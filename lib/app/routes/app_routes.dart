@@ -1,0 +1,31 @@
+part of 'app_pages.dart';
+
+abstract class Routes {
+  Routes._();
+
+  // General Routes
+  static const SPLASH = '/splash';
+  static const LOGIN = '/login';
+  static const REGISTER = '/register';
+  static const FORGOT_PASSWORD = '/forgot-password';
+
+  // Customer Routes
+  static const CUSTOMER_HOME = '/customer/home';
+  static const CUSTOMER_QR_CODE = '/customer/qr-code';
+  static const CUSTOMER_SCAN_HISTORY = '/customer/scan-history';
+
+  // Restaurant Routes
+  static const RESTAURANT_DASHBOARD = '/restaurant/dashboard';
+  static const RESTAURANT_PROFILE_SETUP = '/restaurant/profile-setup';
+  static const RESTAURANT_PROGRAM_CONFIG = '/restaurant/program-config';
+  static const RESTAURANT_QR_SCANNER = '/restaurant/qr-scanner';
+  static const RESTAURANT_SUBSCRIPTION = '/restaurant/subscription';
+
+  // Admin Routes
+  static const ADMIN_LOGIN = '/admin/login';
+  static const ADMIN_DASHBOARD = '/admin/dashboard';
+  static const ADMIN_RESTAURANTS = '/admin/restaurants';
+  static const ADMIN_CUSTOMERS = '/admin/customers';
+  static const ADMIN_SUBSCRIPTIONS = '/admin/subscriptions';
+  static const ADMIN_REPORTS = '/admin/reports';
+}

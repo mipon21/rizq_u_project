@@ -1,0 +1,108 @@
+// Firestore Security Rules for Rizq App
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is an admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Check if user is a restaurant owner
+    function isRestaurant() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'restaurateur';
+    }
+    
+    // Check if user is a customer
+    function isCustomer() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'customer';
+    }
+    
+    // Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Admin Collection - Only admins can read/write
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
+      allow create: if false; // Admin creation should be done via backend only
+    }
+    
+    // Users Collection
+    match /users/{userId} {
+      // Any authenticated user can read their own data
+      allow read: if isOwner(userId);
+      
+      // Only admins can read all users
+      allow read: if isAdmin();
+      
+      // Users can update their own data
+      allow update: if isOwner(userId) && 
+                     !request.resource.data.diff(resource.data).affectedKeys
+                      .hasAny(['role', 'isAdmin']); // Cannot change role or admin status
+      
+      // Only admins can create/delete users
+      allow create, delete: if isAdmin();
+    }
+    
+    // Restaurants Collection
+    match /restaurants/{restaurantId} {
+      // Restaurant owners can read/update their own restaurant
+      allow read, update: if isOwner(restaurantId);
+      
+      // Customers can read restaurant info
+      allow read: if isCustomer();
+      
+      // Admins can read/write all restaurants
+      allow read, write: if isAdmin();
+    }
+    
+    // Programs Collection (Loyalty Programs)
+    match /programs/{programId} {
+      // Restaurant owners can read/write their own programs
+      allow read, write: if isOwner(programId);
+      
+      // Customers can read all programs
+      allow read: if isCustomer();
+      
+      // Admins can read/write all programs
+      allow read, write: if isAdmin();
+    }
+    
+    // Scans Collection
+    match /scans/{scanId} {
+      // Restaurant owners can read/create scans for their restaurant
+      allow read, create: if isRestaurant() && 
+                           request.resource.data.restaurantId == request.auth.uid;
+      
+      // Customers can read their own scans
+      allow read: if isCustomer() && 
+                   resource.data.clientId == request.auth.uid;
+      
+      // Admins can read/write all scans
+      allow read, write: if isAdmin();
+    }
+    
+    // Subscriptions Collection
+    match /subscriptions/{subscriptionId} {
+      // Restaurant owners can read their subscriptions
+      allow read: if isRestaurant() && 
+                   resource.data.restaurantId == request.auth.uid;
+      
+      // Only admins can create/update/delete subscriptions
+      allow write: if isAdmin();
+      
+      // Admins can read all subscriptions
+      allow read: if isAdmin();
+    }
+  }
+} 
