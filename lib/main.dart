@@ -25,11 +25,18 @@ void main() async {
 
   await GetStorage.init();
 
-  runApp(const RizqApp());
+  // Create the RouteObserver before app initialization
+  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+  // Register the RouteObserver globally
+  Get.put<RouteObserver<PageRoute>>(routeObserver, permanent: true);
+
+  runApp(RizqApp(routeObserver: routeObserver));
 }
 
 class RizqApp extends StatelessWidget {
-  const RizqApp({super.key});
+  final RouteObserver<PageRoute> routeObserver;
+
+  const RizqApp({super.key, required this.routeObserver});
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +51,8 @@ class RizqApp extends StatelessWidget {
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
+      // Register the observer for navigation
+      navigatorObservers: [routeObserver],
       // home:  AdminLoginPage(),
     );
   }

@@ -8,6 +8,15 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 class ReportsPage extends GetView<AdminController> {
   const ReportsPage({Key? key}) : super(key: key);
 
+  // Override the controller getter to ensure it's properly initialized
+  @override
+  AdminController get controller {
+    if (!Get.isRegistered<AdminController>()) {
+      Get.put(AdminController(), permanent: true);
+    }
+    return Get.find<AdminController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +109,7 @@ class ReportsPage extends GetView<AdminController> {
                         children: [
                           Expanded(
                             child: SizedBox(
-                              width: double.infinity, 
+                              width: double.infinity,
                               child: ElevatedButton.icon(
                                 onPressed: () => _generateReport('csv'),
                                 icon: const Icon(Icons.download),
@@ -167,6 +176,16 @@ class ReportsPage extends GetView<AdminController> {
                 padding: const EdgeInsets.all(16),
                 child: _buildRestaurantActivityChart(),
               ),
+            ),
+            const SizedBox(height: 20),
+            _buildReportSection(
+              title: 'Loyalty Program Analytics',
+              child: _buildLoyaltyProgramSection(),
+            ),
+            const SizedBox(height: 20),
+            _buildReportSection(
+              title: 'Recent Reward Claims',
+              child: _buildRecentClaimsTable(),
             ),
             const SizedBox(height: 20),
             _buildReportSection(
@@ -252,6 +271,258 @@ class ReportsPage extends GetView<AdminController> {
         ),
       ],
     );
+  }
+
+  Widget _buildLoyaltyProgramSection() {
+    // Fetch loyalty program data when widget is built
+    if (!controller.isLoadingLoyaltyData.value &&
+        controller.loyaltyPrograms.isEmpty) {
+      controller.fetchLoyaltyProgramData();
+    }
+
+    return Obx(() {
+      if (controller.isLoadingLoyaltyData.value) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      return Column(
+        children: [
+          // Loyalty program stats cards
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildStatsCard(
+                    title: 'Total Programs',
+                    value: '${controller.loyaltyPrograms.length}',
+                    icon: Icons.card_giftcard,
+                    color: Colors.indigo,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatsCard(
+                    title: 'Total Rewards Claimed',
+                    value: '${controller.totalRewardsClaimed}',
+                    icon: Icons.redeem,
+                    color: Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Top restaurants by rewards claimed
+          if (controller.topRestaurantsByRewards.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Top Restaurants by Rewards Claimed',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTopRestaurantsChart(),
+                ],
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildStatsCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopRestaurantsChart() {
+    final data = controller.topRestaurantsByRewards.entries
+        .map((entry) => LoyaltyData(entry.key, entry.value))
+        .toList();
+
+    if (data.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text('No reward claim data available'),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 250,
+      child: SfCartesianChart(
+        primaryXAxis: CategoryAxis(),
+        primaryYAxis: NumericAxis(
+          title: AxisTitle(text: 'Rewards Claimed'),
+        ),
+        series: <CartesianSeries<LoyaltyData, String>>[
+          BarSeries<LoyaltyData, String>(
+            dataSource: data,
+            xValueMapper: (LoyaltyData data, _) => data.restaurant,
+            yValueMapper: (LoyaltyData data, _) => data.value,
+            name: 'Rewards Claimed',
+            color: Colors.purple.shade400,
+            dataLabelSettings: const DataLabelSettings(
+              isVisible: true,
+              labelPosition: ChartDataLabelPosition.inside,
+            ),
+          ),
+        ],
+        tooltipBehavior: TooltipBehavior(enable: true),
+      ),
+    );
+  }
+
+  Widget _buildRecentClaimsTable() {
+    return Obx(() {
+      if (controller.isLoadingLoyaltyData.value) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      if (controller.recentClaims.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Text('No recent reward claims'),
+          ),
+        );
+      }
+
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 20,
+            columns: const [
+              DataColumn(label: Text('Restaurant')),
+              DataColumn(label: Text('Customer ID')),
+              DataColumn(label: Text('Reward Type')),
+              DataColumn(label: Text('Points Used')),
+              DataColumn(label: Text('Claim Date')),
+            ],
+            rows: controller.recentClaims.map((claim) {
+              final timestamp = (claim['claimDate'] as Timestamp?)?.toDate();
+              final dateFormat = DateFormat('MMM d, yyyy - HH:mm');
+              final formattedDate =
+                  timestamp != null ? dateFormat.format(timestamp) : 'Unknown';
+
+              return DataRow(
+                cells: [
+                  DataCell(Text(claim['restaurantName'] ?? 'Unknown')),
+                  DataCell(Text(claim['customerId'] ?? 'Unknown')),
+                  DataCell(Text(claim['rewardType'] ?? 'Unknown')),
+                  DataCell(Text('${claim['pointsUsed'] ?? 0}')),
+                  DataCell(Text(formattedDate)),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildRecentActivitiesList() {
@@ -377,4 +648,11 @@ class ActivityData {
   final int count;
 
   ActivityData(this.day, this.count);
+}
+
+class LoyaltyData {
+  final String restaurant;
+  final int value;
+
+  LoyaltyData(this.restaurant, this.value);
 }

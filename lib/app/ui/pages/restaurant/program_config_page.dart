@@ -14,7 +14,6 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
   final ProgramController controller = Get.find();
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   late TextEditingController rewardTypeController;
-  late TextEditingController pointsRequiredController;
 
   // Example reward types - could fetch from backend or be static
   final List<String> rewardOptions = [
@@ -31,9 +30,6 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
     rewardTypeController = TextEditingController(
       text: controller.currentRewardType,
     );
-    pointsRequiredController = TextEditingController(
-      text: controller.currentPointsRequired.toString(),
-    );
     selectedRewardType =
         controller.currentRewardType.obs; // Initialize RxString
 
@@ -41,8 +37,6 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
     ever(controller.loyaltyProgram, (_) {
       if (mounted && controller.loyaltyProgram.value != null) {
         rewardTypeController.text = controller.currentRewardType;
-        pointsRequiredController.text =
-            controller.currentPointsRequired.toString();
         selectedRewardType.value = controller.currentRewardType;
       }
     });
@@ -51,7 +45,6 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
   @override
   void dispose() {
     rewardTypeController.dispose();
-    pointsRequiredController.dispose();
     super.dispose();
   }
 
@@ -83,36 +76,57 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
                   style: TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value:
-                      rewardOptions.contains(selectedRewardType.value)
-                          ? selectedRewardType.value
-                          : null, // Handle initial state if not in options
-                  items:
-                      rewardOptions.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
+                // Replace dropdown with card selection
+                Obx(() => GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.7,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      children: rewardOptions.map((rewardType) {
+                        final isSelected =
+                            selectedRewardType.value == rewardType;
+                        return GestureDetector(
+                          onTap: () {
+                            selectedRewardType.value = rewardType;
+                            rewardTypeController.text = rewardType;
+                          },
+                          child: Card(
+                            elevation: isSelected ? 4 : 1,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context).cardColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade300,
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Text(
+                                  rewardType,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         );
                       }).toList(),
-                  onChanged: (newValue) {
-                    if (newValue != null) {
-                      selectedRewardType.value = newValue;
-                      rewardTypeController.text =
-                          newValue; // Keep text controller in sync
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 15,
-                    ),
-                  ),
-                  validator:
-                      (value) =>
-                          value == null ? 'Please select a reward type' : null,
-                ),
+                    )),
                 const SizedBox(height: 15),
                 const Text(
                   'Or enter a custom reward type below:',
@@ -125,10 +139,8 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
                     labelText: 'Reward Description (e.g., Free Coffee)',
                     hintText: 'Enter custom reward...',
                   ),
-                  onChanged:
-                      (value) =>
-                          selectedRewardType.value =
-                              value, // Update dropdown selection if typing
+                  onChanged: (value) => selectedRewardType.value =
+                      value, // Update dropdown selection if typing
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a reward description';
@@ -138,24 +150,69 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // Points Required Field
-                TextFormField(
-                  controller: pointsRequiredController,
-                  decoration: const InputDecoration(
-                    labelText: 'Points Required for Reward',
+                // Replace editable Points Required field with fixed display
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.grey.shade300),
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter points required';
-                    }
-                    final points = int.tryParse(value);
-                    if (points == null || points <= 0) {
-                      return 'Please enter a valid positive number';
-                    }
-                    return null;
-                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.stars,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Points Required for Reward',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text(
+                                    '10',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'points',
+                                    style:
+                                        TextStyle(color: Colors.grey.shade600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'Points required is fixed at 10',
+                          child: Icon(
+                            Icons.info_outline,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 40),
 
@@ -164,11 +221,10 @@ class _ProgramConfigPageState extends State<ProgramConfigPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (formKey.currentState!.validate()) {
-                        final points = int.parse(pointsRequiredController.text);
+                        // Use fixed value 10 for points
                         controller.updateLoyaltyProgram(
-                          rewardTypeController.text
-                              .trim(), // Use text field value
-                          points,
+                          rewardTypeController.text.trim(),
+                          10, // Fixed at 10 points
                         );
                         Get.back(); // Go back after saving
                       }

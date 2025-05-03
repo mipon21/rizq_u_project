@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/admin_controller.dart';
+import 'package:rizq/app/routes/app_pages.dart';
 
 class AdminLoginPage extends GetView<AdminController> {
   const AdminLoginPage({Key? key}) : super(key: key);
@@ -63,20 +64,29 @@ class AdminLoginPage extends GetView<AdminController> {
                       ),
                     )),
                 const SizedBox(height: 24),
-                Obx(() => ElevatedButton(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : () => controller.login(),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: controller.isLoading.value
-                          ? const CircularProgressIndicator()
-                          : const Text(
-                              'Login',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                    )),
+                Obx(
+                  () => ElevatedButton(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : () => controller.login(),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: controller.isLoading.value
+                        ? const CircularProgressIndicator()
+                        : const Text(
+                            'Login',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () {
+                    Get.offAllNamed(Routes.LOGIN);
+                  },
+                  child: const Text('Register'),
+                ),
               ],
             ),
           ),

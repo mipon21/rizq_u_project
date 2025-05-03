@@ -6,6 +6,15 @@ import 'package:rizq/app/controllers/admin_controller.dart';
 class RestaurantManagementPage extends GetView<AdminController> {
   const RestaurantManagementPage({Key? key}) : super(key: key);
 
+  // Override the controller getter to ensure it's properly initialized
+  @override
+  AdminController get controller {
+    if (!Get.isRegistered<AdminController>()) {
+      Get.put(AdminController(), permanent: true);
+    }
+    return Get.find<AdminController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,41 +352,207 @@ class RestaurantManagementPage extends GetView<AdminController> {
   void _showRestaurantDetails(
       BuildContext context, String restaurantId, Map<String, dynamic> data) {
     Get.dialog(
-      AlertDialog(
-        title: Text(data['name'] ?? 'Restaurant Details'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDetailRow('Email', data['email'] ?? 'No email'),
-              _buildDetailRow('Address', data['address'] ?? 'No address'),
-              _buildDetailRow('Phone', data['phone'] ?? 'No phone'),
-              _buildDetailRow(
-                  'Subscription Plan', data['subscriptionPlan'] ?? 'No plan'),
-              _buildDetailRow('Subscription Status',
-                  data['subscriptionStatus'] ?? 'inactive'),
-              _buildDetailRow(
-                  'Total Scans', '${data['currentScanCount'] ?? 0}'),
-              _buildDetailRow(
-                  'Created At',
-                  data['createdAt'] != null
-                      ? (data['createdAt'] as Timestamp).toDate().toString()
-                      : 'Unknown'),
-            ],
+      Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: DefaultTabController(
+            length: 3, // Changed from 2 to 3 tabs
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['name'] ?? 'Restaurant Details',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const TabBar(
+                  tabs: [
+                    Tab(text: 'Info'),
+                    Tab(text: 'Subscription'),
+                    Tab(text: 'Loyalty Program'), // New tab
+                  ],
+                  labelColor: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: TabBarView(
+                    children: [
+                      // Info tab content
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInfoRow('Email', data['email'] ?? 'Not set'),
+                            _buildInfoRow('Phone', data['phone'] ?? 'Not set'),
+                            _buildInfoRow(
+                                'Address', data['address'] ?? 'Not set'),
+                            _buildInfoRow(
+                                'Owner', data['ownerName'] ?? 'Not set'),
+                            _buildInfoRow(
+                                'Status',
+                                data['isSuspended'] == true
+                                    ? 'Suspended'
+                                    : 'Active'),
+                            _buildInfoRow(
+                                'Created', _formatTimestamp(data['createdAt'])),
+                            const SizedBox(height: 16),
+                            if (data['logoUrl'] != null &&
+                                data['logoUrl'].isNotEmpty)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Logo:',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Image.network(
+                                    data['logoUrl'],
+                                    height: 80,
+                                    width: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 80,
+                                        width: 80,
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: Text('No Image'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                      // Subscription tab content
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInfoRow(
+                                'Plan', data['subscriptionPlan'] ?? 'Not set'),
+                            _buildInfoRow('Status',
+                                data['subscriptionStatus'] ?? 'inactive'),
+                            _buildInfoRow('Started',
+                                _formatTimestamp(data['subscriptionStart'])),
+                            _buildInfoRow('Expires',
+                                _formatTimestamp(data['subscriptionEnd'])),
+                            _buildInfoRow('Auto-Renew',
+                                (data['autoRenew'] == true) ? 'Yes' : 'No'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _showManageSubscriptionDialog(
+                                  context, restaurantId, data),
+                              child: const Text('Manage Subscription'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Loyalty Program tab content (new)
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('programs')
+                            .doc(restaurantId)
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Text('Error: ${snapshot.error}'),
+                            );
+                          }
+
+                          final programData =
+                              snapshot.data?.data() as Map<String, dynamic>?;
+
+                          if (programData == null) {
+                            return const Center(
+                              child: Text(
+                                  'No loyalty program found for this restaurant'),
+                            );
+                          }
+
+                          return SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildInfoRow('Reward Type',
+                                    programData['rewardType'] ?? 'Not set'),
+                                _buildInfoRow('Points Required',
+                                    '${programData['pointsRequired'] ?? 10}'),
+                                _buildInfoRow('Created',
+                                    _formatTimestamp(programData['createdAt'])),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Reward Claims:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                FutureBuilder<int>(
+                                  future:
+                                      _getRestaurantClaimCount(restaurantId),
+                                  builder: (context, claimSnapshot) {
+                                    if (claimSnapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const Text(
+                                          'Loading claim data...');
+                                    }
+
+                                    final claimCount = claimSnapshot.data ?? 0;
+                                    return Text(
+                                      'Total rewards claimed: $claimCount',
+                                      style: const TextStyle(fontSize: 16),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      _showEditLoyaltyProgramDialog(
+                                          context, restaurantId, programData),
+                                  child: const Text('Edit Loyalty Program'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -391,6 +566,260 @@ class RestaurantManagementPage extends GetView<AdminController> {
           ),
           Expanded(
             child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      return timestamp.toDate().toString();
+    } else if (timestamp is String) {
+      return timestamp;
+    } else {
+      throw Exception('Invalid timestamp format');
+    }
+  }
+
+  Future<int> _getRestaurantClaimCount(String restaurantId) async {
+    final claimsSnapshot = await FirebaseFirestore.instance
+        .collection('claims')
+        .where('restaurantId', isEqualTo: restaurantId)
+        .count()
+        .get();
+
+    return claimsSnapshot.count ?? 0;
+  }
+
+  void _showEditLoyaltyProgramDialog(BuildContext context, String restaurantId,
+      Map<String, dynamic> programData) {
+    final rewardTypeController =
+        TextEditingController(text: programData['rewardType'] ?? '');
+    final pointsRequiredController =
+        TextEditingController(text: '${programData['pointsRequired'] ?? 10}');
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Edit Loyalty Program'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: rewardTypeController,
+                decoration: const InputDecoration(
+                  labelText: 'Reward Type',
+                  hintText: 'e.g., Free Coffee, Dessert Offer, etc.',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pointsRequiredController,
+                decoration: const InputDecoration(
+                  labelText: 'Points Required',
+                  hintText: 'e.g., 10',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final rewardType = rewardTypeController.text.trim();
+              final pointsRequired =
+                  int.tryParse(pointsRequiredController.text.trim()) ?? 10;
+
+              if (rewardType.isEmpty) {
+                Get.snackbar(
+                  'Error',
+                  'Please enter a reward type',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+
+              try {
+                await FirebaseFirestore.instance
+                    .collection('programs')
+                    .doc(restaurantId)
+                    .update({
+                  'rewardType': rewardType,
+                  'pointsRequired': pointsRequired,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+
+                Get.back(); // Close the dialog
+                Get.snackbar(
+                  'Success',
+                  'Loyalty program updated successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.green,
+                  colorText: Colors.white,
+                );
+
+                // Refresh the dialog
+                Navigator.of(context).pop();
+                _showRestaurantDetails(
+                    context,
+                    restaurantId,
+                    (await FirebaseFirestore.instance
+                                .collection('restaurants')
+                                .doc(restaurantId)
+                                .get())
+                            .data() ??
+                        {});
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to update loyalty program: $e',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Add the missing subscription management dialog
+  void _showManageSubscriptionDialog(
+      BuildContext context, String restaurantId, Map<String, dynamic> data) {
+    final planController =
+        TextEditingController(text: data['subscriptionPlan'] ?? 'Basic');
+    final statusController =
+        TextEditingController(text: data['subscriptionStatus'] ?? 'inactive');
+
+    // For date pickers
+    DateTime startDate =
+        (data['subscriptionStart'] as Timestamp?)?.toDate() ?? DateTime.now();
+    DateTime endDate = (data['subscriptionEnd'] as Timestamp?)?.toDate() ??
+        DateTime.now().add(const Duration(days: 30));
+
+    // For auto-renew checkbox
+    bool autoRenew = data['autoRenew'] ?? false;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Manage Subscription'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Subscription Plan',
+                  border: OutlineInputBorder(),
+                ),
+                value: planController.text,
+                items: const [
+                  DropdownMenuItem(value: 'Basic', child: Text('Basic')),
+                  DropdownMenuItem(value: 'Premium', child: Text('Premium')),
+                  DropdownMenuItem(
+                      value: 'Enterprise', child: Text('Enterprise')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    planController.text = value;
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Status',
+                  border: OutlineInputBorder(),
+                ),
+                value: statusController.text,
+                items: const [
+                  DropdownMenuItem(value: 'active', child: Text('Active')),
+                  DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
+                  DropdownMenuItem(
+                      value: 'free_trial', child: Text('Free Trial')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    statusController.text = value;
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Auto-Renew'),
+                trailing: Switch(
+                  value: autoRenew,
+                  onChanged: (value) {
+                    autoRenew = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await FirebaseFirestore.instance
+                    .collection('restaurants')
+                    .doc(restaurantId)
+                    .update({
+                  'subscriptionPlan': planController.text,
+                  'subscriptionStatus': statusController.text,
+                  'autoRenew': autoRenew,
+                  'subscriptionStart': Timestamp.fromDate(startDate),
+                  'subscriptionEnd': Timestamp.fromDate(endDate),
+                });
+
+                Get.back(); // Close the dialog
+                Get.snackbar(
+                  'Success',
+                  'Subscription updated successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.green,
+                  colorText: Colors.white,
+                );
+
+                // Refresh the dialog
+                Navigator.of(context).pop();
+                _showRestaurantDetails(
+                    context,
+                    restaurantId,
+                    (await FirebaseFirestore.instance
+                                .collection('restaurants')
+                                .doc(restaurantId)
+                                .get())
+                            .data() ??
+                        {});
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to update subscription: $e',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
+            child: const Text('SAVE'),
           ),
         ],
       ),

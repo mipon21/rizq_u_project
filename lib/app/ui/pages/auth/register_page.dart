@@ -165,11 +165,11 @@ class RegisterPage extends GetView<AuthController> {
                   child: const Text("Already have an account? Login"),
                 ),
                 const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () =>
-                      Get.offAllNamed(Routes.ADMIN_LOGIN), // Go back to login
-                  child: const Text("Admin? Login here"),
-                ),
+                // TextButton(
+                //   onPressed: () =>
+                //       Get.offAllNamed(Routes.ADMIN_LOGIN), // Go back to login
+                //   child: const Text("Admin? Login here"),
+                // ),
               ],
             ),
           ),

@@ -65,28 +65,26 @@ class LoginPage extends GetView<AuthController> {
                   () => SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          controller.isLoading.value
-                              ? null
-                              : () {
-                                if (formKey.currentState!.validate()) {
-                                  controller.login(
-                                    emailController.text.trim(),
-                                    passwordController.text.trim(),
-                                  );
-                                }
-                              },
-                      child:
-                          controller.isLoading.value
-                              ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : const Text('Login'),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              if (formKey.currentState!.validate()) {
+                                controller.login(
+                                  emailController.text.trim(),
+                                  passwordController.text.trim(),
+                                );
+                              }
+                            },
+                      child: controller.isLoading.value
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Login'),
                     ),
                   ),
                 ),

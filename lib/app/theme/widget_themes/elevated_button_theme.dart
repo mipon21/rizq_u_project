@@ -16,7 +16,7 @@ class MElevatedButtonTheme {
       disabledForegroundColor: MColors.darkGrey,
       disabledBackgroundColor: MColors.buttonDisabled,
       side: const BorderSide(color: MColors.primary),
-      padding: const EdgeInsets.symmetric(vertical: MSizes.buttonHeight),
+      padding: const EdgeInsets.symmetric(vertical: MSizes.buttonHeight, horizontal: 20),
       textStyle: const TextStyle(fontSize: 16, color: MColors.textWhite, fontWeight: FontWeight.w600),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MSizes.buttonRadius)),
     ),

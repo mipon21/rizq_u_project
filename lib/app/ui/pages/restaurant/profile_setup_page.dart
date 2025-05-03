@@ -1,7 +1,8 @@
 import 'dart:io'; // Required for File type
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart'; // Adjust import
+import 'package:rizq/app/controllers/restaurant_controller.dart';
+import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
 
 class ProfileSetupPage extends StatefulWidget {
   // Use StatefulWidget to manage TextEditControllers with initial values
@@ -53,106 +54,108 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Setup or Update Your Profile',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 30),
-
-                // Logo Display and Upload Button
-                Stack(
-                  // Use Stack to overlay edit icon
-                  alignment: Alignment.bottomRight,
+          child: Column(
+            children: [
+              Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage:
-                          controller.logoUrl.isNotEmpty
+                    Text(
+                      'Setup or Update Your Profile',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Logo Display and Upload Button
+                    Stack(
+                      // Use Stack to overlay edit icon
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: controller.logoUrl.isNotEmpty
                               ? NetworkImage(controller.logoUrl)
                               : null, // Use NetworkImage if URL exists
-                      child:
-                          controller.logoUrl.isEmpty
+                          child: controller.logoUrl.isEmpty
                               ? const Icon(
-                                Icons.storefront,
-                                size: 60,
-                                color: Colors.grey,
-                              )
+                                  Icons.storefront,
+                                  size: 60,
+                                  color: Colors.grey,
+                                )
                               : null,
-                    ),
-                    Material(
-                      // Small circle for edit button
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        onTap: () => controller.pickAndUploadLogo(),
-                        customBorder: const CircleBorder(),
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(
-                            Icons.edit,
-                            color: Colors.white,
-                            size: 20,
+                        ),
+                        Material(
+                          // Small circle for edit button
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: () => controller.pickAndUploadLogo(),
+                            customBorder: const CircleBorder(),
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => controller.pickAndUploadLogo(),
+                      child: const Text('Upload Logo'),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Form Fields
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Restaurant Name',
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your restaurant name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    TextFormField(
+                      controller: addressController,
+                      decoration: const InputDecoration(labelText: 'Address'),
+                      maxLines: 2, // Allow multi-line address
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your restaurant address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Save Button
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          controller.updateRestaurantDetails(
+                            nameController.text.trim(),
+                            addressController.text.trim(),
+                          );
+                          Get.back(); // Go back after saving (optional)
+                        }
+                      },
+                      child: const Text('Save Profile'),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => controller.pickAndUploadLogo(),
-                  child: const Text('Upload Logo'),
-                ),
-                const SizedBox(height: 30),
-
-                // Form Fields
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Restaurant Name',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your restaurant name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 15),
-                TextFormField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 2, // Allow multi-line address
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your restaurant address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 30),
-
-                // Save Button
-                ElevatedButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      controller.updateRestaurantDetails(
-                        nameController.text.trim(),
-                        addressController.text.trim(),
-                      );
-                      Get.back(); // Go back after saving (optional)
-                    }
-                  },
-                  child: const Text('Save Profile'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       }),

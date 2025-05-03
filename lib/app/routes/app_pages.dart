@@ -16,12 +16,14 @@ import 'package:rizq/app/ui/pages/auth/forgot_password_page.dart';
 import 'package:rizq/app/ui/pages/customer/customer_home_page.dart';
 import 'package:rizq/app/ui/pages/customer/scan_history_page.dart';
 import 'package:rizq/app/ui/pages/customer/qr_code_page.dart';
+import 'package:rizq/app/ui/pages/customer/customer_profile_page.dart';
 import 'package:rizq/app/ui/pages/restaurant/dashboard_page.dart';
 import 'package:rizq/app/ui/pages/restaurant/profile_setup_page.dart';
 import 'package:rizq/app/ui/pages/restaurant/program_config_page.dart';
 import 'package:rizq/app/ui/pages/restaurant/qr_scanner_page.dart';
 import 'package:rizq/app/ui/pages/restaurant/subscription_page.dart';
 import 'package:rizq/app/ui/pages/splash_page.dart';
+import 'package:rizq/app/ui/pages/admin/plan_pricing_page.dart';
 
 part 'app_routes.dart';
 
@@ -64,6 +66,11 @@ class AppPages {
     GetPage(
       name: Routes.CUSTOMER_SCAN_HISTORY,
       page: () => const ScanHistoryPage(),
+      binding: CustomerBinding(),
+    ),
+    GetPage(
+      name: Routes.CUSTOMER_PROFILE,
+      page: () => const CustomerProfilePage(),
       binding: CustomerBinding(),
     ),
     // Restaurant Routes
@@ -126,6 +133,12 @@ class AppPages {
     GetPage(
       name: Routes.ADMIN_REPORTS,
       page: () => const ReportsPage(),
+      binding: AdminBinding(),
+      middlewares: adminMiddleware,
+    ),
+    GetPage(
+      name: Routes.ADMIN_PLAN_PRICING,
+      page: () => const PlanPricingPage(),
       binding: AdminBinding(),
       middlewares: adminMiddleware,
     ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rizq/app/controllers/admin_controller.dart';
+import 'package:rizq/app/routes/app_pages.dart';
 
 class SubscriptionManagementPage extends GetView<AdminController> {
   const SubscriptionManagementPage({Key? key}) : super(key: key);
@@ -12,6 +13,13 @@ class SubscriptionManagementPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscription Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.attach_money),
+            tooltip: 'Manage Scan Pricing',
+            onPressed: () => Get.toNamed(Routes.ADMIN_PLAN_PRICING),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -689,13 +697,14 @@ class SubscriptionManagementPage extends GetView<AdminController> {
   }
 
   double _getPlanAmount(String plan) {
+    // Get from subscription_plans collection instead of hardcoded values
     switch (plan) {
       case 'plan_100':
-        return 99.99;
+        return controller.planPrices['plan_100'] ?? 99.99;
       case 'plan_250':
-        return 199.99;
+        return controller.planPrices['plan_250'] ?? 199.99;
       case 'plan_unlimited':
-        return 299.99;
+        return controller.planPrices['plan_unlimited'] ?? 299.99;
       default:
         return 0.0;
     }

@@ -13,6 +13,7 @@ abstract class Routes {
   static const CUSTOMER_HOME = '/customer/home';
   static const CUSTOMER_QR_CODE = '/customer/qr-code';
   static const CUSTOMER_SCAN_HISTORY = '/customer/scan-history';
+  static const CUSTOMER_PROFILE = '/customer/profile';
 
   // Restaurant Routes
   static const RESTAURANT_DASHBOARD = '/restaurant/dashboard';
@@ -28,4 +29,5 @@ abstract class Routes {
   static const ADMIN_CUSTOMERS = '/admin/customers';
   static const ADMIN_SUBSCRIPTIONS = '/admin/subscriptions';
   static const ADMIN_REPORTS = '/admin/reports';
+  static const ADMIN_PLAN_PRICING = '/admin/plan-pricing';
 }

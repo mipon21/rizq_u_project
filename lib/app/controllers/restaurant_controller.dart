@@ -2,10 +2,13 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust if needed
 import 'package:flutter/foundation.dart'; // For kDebugMode
+import 'package:intl/intl.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 
 class RestaurantProfileModel {
   final String uid;
@@ -70,6 +73,40 @@ class RestaurantProfileModel {
   }
 }
 
+// For Claim History
+class ClaimModel {
+  final String id;
+  final String customerId;
+  final String restaurantId;
+  final String restaurantName;
+  final String rewardType;
+  final DateTime claimDate;
+  final int pointsUsed;
+  final bool isVerified;
+  final DateTime? verifiedDate;
+
+  ClaimModel({
+    required this.id,
+    required this.customerId,
+    required this.restaurantId,
+    required this.restaurantName,
+    required this.rewardType,
+    required this.claimDate,
+    required this.pointsUsed,
+    this.isVerified = false,
+    this.verifiedDate,
+  });
+
+  String get formattedDate =>
+      DateFormat('MMM d, yyyy - hh:mm a').format(claimDate);
+
+  String get verificationCode => id.substring(0, 6).toUpperCase();
+
+  String get formattedVerifiedDate => verifiedDate != null
+      ? DateFormat('MMM d, yyyy - hh:mm a').format(verifiedDate!)
+      : '';
+}
+
 class RestaurantController extends GetxController {
   static RestaurantController get instance => Get.find();
   final AuthController _authController = Get.find();
@@ -82,6 +119,13 @@ class RestaurantController extends GetxController {
   final RxBool isLoadingUpload = false.obs;
   final Rx<RestaurantProfileModel?> restaurantProfile =
       Rx<RestaurantProfileModel?>(null);
+
+  final RxBool isLoadingClaims = false.obs;
+  final RxList<ClaimModel> claimedRewards = <ClaimModel>[].obs;
+
+  final RxBool isVerifying = false.obs;
+  final RxString verificationResult = ''.obs;
+  final RxBool showVerificationResult = false.obs;
 
   String get restaurantUid => _authController.currentUserUid;
 
@@ -99,62 +143,143 @@ class RestaurantController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Initialize with empty data first to avoid null issues
+    restaurantProfile.value = null;
+    claimedRewards.assignAll([]);
+
     if (restaurantUid.isNotEmpty) {
-      fetchRestaurantProfile();
+      // Use Future.delayed to ensure this runs after widget tree is built
+      Future.delayed(Duration.zero, () {
+        fetchRestaurantProfile();
+        fetchClaimedRewards();
+      });
     }
+
     // Re-fetch if user changes using the NEW public getter
     ever(_authController.reactiveFirebaseUser, (User? user) {
-      // Pass the user
-      if (user != null && _authController.userRole.value == 'restaurateur') {
-        // Ensure user is logged in and is a restaurateur
+      if (user != null) {
         fetchRestaurantProfile();
-        if (kDebugMode) {
-          print(
-            "Auth state changed: Restaurateur logged in. Fetching profile.",
-          );
-        }
+        fetchClaimedRewards(); // Fetch claimed rewards when user logs in
       } else {
-        restaurantProfile.value =
-            null; // Clear profile on logout or if role changes
+        // Clear data if logged out
         if (kDebugMode) {
           print(
-            "Auth state changed: User logged out or role mismatch. Clearing restaurant profile.",
-          );
+              "Auth state changed: User logged out. Clearing restaurant data.");
         }
+        restaurantProfile.value = null;
+        claimedRewards.clear(); // Clear claimed rewards when user logs out
+      }
+    });
+
+    // Add persistent data check to catch release mode issues
+    ever(isLoadingProfile, (bool loading) {
+      if (!loading &&
+          restaurantProfile.value == null &&
+          restaurantUid.isNotEmpty) {
+        // If loading finished but profile is still null, try once more
+        // This helps in release mode where reactivity might not work as expected
+        print("Profile still null after loading - retrying fetch");
+        Future.delayed(const Duration(milliseconds: 500), () {
+          fetchRestaurantProfile();
+        });
       }
     });
   }
 
-  Future<void> fetchRestaurantProfile() async {
-    if (restaurantUid.isEmpty) return;
+  Future<bool> fetchRestaurantProfile() async {
+    if (restaurantUid.isEmpty) return false;
+
+    // Set loading state
     isLoadingProfile.value = true;
+
     try {
-      final doc =
-          await _firestore.collection('restaurants').doc(restaurantUid).get();
-      if (doc.exists) {
-        restaurantProfile.value = RestaurantProfileModel.fromSnapshot(
-          doc as DocumentSnapshot<Map<String, dynamic>>,
-        );
-        if (kDebugMode) {
-          print(
-            "Fetched profile for restaurant $restaurantUid. Status: ${restaurantProfile.value?.subscriptionStatus}",
-          );
+      // Direct Firestore instance reference - important for release mode
+      final firestore = FirebaseFirestore.instance;
+
+      print("Fetching profile for restaurant: $restaurantUid");
+
+      // Enable offline persistence with unlimited cache size
+      try {
+        firestore.settings = const Settings(
+            persistenceEnabled: true,
+            cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED);
+      } catch (e) {
+        // Settings might already be initialized, which can throw an error
+        print("Firestore settings error (can be ignored): $e");
+      }
+
+      // Get restaurant document with server and cache option
+      final restaurantDoc =
+          firestore.collection('restaurants').doc(restaurantUid);
+
+      try {
+        // First try to get the document with server as source
+        final docFromServer =
+            await restaurantDoc.get(GetOptions(source: Source.server));
+
+        if (docFromServer.exists) {
+          _parseAndSetProfile(docFromServer);
+          return true;
         }
-        // Check and update trial status if expired
-        _checkAndUpdateTrialStatus();
+      } catch (serverError) {
+        // If server fetch fails, try cache
+        print("Server fetch failed, trying cache: $serverError");
+      }
+
+      // Try cache if server failed or document didn't exist
+      try {
+        final docFromCache =
+            await restaurantDoc.get(GetOptions(source: Source.cache));
+
+        if (docFromCache.exists) {
+          _parseAndSetProfile(docFromCache);
+          return true;
+        }
+      } catch (cacheError) {
+        print("Cache fetch failed: $cacheError");
+      }
+
+      // If both failed or document doesn't exist, try default fetch
+      final doc = await restaurantDoc.get();
+
+      if (doc.exists) {
+        _parseAndSetProfile(doc);
+        return true;
       } else {
         restaurantProfile.value = null; // Clear if not found
-        if (kDebugMode) {
-          print("Restaurant profile not found for UID: $restaurantUid");
-        }
+        print("Restaurant profile not found for UID: $restaurantUid");
+        return false;
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch restaurant profile: $e');
-      if (kDebugMode) {
-        print("Error fetching restaurant profile $restaurantUid: $e");
-      }
+      print("Error fetching restaurant profile $restaurantUid: $e");
+      Get.snackbar('Error', 'Failed to fetch restaurant profile');
+      return false;
     } finally {
       isLoadingProfile.value = false;
+      // Force update to ensure UI refreshes
+      update();
+    }
+  }
+
+  // Helper method to parse and set profile data
+  void _parseAndSetProfile(DocumentSnapshot doc) {
+    try {
+      restaurantProfile.value = RestaurantProfileModel.fromSnapshot(
+        doc as DocumentSnapshot<Map<String, dynamic>>,
+      );
+
+      print("Successfully loaded profile for ${restaurantProfile.value?.name}");
+
+      // Check and update trial status if expired
+      _checkAndUpdateTrialStatus();
+
+      // Force update to ensure UI refreshes
+      update();
+    } catch (parseError) {
+      print("Error parsing restaurant data: $parseError");
+      restaurantProfile.value = null;
+      Get.snackbar('Data Error', 'Could not read restaurant data correctly');
     }
   }
 
@@ -308,6 +433,32 @@ class RestaurantController extends GetxController {
         return;
       }
 
+      // NEW: Check if the customer already has 10 or more points but hasn't claimed their reward
+      final customerPointsMapCheck =
+          customerDoc.data()?['pointsByRestaurant'] as Map<String, dynamic>? ??
+              {};
+      final restaurantPointsDataCheck =
+          customerPointsMapCheck[restaurantUid] as Map<String, dynamic>? ??
+              {'points': 0, 'rewardReceived': false};
+
+      final customerCurrentPoints =
+          restaurantPointsDataCheck['points'] as int? ?? 0;
+      final rewardReceived =
+          restaurantPointsDataCheck['rewardReceived'] as bool? ?? false;
+
+      // If customer already has 10+ points but hasn't claimed the reward, prevent scanning
+      if (customerCurrentPoints >= 10 && !rewardReceived) {
+        Get.snackbar(
+          colorText: MColors.error,
+          'Reward Ready',
+          'Customer has a pending reward to claim. Please claim your previous reward before scanning again.',
+          duration: const Duration(seconds: 5),
+          backgroundColor: MColors.white.withOpacity(0.8),
+          margin: EdgeInsets.fromLTRB(0, 70, 0, 0),
+        );
+        return;
+      }
+
       // 3. Check 10-Minute Cooldown for this specific customer
       final now = DateTime.now();
       final tenMinutesAgo = now.subtract(const Duration(minutes: 10));
@@ -323,17 +474,17 @@ class RestaurantController extends GetxController {
           .limit(1) // We only need to know if at least one exists
           .get();
 
-      if (recentScans.docs.isNotEmpty) {
-        final lastScanTime =
-            (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
-        final minutesPassed = now.difference(lastScanTime).inMinutes;
-        final waitTime = 10 - minutesPassed;
-        Get.snackbar(
-          'Cooldown Active',
-          'Customer scanned ${minutesPassed}m ago. Please wait ${waitTime}m.',
-        );
-        return;
-      }
+      // if (recentScans.docs.isNotEmpty) {
+      //   final lastScanTime =
+      //       (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
+      //   final minutesPassed = now.difference(lastScanTime).inMinutes;
+      //   final waitTime = 0 - minutesPassed;
+      //   Get.snackbar(
+      //     'Cooldown Active',
+      //     'Customer scanned ${minutesPassed}m ago. Please wait ${waitTime}m.',
+      //   );
+      //   return;
+      // }
 
       // --- If all checks pass, proceed with scan ---
 
@@ -409,5 +560,133 @@ class RestaurantController extends GetxController {
     } finally {
       isLoadingScan.value = false;
     }
+  }
+
+  // Fetch claimed rewards history for the restaurant
+  Future<void> fetchClaimedRewards() async {
+    if (restaurantUid.isEmpty) return;
+
+    isLoadingClaims.value = true;
+    claimedRewards.clear(); // Clear before fetching new data
+
+    try {
+      // Keep a reference to the Firestore instance
+      final firestore = FirebaseFirestore.instance;
+
+      final snapshot = await firestore
+          .collection('claims')
+          .where('restaurantId', isEqualTo: restaurantUid)
+          .orderBy('claimDate', descending: true)
+          .get(GetOptions(
+              source: Source.serverAndCache)); // Try server first, then cache
+
+      if (snapshot.docs.isNotEmpty) {
+        final rewards = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return ClaimModel(
+            id: doc.id,
+            customerId: data['customerId'] ?? '',
+            restaurantId: data['restaurantId'] ?? '',
+            restaurantName: data['restaurantName'] ?? '',
+            rewardType: data['rewardType'] ?? 'Unknown Reward',
+            claimDate: (data['claimDate'] as Timestamp).toDate(),
+            pointsUsed: data['pointsUsed'] ?? 0,
+            isVerified: data['isVerified'] ?? false,
+            verifiedDate: data['verifiedDate'] != null
+                ? (data['verifiedDate'] as Timestamp).toDate()
+                : null,
+          );
+        }).toList();
+
+        // Use assignAll to trigger reactive updates
+        claimedRewards.assignAll(rewards);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch claimed rewards: $e');
+      if (kDebugMode) {
+        print("Error fetching claimed rewards: $e");
+      }
+    } finally {
+      isLoadingClaims.value = false;
+      // Force update in case Obx doesn't catch the changes
+      update();
+    }
+  }
+
+  // Verify a reward claim using the 6-digit code
+  Future<bool> verifyRewardClaim(String verificationCode) async {
+    if (restaurantUid.isEmpty) return false;
+
+    isVerifying.value = true;
+    showVerificationResult.value = true;
+    verificationResult.value = '';
+
+    try {
+      // Normalize the code (uppercase)
+      final normalizedCode = verificationCode.trim().toUpperCase();
+
+      if (normalizedCode.length != 6) {
+        verificationResult.value =
+            'Invalid code format. Please enter a 6-digit code.';
+        return false;
+      }
+
+      // Query Firestore for claims with this prefix in the ID
+      final querySnapshot = await _firestore.collection('claims').get();
+
+      // Find claims matching this code (checking first 6 characters of ID)
+      final matchingClaims = querySnapshot.docs.where((doc) =>
+          doc.id.substring(0, 6).toUpperCase() == normalizedCode &&
+          doc.data()['restaurantId'] == restaurantUid);
+
+      if (matchingClaims.isEmpty) {
+        verificationResult.value =
+            'No matching claim found. Please check the code.';
+        return false;
+      }
+
+      final claimDoc = matchingClaims.first;
+      final claimData = claimDoc.data();
+
+      // Check if already verified
+      if (claimData['isVerified'] == true) {
+        verificationResult.value =
+            'This reward has already been verified on ${DateFormat('MMM d, yyyy').format((claimData['verifiedDate'] as Timestamp).toDate())}';
+        return false;
+      }
+
+      // Mark as verified
+      await _firestore.collection('claims').doc(claimDoc.id).update({
+        'isVerified': true,
+        'verifiedDate': FieldValue.serverTimestamp(),
+      });
+
+      // Show success message with reward details
+      final rewardType = claimData['rewardType'] ?? 'Reward';
+      final customerName = claimData['customerName'] ?? 'Customer';
+
+      verificationResult.value =
+          'Success! Verified "$rewardType" reward. This claim is now marked as fulfilled.';
+
+      // Refresh the claims list
+      await fetchClaimedRewards();
+
+      return true;
+    } catch (e) {
+      verificationResult.value =
+          'Error: Failed to verify claim. ${e.toString()}';
+      if (kDebugMode) {
+        print("Error verifying claim: $e");
+      }
+      return false;
+    } finally {
+      isVerifying.value = false;
+    }
+  }
+
+  // Clear verification result
+  void clearVerificationResult() {
+    showVerificationResult.value = false;
+    verificationResult.value = '';
   }
 }
