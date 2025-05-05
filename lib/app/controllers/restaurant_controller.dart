@@ -8,7 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust if needed
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:intl/intl.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../utils/constants/colors.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class RestaurantProfileModel {
   final String uid;
@@ -127,6 +128,10 @@ class RestaurantController extends GetxController {
   final RxString verificationResult = ''.obs;
   final RxBool showVerificationResult = false.obs;
 
+  // --- Dashboard Data ---
+  final RxList<Map<String, String>> recentScans = <Map<String, String>>[].obs;
+  final RxList<FlSpot> scanChartData = <FlSpot>[].obs;
+
   String get restaurantUid => _authController.currentUserUid;
 
   // Expose profile details reactively
@@ -147,12 +152,16 @@ class RestaurantController extends GetxController {
     // Initialize with empty data first to avoid null issues
     restaurantProfile.value = null;
     claimedRewards.assignAll([]);
+    recentScans.clear();
+    scanChartData.clear();
 
     if (restaurantUid.isNotEmpty) {
       // Use Future.delayed to ensure this runs after widget tree is built
       Future.delayed(Duration.zero, () {
         fetchRestaurantProfile();
         fetchClaimedRewards();
+        fetchRecentScans();
+        fetchScanChartData();
       });
     }
 
@@ -160,7 +169,9 @@ class RestaurantController extends GetxController {
     ever(_authController.reactiveFirebaseUser, (User? user) {
       if (user != null) {
         fetchRestaurantProfile();
-        fetchClaimedRewards(); // Fetch claimed rewards when user logs in
+        fetchClaimedRewards();
+        fetchRecentScans();
+        fetchScanChartData();
       } else {
         // Clear data if logged out
         if (kDebugMode) {
@@ -168,7 +179,9 @@ class RestaurantController extends GetxController {
               "Auth state changed: User logged out. Clearing restaurant data.");
         }
         restaurantProfile.value = null;
-        claimedRewards.clear(); // Clear claimed rewards when user logs out
+        claimedRewards.clear();
+        recentScans.clear();
+        scanChartData.clear();
       }
     });
 
@@ -182,6 +195,8 @@ class RestaurantController extends GetxController {
         print("Profile still null after loading - retrying fetch");
         Future.delayed(const Duration(milliseconds: 500), () {
           fetchRestaurantProfile();
+          fetchRecentScans();
+          fetchScanChartData();
         });
       }
     });
@@ -688,5 +703,118 @@ class RestaurantController extends GetxController {
   void clearVerificationResult() {
     showVerificationResult.value = false;
     verificationResult.value = '';
+  }
+
+  // Fetch the latest 5 scans for this restaurant (with customer name and date)
+  Future<void> fetchRecentScans() async {
+    if (restaurantUid.isEmpty) return;
+    try {
+      final querySnapshot = await _firestore
+          .collection('scans')
+          .where('restaurantId', isEqualTo: restaurantUid)
+          .orderBy('timestamp', descending: true)
+          .limit(5)
+          .get();
+      final List<Map<String, String>> scans = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final customerId = data['clientId'] as String?;
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+        String customerName = 'Customer';
+        if (customerId != null) {
+          final customerDoc =
+              await _firestore.collection('users').doc(customerId).get();
+          if (customerDoc.exists) {
+            customerName = customerDoc.data()?['name'] ?? 'Customer';
+          }
+        }
+        final dateStr =
+            timestamp != null ? DateFormat('MMM d').format(timestamp) : '';
+        scans.add({'name': customerName, 'date': dateStr});
+      }
+      recentScans.assignAll(scans);
+    } catch (e) {
+      if (kDebugMode) print('Error fetching recent scans: $e');
+      recentScans.clear();
+    }
+  }
+
+  // Fetch scan counts per day for the current month for the chart
+  Future<void> fetchScanChartData() async {
+    if (restaurantUid.isEmpty) return;
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final querySnapshot = await _firestore
+          .collection('scans')
+          .where('restaurantId', isEqualTo: restaurantUid)
+          .where('timestamp',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .orderBy('timestamp')
+          .get();
+      // Count scans per day
+      final Map<int, int> dayToCount = {};
+      for (var doc in querySnapshot.docs) {
+        final timestamp = (doc.data()['timestamp'] as Timestamp?)?.toDate();
+        if (timestamp != null) {
+          final day = timestamp.day;
+          dayToCount[day] = (dayToCount[day] ?? 0) + 1;
+        }
+      }
+
+      // Build cumulative total
+      final List<FlSpot> spots = [];
+      int runningTotal = 0;
+      final days = dayToCount.keys.toList()..sort();
+      for (final day in days) {
+        runningTotal += dayToCount[day]!;
+        spots.add(FlSpot(day.toDouble(), runningTotal.toDouble()));
+      }
+      scanChartData.assignAll(spots);
+    } catch (e) {
+      if (kDebugMode) print('Error fetching scan chart data: $e');
+      scanChartData.clear();
+    }
+  }
+
+  // After a scan is recorded, also refresh dashboard data
+  Future<void> recordScanAndRefresh(String customerUid) async {
+    await processQrScan(customerUid);
+    await fetchRecentScans();
+    await fetchScanChartData();
+  }
+
+  // Stream of recent scans for live updates
+  Stream<List<Map<String, dynamic>>> recentScansStream() {
+    if (restaurantUid.isEmpty) return const Stream.empty();
+    return _firestore
+        .collection('scans')
+        .where('restaurantId', isEqualTo: restaurantUid)
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final List<Map<String, dynamic>> scans = [];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final customerId = data['clientId'] as String?;
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+        final points = data['pointsAwarded'] ?? 1;
+        String customerName = 'Customer';
+        if (customerId != null) {
+          final customerDoc =
+              await _firestore.collection('users').doc(customerId).get();
+          if (customerDoc.exists) {
+            customerName = customerDoc.data()?['name'] ?? 'Customer';
+          }
+        }
+        scans.add({
+          'name': customerName,
+          'date': timestamp,
+          'points': points,
+        });
+      }
+      return scans;
+    });
   }
 }

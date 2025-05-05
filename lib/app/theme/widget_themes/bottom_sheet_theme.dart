@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../utils/constants/colors.dart';
 
 class MBottomSheetTheme {
   MBottomSheetTheme._();

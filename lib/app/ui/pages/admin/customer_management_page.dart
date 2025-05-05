@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
+import '../../../controllers/admin_controller.dart';
 
 class CustomerManagementPage extends GetView<AdminController> {
   const CustomerManagementPage({Key? key}) : super(key: key);

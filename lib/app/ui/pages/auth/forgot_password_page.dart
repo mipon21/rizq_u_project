@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
+import 'package:rizq/app/controllers/auth_controller.dart';
+
+import '../../../utils/constants/colors.dart'; // Adjust import
 
 class ForgotPasswordPage extends GetView<AuthController> {
   const ForgotPasswordPage({Key? key}) : super(key: key);
@@ -11,61 +13,65 @@ class ForgotPasswordPage extends GetView<AuthController> {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Enter your email address to receive a password reset link.',
-                  textAlign: TextAlign.center,
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: MColors.primary),
+        leading: IconButton(
+          onPressed: () => Get.back(),
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Image.asset('assets/icons/general-u.png', height: 150),
+              const SizedBox(height: 50),
+              const Text(
+                'Enter your email address to receive a password reset link.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null ||
+                      value.isEmpty ||
+                      !GetUtils.isEmail(value)) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 30),
+              Obx(
+                () => ElevatedButton(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () {
+                          if (formKey.currentState!.validate()) {
+                            controller.forgotPassword(
+                              emailController.text.trim(),
+                            );
+                          }
+                        },
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Send Reset Email'),
                 ),
-                const SizedBox(height: 30),
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null ||
-                        value.isEmpty ||
-                        !GetUtils.isEmail(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 30),
-                Obx(
-                  () => ElevatedButton(
-                    onPressed:
-                        controller.isLoading.value
-                            ? null
-                            : () {
-                              if (formKey.currentState!.validate()) {
-                                controller.forgotPassword(
-                                  emailController.text.trim(),
-                                );
-                              }
-                            },
-                    child:
-                        controller.isLoading.value
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                            : const Text('Send Reset Email'),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

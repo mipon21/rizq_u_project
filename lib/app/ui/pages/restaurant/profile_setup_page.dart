@@ -1,7 +1,7 @@
 import 'dart:io'; // Required for File type
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
+import '../../../controllers/restaurant_controller.dart';
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
 
 class ProfileSetupPage extends StatefulWidget {

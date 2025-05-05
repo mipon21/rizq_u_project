@@ -8,8 +8,8 @@ import 'package:intl/intl.dart'; // For date formatting
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:flutter/material.dart'; // For Material Design
 import 'package:image_picker/image_picker.dart';
-import 'package:rizq/app/routes/app_pages.dart';
-import 'package:rizq/app/ui/pages/customer/scan_history_page.dart';
+import '../routes/app_pages.dart';
+import '../ui/pages/customer/scan_history_page.dart';
 
 // Represents the data needed for a loyalty card display
 class LoyaltyCardModel {
@@ -649,7 +649,7 @@ class CustomerController extends GetxController {
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 10),
+              
 
               // // Close button
               // SizedBox(
@@ -673,26 +673,9 @@ class CustomerController extends GetxController {
               //     ),
               //   ),
               // ),
+              
+              
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  'Take a Screenshot or Press the Button Below to go to your Reward History',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -715,6 +698,26 @@ class CustomerController extends GetxController {
                       fontSize: 16,
                     ),
                   ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'Take a Screenshot or Press the Button Up to go to your Reward History',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],

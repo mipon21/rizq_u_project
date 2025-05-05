@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
+import '../../../controllers/auth_controller.dart';
+import '../../../controllers/customer_controller.dart';
 import 'package:intl/intl.dart';
 
 class CustomerProfilePage extends GetView<CustomerController> {

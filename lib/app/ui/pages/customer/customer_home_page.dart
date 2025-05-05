@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
 import 'package:rizq/app/controllers/customer_controller.dart'; // Adjust import
-import 'package:rizq/app/routes/app_pages.dart';
+import '../../../routes/app_pages.dart';
 import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
 import 'package:flutter/foundation.dart';
 
@@ -58,28 +58,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        toolbarHeight: 150,
+        // toolbarHeight: 150,
         centerTitle: true,
-        title: Column(
-          children: [
-            Text(
-              'RIZQ',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: Colors.indigo[700],
-              ),
-            ),
-            Text(
-              'رزق',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Colors.indigo[700],
-              ),
-            ),
-          ],
-        ),
+        title: Image.asset('assets/icons/general-u.png', height: 90),
+        toolbarHeight: 100,
         leading: IconButton(
           onPressed: () {
             Get.toNamed(Routes.CUSTOMER_SCAN_HISTORY);

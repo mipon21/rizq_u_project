@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
+import '../../../controllers/customer_controller.dart';
 import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
 
 class ScanHistoryPage extends StatefulWidget {
@@ -60,34 +60,51 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
         length: 2,
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('My History'),
-            bottom: const TabBar(
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: MColors.white,
-              indicator: BoxDecoration(
-                color: Color.fromARGB(255, 114, 88, 201),
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              tabs: [
-                Tab(
-                  icon: Icon(
-                    Icons.qr_code_scanner,
-                    color: MColors.white,
-                  ),
-                  child: Text(
-                    'Claim Rewards',
-                    style: TextStyle(color: MColors.white),
-                  ),
-                ),
-                Tab(
-                  icon: Icon(Icons.card_giftcard, color: MColors.white),
-                  child: Text(
-                    'Points History',
-                    style: TextStyle(color: MColors.white),
-                  ),
-                ),
-              ],
+            title: Text('Your Rewards'),
+            titleTextStyle: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: MColors.primary,
             ),
+            toolbarHeight: 90,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_outlined,
+                color: MColors.primary,
+              ),
+              onPressed: () => Get.back(),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(60),
+              child: Container(
+                color: Colors.white, // Set your desired background color here
+                child: TabBar(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: Theme.of(context).primaryColor,
+                  unselectedLabelColor: Colors.grey,
+                  indicator: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.15),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  ),
+                  indicatorColor: Colors.transparent,
+                  indicatorWeight: 0,
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.qr_code_scanner),
+                      child: Text('Claim Rewards'),
+                    ),
+                    Tab(
+                      icon: Icon(Icons.card_giftcard),
+                      child: Text('Points History'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            elevation: 0,
+            shadowColor: Colors.transparent,
           ),
           body: TabBarView(
             children: [

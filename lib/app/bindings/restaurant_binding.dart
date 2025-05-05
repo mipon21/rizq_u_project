@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
-import 'package:rizq/app/controllers/program_controller.dart';
+import '../controllers/restaurant_controller.dart';
+import '../controllers/program_controller.dart';
 // Import AuthController if needed
 // import 'package:rizq/app/controllers/auth_controller.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
+import '../../../controllers/admin_controller.dart';
 
 class PlanPricingPage extends GetView<AdminController> {
   const PlanPricingPage({Key? key}) : super(key: key);

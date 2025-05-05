@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
+import '../controllers/customer_controller.dart';
 // Import AuthController if needed within CustomerController or its pages
 // import 'package:rizq/app/controllers/auth_controller.dart';
 

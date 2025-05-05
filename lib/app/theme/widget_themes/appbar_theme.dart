@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/utils/constants/sizes.dart';
+import '../../utils/constants/colors.dart';
+import '../../utils/constants/sizes.dart';
 import '../../utils/constants/colors.dart';
 
 class MAppBarTheme {
@@ -10,7 +10,7 @@ class MAppBarTheme {
     elevation: 0,
     centerTitle: true,
     scrolledUnderElevation: 0,
-    backgroundColor: MColors.primary,
+    backgroundColor: Colors.transparent,
     surfaceTintColor: Colors.transparent,
     iconTheme: IconThemeData(color: MColors.white, size: MSizes.iconMd),
     actionsIconTheme: IconThemeData(color: MColors.white, size: MSizes.iconMd),
@@ -24,7 +24,7 @@ class MAppBarTheme {
     elevation: 0,
     centerTitle: true,
     scrolledUnderElevation: 0,
-    backgroundColor: MColors.primary,
+    backgroundColor: Colors.transparent,
     surfaceTintColor: Colors.transparent,
     iconTheme: IconThemeData(color: MColors.white, size: MSizes.iconMd),
     actionsIconTheme: IconThemeData(color: MColors.white, size: MSizes.iconMd),

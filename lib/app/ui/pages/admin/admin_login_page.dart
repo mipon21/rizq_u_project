@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
-import 'package:rizq/app/routes/app_pages.dart';
+import '../../../controllers/admin_controller.dart';
+import '../../../routes/app_pages.dart';
 
 class AdminLoginPage extends GetView<AdminController> {
   const AdminLoginPage({Key? key}) : super(key: key);

@@ -14,9 +14,9 @@ class RegisterPage extends GetView<AuthController> {
         TextEditingController();
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final RxString selectedRole = 'customer'.obs; // Default role
+    final RxBool agreedToTerms = false.obs; // Terms and Conditions checkbox
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Register for Rizq')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -25,6 +25,9 @@ class RegisterPage extends GetView<AuthController> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const SizedBox(height: 50),
+                Image.asset('assets/icons/general-u.png', height: 150),
+                const SizedBox(height: 20),
                 Text(
                   'Create Your Account',
                   style: Theme.of(context).textTheme.headlineMedium,
@@ -95,7 +98,8 @@ class RegisterPage extends GetView<AuthController> {
                                 value: 'customer',
                                 groupValue: selectedRole.value,
                                 visualDensity: VisualDensity.compact,
-                                onChanged: (value) => selectedRole.value = value!,
+                                onChanged: (value) =>
+                                    selectedRole.value = value!,
                               ),
                               Text('Customer'),
                             ],
@@ -119,7 +123,8 @@ class RegisterPage extends GetView<AuthController> {
                                 value: 'restaurateur',
                                 groupValue: selectedRole.value,
                                 visualDensity: VisualDensity.compact,
-                                onChanged: (value) => selectedRole.value = value!,
+                                onChanged: (value) =>
+                                    selectedRole.value = value!,
                               ),
                               Text('Restaurateur'),
                             ],
@@ -131,20 +136,31 @@ class RegisterPage extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 20),
                 Obx(
+                  () => CheckboxListTile(
+                    value: agreedToTerms.value,
+                    onChanged: (value) => agreedToTerms.value = value ?? false,
+                    title: const Text('I agree to the Terms and Conditions'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Obx(
                   () => SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : () {
-                              if (formKey.currentState!.validate()) {
-                                controller.register(
-                                  emailController.text.trim(),
-                                  passwordController.text.trim(),
-                                  selectedRole.value,
-                                );
-                              }
-                            },
+                      onPressed:
+                          controller.isLoading.value || !agreedToTerms.value
+                              ? null
+                              : () {
+                                  if (formKey.currentState!.validate()) {
+                                    controller.register(
+                                      emailController.text.trim(),
+                                      passwordController.text.trim(),
+                                      selectedRole.value,
+                                    );
+                                  }
+                                },
                       child: controller.isLoading.value
                           ? const SizedBox(
                               height: 20,

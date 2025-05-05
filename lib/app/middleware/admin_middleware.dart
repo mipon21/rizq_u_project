@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/routes/app_pages.dart';
+
+import '../routes/app_pages.dart';
 
 class AdminMiddleware extends GetMiddleware {
   @override

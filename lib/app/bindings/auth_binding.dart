@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
+import '../controllers/auth_controller.dart';
+import '../controllers/auth_controller.dart';
 
 // Binding for authentication-related screens (Login, Register, Forgot Password)
 class AuthBinding extends Bindings {

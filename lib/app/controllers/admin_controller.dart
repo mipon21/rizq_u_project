@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
-import 'package:rizq/app/routes/app_pages.dart';
+import '../routes/app_pages.dart';
 
 class AdminController extends GetxController {
   static AdminController get instance => Get.find();

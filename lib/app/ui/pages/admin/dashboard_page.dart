@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
-import 'package:rizq/app/routes/app_pages.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../controllers/admin_controller.dart';
+import '../../../routes/app_pages.dart';
+import '../../../utils/constants/colors.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
