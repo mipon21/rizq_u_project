@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart'; // For date formatting
-import 'package:rizq/app/controllers/restaurant_controller.dart'; // Adjust
+import 'package:rizq/app/controllers/restaurant_controller.dart';
+import 'package:rizq/app/utils/constants/colors.dart'; // Adjust
 
 class SubscriptionPage extends GetView<RestaurantController> {
   const SubscriptionPage({Key? key}) : super(key: key);
@@ -29,7 +30,18 @@ class SubscriptionPage extends GetView<RestaurantController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Subscription Details')),
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_outlined,
+            color: MColors.primary,
+          ),
+          tooltip: 'Back',
+          onPressed: () => Get.back(),
+        ),
+      ),
       body: Obx(() {
         if (controller.isLoadingProfile.value &&
             controller.restaurantProfile.value == null) {

@@ -3,14 +3,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:rizq/app/bindings/initial_binding.dart';
+import 'package:rizq/app/controllers/language_controller.dart';
 import 'package:rizq/app/routes/app_pages.dart';
 import 'package:rizq/app/theme/theme.dart';
 import 'package:rizq/app/ui/pages/admin/admin_login_page.dart';
 import 'package:rizq/app/ui/theme/app_theme.dart';
 import 'package:rizq/app/controllers/auth_controller.dart';
+import 'package:rizq/app/utils/translations.dart';
 import 'package:rizq/firebase_options.dart';
 
 void main() async {
@@ -30,6 +33,9 @@ void main() async {
   // Register the RouteObserver globally
   Get.put<RouteObserver<PageRoute>>(routeObserver, permanent: true);
 
+  // Initialize language controller
+  final languageController = Get.put(LanguageController());
+
   runApp(RizqApp(routeObserver: routeObserver));
 }
 
@@ -41,6 +47,7 @@ class RizqApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = Get.put(AuthController());
+    final languageController = Get.find<LanguageController>();
 
     return GetMaterialApp(
       title: 'Rizq Loyalty App',
@@ -51,6 +58,18 @@ class RizqApp extends StatelessWidget {
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
+
+      // Localization setup
+      translations: AppTranslations(),
+      locale: languageController.currentLocale,
+      fallbackLocale: const Locale('en', 'US'),
+      supportedLocales: languageController.supportedLocales,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
       // Register the observer for navigation
       navigatorObservers: [routeObserver],
       // home:  AdminLoginPage(),

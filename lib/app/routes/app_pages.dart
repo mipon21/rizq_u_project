@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:rizq/app/ui/pages/restaurant/tabs/profile_tab.dart';
+import 'package:rizq/app/ui/pages/restaurant/tabs/program_settings_tab.dart';
 import '../bindings/admin_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/customer_binding.dart';
@@ -18,9 +20,8 @@ import '../ui/pages/customer/scan_history_page.dart';
 import '../ui/pages/customer/qr_code_page.dart';
 import '../ui/pages/customer/customer_profile_page.dart';
 import '../ui/pages/restaurant/dashboard_page.dart';
-import '../ui/pages/restaurant/profile_setup_page.dart';
-import '../ui/pages/restaurant/program_config_page.dart';
-import '../ui/pages/restaurant/qr_scanner_page.dart';
+
+import '../ui/pages/restaurant/tabs/qr_scanner_page.dart';
 import '../ui/pages/restaurant/subscription_page.dart';
 import '../ui/pages/splash_page.dart';
 import '../ui/pages/admin/plan_pricing_page.dart';
@@ -81,12 +82,12 @@ class AppPages {
     ),
     GetPage(
       name: Routes.RESTAURANT_PROFILE_SETUP,
-      page: () => const ProfileSetupPage(),
+      page: () => const ProfileTab(),
       binding: RestaurantBinding(),
     ),
     GetPage(
       name: Routes.RESTAURANT_PROGRAM_CONFIG,
-      page: () => const ProgramConfigPage(),
+      page: () => const ProgramSettingsTab(),
       binding: RestaurantBinding(),
     ),
     GetPage(

@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
-import 'package:rizq/app/controllers/customer_controller.dart'; // Adjust import
-import '../../../routes/app_pages.dart';
-import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
+import 'package:rizq/app/controllers/auth_controller.dart';
+import 'package:rizq/app/controllers/customer_controller.dart';
+import '../../../routes/app_pages.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
+import 'package:rizq/app/utils/app_events.dart';
+import 'package:rizq/app/ui/pages/customer/qr_code_page.dart';
+import 'package:rizq/app/ui/pages/customer/customer_profile_page.dart';
+import 'package:rizq/app/ui/pages/customer/home_tab.dart';
+import 'package:rizq/app/ui/pages/customer/rewards_tab.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({Key? key}) : super(key: key);
@@ -19,11 +26,40 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   final RouteObserver<PageRoute> routeObserver =
       Get.find<RouteObserver<PageRoute>>();
 
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
     // Fetch data when the page is created
     _refreshData();
+
+    // Check if we have navigation arguments upon initial creation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = Get.arguments;
+      if (args != null && args is Map && args.containsKey('navigateTo')) {
+        final tabIndex = args['navigateTo'] as int;
+        if (tabIndex >= 0 && tabIndex < 4) {
+          _changeTab(tabIndex);
+        }
+      }
+
+      // Check if there's already a tab navigation request
+      // This handles the case where the event was fired before this page loaded
+      if (AppEvents.navigateToTab.value >= 0 &&
+          AppEvents.navigateToTab.value < 4) {
+        if (kDebugMode) {
+          print(
+              "DEBUG: Found existing tab navigation request: ${AppEvents.navigateToTab.value}");
+        }
+        _changeTab(AppEvents.navigateToTab.value);
+        AppEvents.navigateToTab.value = -1;
+      }
+
+      // Set up a permanent worker to listen for tab navigation events
+      // This ensures the listener persists as long as the app is running
+      _setupTabNavigationListener();
+    });
   }
 
   @override
@@ -37,6 +73,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   void didPopNext() {
     // Refresh data when returning to this page
     _refreshData();
+
+    // Check for navigation result
+    final result = Get.arguments;
+    if (result != null && result is Map && result.containsKey('navigateTo')) {
+      final tabIndex = result['navigateTo'] as int;
+      if (tabIndex >= 0 && tabIndex < 4) {
+        _changeTab(tabIndex);
+      }
+    }
   }
 
   @override
@@ -49,7 +94,85 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   // Refresh data method
   void _refreshData() {
     controller.fetchAllRestaurantPrograms();
+    // Also fetch history data for the rewards tab
+    controller.fetchClaimHistory();
+    controller.fetchScanHistory();
   }
+
+  // Method to change tab
+  void _changeTab(int index) {
+    if (kDebugMode) {
+      print(
+          "DEBUG: _changeTab called with index $index (current: $_currentIndex)");
+    }
+
+    // Refresh data when switching tabs to ensure fresh content
+    if (_currentIndex != index) {
+      _refreshTabSpecificData(index);
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+    if (kDebugMode) {
+      print("DEBUG: Tab changed to $_currentIndex");
+    }
+  }
+
+  // Refresh data specific to the selected tab
+  void _refreshTabSpecificData(int tabIndex) {
+    switch (tabIndex) {
+      case 0: // Home tab
+        controller.fetchAllRestaurantPrograms();
+        break;
+      case 2: // Rewards tab
+        controller.refreshClaimHistory();
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Method to get the tab at the current index
+  Widget _getPage() {
+    switch (_currentIndex) {
+      case 0:
+        return HomeTab(
+          controller: controller,
+          refreshData: _refreshData,
+          showClaimConfirmation: _showClaimConfirmation,
+        );
+      case 1:
+        return const QrCodePage();
+      case 2:
+        return RewardsTab(controller: controller);
+      case 3:
+        return const CustomerProfilePage();
+      default:
+        return HomeTab(
+          controller: controller,
+          refreshData: _refreshData,
+          showClaimConfirmation: _showClaimConfirmation,
+        );
+    }
+  }
+
+  // Get app bar title based on selected tab
+  String _getTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return '';
+      case 1:
+        return 'Mon QR Code';
+      case 2:
+        return 'Your Rewards';
+      case 3:
+        return 'Mon Profil';
+      default:
+        return '';
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -58,265 +181,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        // toolbarHeight: 150,
         centerTitle: true,
         title: Image.asset('assets/icons/general-u.png', height: 90),
         toolbarHeight: 100,
-        leading: IconButton(
-          onPressed: () {
-            Get.toNamed(Routes.CUSTOMER_SCAN_HISTORY);
-          },
-          icon: const Icon(
-            Icons.card_giftcard,
-            color: MColors.primary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              authController.logout();
-            },
-            icon: const Icon(
-              Icons.logout,
-              color: MColors.primary,
-            ),
-          ),
-        ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Programmes de fidélité',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _refreshData,
-                  tooltip: 'Refresh',
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              // Add debug print to help identify issues
-              if (kDebugMode) {
-                print(
-                    "UI Rebuild - isLoading: ${controller.isLoadingPrograms.value}, programs count: ${controller.allPrograms.length}");
-              }
-
-              if (controller.isLoadingPrograms.value) {
-                return const Center(
-                    child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 20),
-                    Text("Chargement des programmes...")
-                  ],
-                ));
-              }
-
-              // Handle the case where allPrograms is null or empty
-              if (controller.allPrograms.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.card_giftcard_outlined,
-                          size: 64,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Aucun programme de fidélité disponible',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Revenez plus tard pour voir les programmes disponibles',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _refreshData,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Actualiser'),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: controller.allPrograms.length,
-                itemBuilder: (context, index) {
-                  final program = controller.allPrograms[index];
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              // Restaurant logo or placeholder
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: _getAvatarColor(index),
-                                backgroundImage: program.logoUrl.isNotEmpty
-                                    ? NetworkImage(program.logoUrl)
-                                    : null,
-                                child: program.logoUrl.isEmpty
-                                    ? Text(
-                                        program.restaurantName.isNotEmpty
-                                            ? program.restaurantName[0]
-                                            : '?',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-
-                              // Restaurant name and points
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      program.restaurantName,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${program.customerPoints} / ${program.pointsRequired}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Status tag
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: program.rewardReady
-                                      ? Colors.purple[100]
-                                      : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  program.rewardReady
-                                      ? 'Récompense\nobtenue'
-                                      : 'En cours',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: program.rewardReady
-                                        ? Colors.purple[900]
-                                        : Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Progress bar
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: program.customerPoints /
-                                  program.pointsRequired,
-                              minHeight: 6,
-                              backgroundColor: Colors.grey[200],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                _getProgressColor(index, program.rewardReady),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          // Reward text
-                          Text(
-                            program.rewardType,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  _getProgressColor(index, program.rewardReady),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-
-                          // Claim button (only if reward is ready)
-                          if (program.rewardReady)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: ClaimButton(
-                                program: program,
-                                onPressed: () =>
-                                    _showClaimConfirmation(context, program),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
-          ),
-        ],
-      ),
+      body: _getPage(),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
@@ -328,24 +201,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
             label: 'QR Code',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.card_giftcard),
+            label: 'Récompenses',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profil',
           ),
         ],
-        onTap: (index) {
-          if (index == 1) {
-            Get.toNamed(Routes.CUSTOMER_QR_CODE);
-          } else if (index == 2) {
-            Get.toNamed(Routes.CUSTOMER_PROFILE);
-          }
-        },
+        onTap: _changeTab,
       ),
     );
   }
 
   // Show confirmation dialog before claiming a reward
-  void _showClaimConfirmation(
-      BuildContext context, RestaurantProgramModel program) {
+  void _showClaimConfirmation(dynamic program) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -388,123 +258,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
     );
   }
 
-  // Helper methods to get consistent colors for restaurants
-  Color _getAvatarColor(int index) {
-    final colors = [
-      Colors.orange,
-      Colors.purple[800],
-      Colors.red[400],
-    ];
-    return colors[index % colors.length]!;
-  }
+  // Set up a permanent worker to listen for tab navigation events
+  void _setupTabNavigationListener() {
+    ever(AppEvents.navigateToTab, (int tabIndex) {
+      if (kDebugMode) {
+        print("DEBUG: Tab navigation event received: $tabIndex");
+      }
 
-  Color _getProgressColor(int index, bool isReady) {
-    if (isReady) return Colors.purple;
-
-    final colors = [
-      Colors.orange,
-      Colors.purple[800],
-      Colors.red[400],
-    ];
-    return colors[index % colors.length]!;
-  }
-}
-
-// Separate widget for claim button to properly handle GetX reactivity
-class ClaimButton extends StatefulWidget {
-  final RestaurantProgramModel program;
-  final VoidCallback onPressed;
-
-  const ClaimButton({
-    Key? key,
-    required this.program,
-    required this.onPressed,
-  }) : super(key: key);
-
-  @override
-  State<ClaimButton> createState() => _ClaimButtonState();
-}
-
-class _ClaimButtonState extends State<ClaimButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  final CustomerController controller = Get.find();
-
-  @override
-  void initState() {
-    super.initState();
-    // Setup animation
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final isClaimingReward = controller.isClaimingReward.value;
-
-      return AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: isClaimingReward ? 1.0 : _scaleAnimation.value,
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isClaimingReward ? null : widget.onPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 4,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (isClaimingReward)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    else ...[
-                      const Icon(Icons.card_giftcard, size: 20),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'RÉCLAMER MAINTENANT',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ]
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
+      if (tabIndex >= 0 && tabIndex < 4) {
+        _changeTab(tabIndex);
+        // Reset the value to prevent repeated navigations
+        AppEvents.navigateToTab.value = -1;
+      }
     });
   }
 }

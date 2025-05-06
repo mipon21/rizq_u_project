@@ -19,7 +19,10 @@ class AuthController extends GetxController {
 
   // Getter to expose the user safely (non-reactive)
   User? get currentUser => _firebaseUser.value;
-  String get currentUserUid => _firebaseUser.value?.uid ?? '';
+  String get currentUserUid {
+    final uid = _firebaseUser.value?.uid ?? '';
+    return uid.replaceAll(RegExp(r'\\+'), '');
+  }
 
   // Getter to expose the reactive Rx<User?> object itself
   // This allows other controllers/widgets to listen using ever() or Obx()
@@ -124,11 +127,15 @@ class AuthController extends GetxController {
       final user = userCredential.user;
 
       if (user != null) {
-        // Create user document in Firestore
+        // Create user document in Firestore with clean data
+        String cleanString(String input) {
+          return input.replaceAll(RegExp(r'\\+'), '');
+        }
+
         await _firestore.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'email': email,
-          'role': role,
+          'uid': cleanString(user.uid),
+          'email': cleanString(email),
+          'role': cleanString(role),
           'createdAt': FieldValue.serverTimestamp(),
           // Initialize points map for customers
           if (role == 'customer') 'pointsByRestaurant': {},
@@ -137,7 +144,7 @@ class AuthController extends GetxController {
         // Create restaurant document if restaurateur
         if (role == 'restaurateur') {
           await _firestore.collection('restaurants').doc(user.uid).set({
-            'uid': user.uid, // Link to auth UID
+            'uid': cleanString(user.uid), // Link to auth UID
             'name': '', // To be set up later
             'address': '',
             'logoUrl': '',

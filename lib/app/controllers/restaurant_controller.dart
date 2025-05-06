@@ -21,6 +21,7 @@ class RestaurantProfileModel {
   final int currentScanCount;
   final DateTime? trialStartDate;
   final DateTime createdAt;
+  final String bankDetails; // New field for bank details
 
   RestaurantProfileModel({
     required this.uid,
@@ -32,6 +33,7 @@ class RestaurantProfileModel {
     required this.currentScanCount,
     this.trialStartDate,
     required this.createdAt,
+    this.bankDetails = '', // Default to empty string
   });
 
   factory RestaurantProfileModel.fromSnapshot(
@@ -49,6 +51,8 @@ class RestaurantProfileModel {
       trialStartDate: (data['trialStartDate'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ??
           DateTime.now(), // Fallback for older docs
+      bankDetails:
+          data['bankDetails'] ?? '', // Get bank details or default to empty
     );
   }
 
@@ -140,6 +144,7 @@ class RestaurantController extends GetxController {
   String get logoUrl => restaurantProfile.value?.logoUrl ?? '';
   String get subscriptionStatus =>
       restaurantProfile.value?.subscriptionStatus ?? 'inactive';
+  String get bankDetails => restaurantProfile.value?.bankDetails ?? '';
   bool get isSubscribed =>
       restaurantProfile.value?.isSubscriptionActive ?? false;
   int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
@@ -348,6 +353,8 @@ class RestaurantController extends GetxController {
           currentScanCount: restaurantProfile.value!.currentScanCount,
           trialStartDate: restaurantProfile.value!.trialStartDate,
           createdAt: restaurantProfile.value!.createdAt,
+          bankDetails:
+              restaurantProfile.value!.bankDetails, // Preserve bank details
         );
         restaurantProfile.refresh(); // Notify listeners
       }
@@ -396,6 +403,7 @@ class RestaurantController extends GetxController {
             currentScanCount: restaurantProfile.value!.currentScanCount,
             trialStartDate: restaurantProfile.value!.trialStartDate,
             createdAt: restaurantProfile.value!.createdAt,
+            bankDetails: restaurantProfile.value!.bankDetails,
           );
           restaurantProfile.refresh(); // Notify listeners
         }
@@ -414,12 +422,57 @@ class RestaurantController extends GetxController {
     }
   }
 
+  // Method to update bank details in Firestore
+  Future<void> updateBankDetails(String bankDetails) async {
+    if (restaurantUid.isEmpty) return;
+
+    final RxBool isUpdatingBank = true.obs;
+    try {
+      // Update Firestore
+      await _firestore.collection('restaurants').doc(restaurantUid).update({
+        'bankDetails': bankDetails,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local state
+      if (restaurantProfile.value != null) {
+        restaurantProfile.value = RestaurantProfileModel(
+          uid: restaurantProfile.value!.uid,
+          name: restaurantProfile.value!.name,
+          address: restaurantProfile.value!.address,
+          logoUrl: restaurantProfile.value!.logoUrl,
+          subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
+          subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
+          currentScanCount: restaurantProfile.value!.currentScanCount,
+          trialStartDate: restaurantProfile.value!.trialStartDate,
+          createdAt: restaurantProfile.value!.createdAt,
+          bankDetails: bankDetails, // Update bank details
+        );
+        restaurantProfile.refresh(); // Notify listeners
+      }
+
+      Get.snackbar('Success', 'Bank details updated successfully');
+      if (kDebugMode) {
+        print("Bank details updated for $restaurantUid");
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update bank details: $e');
+      if (kDebugMode) {
+        print("Error updating bank details for $restaurantUid: $e");
+      }
+    } finally {
+      isUpdatingBank.value = false;
+    }
+  }
+
   Future<void> processQrScan(String customerUid) async {
     if (restaurantUid.isEmpty) {
+      Get.closeAllSnackbars(); // Close any existing snackbars
       Get.snackbar('Error', 'Restaurant user not identified.');
       return;
     }
     if (customerUid.isEmpty) {
+      Get.closeAllSnackbars(); // Close any existing snackbars
       Get.snackbar('Scan Error', 'Invalid QR code data.');
       return;
     }
@@ -433,6 +486,7 @@ class RestaurantController extends GetxController {
         final message = profile?.subscriptionStatus == 'inactive'
             ? 'Subscription expired. Please renew.'
             : 'Subscription required to scan.';
+        Get.closeAllSnackbars(); // Close any existing snackbars
         Get.snackbar('Subscription Issue', message);
         return;
       }
@@ -441,6 +495,7 @@ class RestaurantController extends GetxController {
       final customerDoc =
           await _firestore.collection('users').doc(customerUid).get();
       if (!customerDoc.exists || customerDoc.data()?['role'] != 'customer') {
+        Get.closeAllSnackbars(); // Close any existing snackbars
         Get.snackbar(
           'Invalid QR',
           'This QR code is not linked to a valid customer.',
@@ -463,6 +518,7 @@ class RestaurantController extends GetxController {
 
       // If customer already has 10+ points but hasn't claimed the reward, prevent scanning
       if (customerCurrentPoints >= 10 && !rewardReceived) {
+        Get.closeAllSnackbars(); // Close any existing snackbars
         Get.snackbar(
           colorText: MColors.error,
           'Reward Ready',
@@ -488,18 +544,6 @@ class RestaurantController extends GetxController {
           )
           .limit(1) // We only need to know if at least one exists
           .get();
-
-      // if (recentScans.docs.isNotEmpty) {
-      //   final lastScanTime =
-      //       (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
-      //   final minutesPassed = now.difference(lastScanTime).inMinutes;
-      //   final waitTime = 0 - minutesPassed;
-      //   Get.snackbar(
-      //     'Cooldown Active',
-      //     'Customer scanned ${minutesPassed}m ago. Please wait ${waitTime}m.',
-      //   );
-      //   return;
-      // }
 
       // --- If all checks pass, proceed with scan ---
 
@@ -545,6 +589,8 @@ class RestaurantController extends GetxController {
         'points': currentPoints + 1,
         // Keep existing reward status or default to false
         'rewardReceived': restaurantPointsData['rewardReceived'],
+        // Add lastUpdated timestamp to track when points were last updated
+        'lastUpdated': FieldValue.serverTimestamp(),
       };
       batch.update(customerRef, {'pointsByRestaurant': customerPointsMap});
 
@@ -561,6 +607,7 @@ class RestaurantController extends GetxController {
       // Update local state after successful transaction
       await fetchRestaurantProfile(); // Re-fetch to get updated scan count
 
+      Get.closeAllSnackbars(); // Close any existing snackbars
       Get.snackbar('Success', 'Customer scan recorded. +1 point awarded.');
       if (kDebugMode) {
         print(
@@ -568,6 +615,7 @@ class RestaurantController extends GetxController {
         );
       }
     } catch (e) {
+      Get.closeAllSnackbars(); // Close any existing snackbars
       Get.snackbar('Scan Error', 'An unexpected error occurred: $e');
       if (kDebugMode) {
         print("Error processing scan for $customerUid at $restaurantUid: $e");

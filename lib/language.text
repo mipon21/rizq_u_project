@@ -1,0 +1,126 @@
+# Rizq Loyalty App - English Translations
+
+## Common
+- Rizq Loyalty App
+- OK
+- Cancel
+- Yes
+- No
+- Error
+- Success
+- Loading...
+- Retry
+- Search
+- Save
+- Delete
+- Edit
+- Next
+- Previous
+- Confirm
+- Back
+- Language
+- App Language
+
+## Authentication (Common)
+- Login
+- Register
+- Email
+- Password
+- Forgot Password
+- Logout
+- Are you sure you want to logout?
+- Name
+- Phone
+- Delete Account
+- Are you sure you want to delete your account? This action cannot be undone.
+
+## Customer Section
+- Home
+- Profile
+- Settings
+- Notifications
+- My Points
+- Scan
+- Rewards
+- Scan History
+- Account
+- About
+- App Version
+- Claimed Rewards
+- Present this code to the restaurateur to collect points.
+- No rewards claimed yet
+- Accueil (Home)
+- QR Code
+- Profil (Profile)
+- Programmes de fidélité (Loyalty Programs)
+- Refresh
+- No program found.
+- Full Name
+- Email (Cannot be changed)
+- Phone Number
+- Birthday
+- Select your birthday
+- SAVE CHANGES
+- Account Information
+- Birthday
+- Member since
+- User ID
+- Récompense obtenue (Reward obtained)
+- En cours (In progress)
+- RÉCLAMER MAINTENANT (Claim now)
+- Réclamer (Claim)
+- ANNULER (Cancel)
+- CONFIRMER (Confirm)
+- Your points will be reset after claiming.
+- REDEEMED
+- CLAIMED
+- Show this code to the restaurant to redeem
+
+## Restaurant Section
+- Restaurant Name
+- Email
+- Logo
+- Change logo
+- Subscription
+- Active
+- scans this month
+- Starter Tier
+- Change subscription
+- Payment failure. Please update your payment information
+- Banking Details
+- Enter your bank IBAN number
+- Update
+- Please complete your profile setup
+- Setup Profile
+
+## Admin Section
+- Admin Dashboard
+- Refreshing Data
+- Dashboard data is being updated...
+- Overview
+- Loyalty Program Analytics
+- Recent Activity
+- Admin Panel
+- Dashboard
+- Restaurants
+- Customers
+- Subscriptions
+- Reports
+- Logout
+- Total Restaurants
+- Total Customers
+- Active Subscriptions
+- Monthly Revenue
+- Popular Rewards
+- Rewards Claimed
+- Points Accumulated
+- Average Points per Customer
+- Recent Restaurant Signups
+- Recent Customer Signups
+- Recent Subscriptions
+- Recent Reward Claims
+- Analytics
+- Download Reports
+- Loyalty Program Performance
+- User Growth
+- Revenue Analysis

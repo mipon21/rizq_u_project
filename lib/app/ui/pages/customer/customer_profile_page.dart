@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/customer_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomerProfilePage extends GetView<CustomerController> {
   const CustomerProfilePage({Key? key}) : super(key: key);
@@ -12,7 +14,10 @@ class CustomerProfilePage extends GetView<CustomerController> {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController nameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
-    final TextEditingController addressController = TextEditingController();
+    final Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+
+    // Date formatter
+    final dateFormat = DateFormat('d MMMM, yyyy');
 
     // Initialize form controllers with current profile data
     void initFormValues() {
@@ -20,46 +25,40 @@ class CustomerProfilePage extends GetView<CustomerController> {
       if (profile != null) {
         nameController.text = profile.name;
         phoneController.text = profile.phoneNumber ?? '';
-        addressController.text = profile.address ?? '';
+        selectedDate.value = profile.dateOfBirth;
       }
     }
+
+    // Date picker function
+    Future<void> _selectDate(BuildContext context) async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate.value ?? DateTime.now(),
+        firstDate: DateTime(1900),
+        lastDate: DateTime.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: Theme.of(context).primaryColor,
+                onPrimary: Colors.white,
+                onSurface: Colors.black,
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+      if (picked != null && picked != selectedDate.value) {
+        selectedDate.value = picked;
+      }
+    }
+
     AuthController authController = Get.find<AuthController>();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        actions: [
-          Obx(() => controller.isUpdatingProfile.value
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.save),
-                  tooltip: 'Save Changes',
-                  onPressed: () {
-                    if (formKey.currentState?.validate() ?? false) {
-                      controller.updateProfile(
-                        name: nameController.text,
-                        phoneNumber: phoneController.text,
-                        address: addressController.text,
-                      );
-                    }
-                  },
-                ))
-        ],
-      ),
       body: Obx(() {
         if (controller.isLoadingProfile.value) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildProfileLoadingShimmer(context);
         }
 
         final profile = controller.customerProfile.value;
@@ -110,19 +109,33 @@ class CustomerProfilePage extends GetView<CustomerController> {
                         CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.grey[200],
-                          backgroundImage: profile.photoUrl != null &&
+                          child: profile.photoUrl != null &&
                                   profile.photoUrl!.isNotEmpty
-                              ? NetworkImage(profile.photoUrl!) as ImageProvider
-                              : const AssetImage(
-                                  'assets/images/default_avatar.png'),
-                          child: profile.photoUrl == null ||
-                                  profile.photoUrl!.isEmpty
-                              ? Icon(
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(60),
+                                  child: CachedNetworkImage(
+                                    imageUrl: profile.photoUrl!,
+                                    fit: BoxFit.cover,
+                                    width: 120,
+                                    height: 120,
+                                    placeholder: (context, url) => Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                )
+                              : Icon(
                                   Icons.person,
                                   size: 60,
                                   color: Colors.grey[400],
-                                )
-                              : null,
+                                ),
                         ),
                         Positioned(
                           bottom: 0,
@@ -200,15 +213,33 @@ class CustomerProfilePage extends GetView<CustomerController> {
                   ),
                   const SizedBox(height: 16),
 
-                  TextFormField(
-                    controller: addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
-                      prefixIcon: Icon(Icons.location_on),
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
+                  // Date of Birth field with date picker
+                  Obx(() => InkWell(
+                        onTap: () => _selectDate(context),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date of Birth',
+                            prefixIcon: Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                selectedDate.value != null
+                                    ? dateFormat.format(selectedDate.value!)
+                                    : 'Select your date of birth',
+                                style: TextStyle(
+                                  color: selectedDate.value != null
+                                      ? Colors.black
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down),
+                            ],
+                          ),
+                        ),
+                      )),
                   const SizedBox(height: 32),
 
                   // Save button
@@ -222,7 +253,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                                 controller.updateProfile(
                                   name: nameController.text,
                                   phoneNumber: phoneController.text,
-                                  address: addressController.text,
+                                  dateOfBirth: selectedDate.value,
                                 );
                               }
                             },
@@ -302,6 +333,87 @@ class CustomerProfilePage extends GetView<CustomerController> {
           ),
         );
       }),
+    );
+  }
+
+  // Profile loading shimmer
+  Widget _buildProfileLoadingShimmer(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Profile Image Shimmer
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Form fields shimmer
+              Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Button shimmer
+              Container(
+                height: 48,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -17,6 +17,8 @@ dependency_overrides:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Utility Packages
   http: ^1.2.1
@@ -30,6 +32,9 @@ dependencies:
   image_picker: ^1.0.7
   change_app_package_name: ^1.5.0
   flutter_launcher_icons: ^0.14.3
+  shimmer: ^3.0.0
+  cached_network_image: ^3.3.0
+  shared_preferences: ^2.2.0
 
   # QR Code & Camera
   qr_flutter: ^4.1.0

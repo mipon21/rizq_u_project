@@ -54,17 +54,22 @@ class RewardsTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: TextFormField(
                           controller: codeController,
                           decoration: InputDecoration(
                             hintText: 'Enter 6-digit code',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            counterText: '',
                           ),
                           textCapitalization: TextCapitalization.characters,
                           style: const TextStyle(
@@ -77,34 +82,40 @@ class RewardsTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: controller.isVerifying.value
-                            ? null
-                            : () {
-                                if (codeController.text.length == 6) {
-                                  controller
-                                      .verifyRewardClaim(codeController.text);
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 15),
-                          backgroundColor: Colors.purple[700],
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      Center(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: controller.isVerifying.value
+                                ? null
+                                : () {
+                                    if (codeController.text.length == 6) {
+                                      controller.verifyRewardClaim(
+                                          codeController.text);
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, 50),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              backgroundColor: MColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: controller.isVerifying.value
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('VERIFY'),
                           ),
                         ),
-                        child: controller.isVerifying.value
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('VERIFY'),
                       ),
                     ],
                   ),
@@ -256,7 +267,7 @@ class RewardsTab extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: Colors.purple[100],
+                                          color: MColors.primary.withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
@@ -266,7 +277,7 @@ class RewardsTab extends StatelessWidget {
                                               : Icons.redeem,
                                           color: reward.isVerified
                                               ? Colors.green[700]
-                                              : Colors.purple[800],
+                                              : MColors.primary,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -367,7 +378,7 @@ class RewardsTab extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.purple[800],
+                                              color: MColors.primary,
                                             ),
                                           ),
                                           Text(
@@ -375,7 +386,7 @@ class RewardsTab extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.purple[800],
+                                              color: MColors.primary,
                                             ),
                                           ),
                                         ],

@@ -10,6 +10,9 @@ import 'package:flutter/material.dart'; // For Material Design
 import 'package:image_picker/image_picker.dart';
 import '../routes/app_pages.dart';
 import '../ui/pages/customer/scan_history_page.dart';
+import '../utils/app_events.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 // Represents the data needed for a loyalty card display
 class LoyaltyCardModel {
@@ -44,6 +47,8 @@ class RestaurantProgramModel {
   final int customerPoints;
   final int actualPoints; // Store actual points for backend operations
   final bool rewardReady;
+  final DateTime?
+      lastUpdated; // New field to track when points were last updated
 
   RestaurantProgramModel({
     required this.restaurantId,
@@ -53,6 +58,7 @@ class RestaurantProgramModel {
     required this.pointsRequired,
     this.customerPoints = 0,
     int? actualPoints, // Optional parameter that defaults to customerPoints
+    this.lastUpdated, // New parameter for tracking updates
   })  : actualPoints = actualPoints ?? customerPoints,
         rewardReady = customerPoints >= pointsRequired;
 }
@@ -113,7 +119,7 @@ class CustomerProfileModel {
   final String email;
   final String? phoneNumber;
   final DateTime createdAt;
-  final String? address;
+  final DateTime? dateOfBirth;
 
   CustomerProfileModel({
     required this.uid,
@@ -122,7 +128,7 @@ class CustomerProfileModel {
     required this.email,
     this.phoneNumber,
     required this.createdAt,
-    this.address,
+    this.dateOfBirth,
   });
 
   factory CustomerProfileModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -133,7 +139,7 @@ class CustomerProfileModel {
       email: data['email'] ?? '',
       phoneNumber: data['phoneNumber'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      address: data['address'],
+      dateOfBirth: (data['dateOfBirth'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -143,7 +149,7 @@ class CustomerProfileModel {
       'photoUrl': photoUrl,
       'email': email,
       'phoneNumber': phoneNumber,
-      'address': address,
+      'dateOfBirth': dateOfBirth,
       // We don't update createdAt or uid as they should remain constant
     };
   }
@@ -153,7 +159,7 @@ class CustomerProfileModel {
     String? name,
     String? photoUrl,
     String? phoneNumber,
-    String? address,
+    DateTime? dateOfBirth,
   }) {
     return CustomerProfileModel(
       uid: this.uid,
@@ -162,7 +168,7 @@ class CustomerProfileModel {
       email: this.email, // Email can't be changed
       phoneNumber: phoneNumber ?? this.phoneNumber,
       createdAt: this.createdAt,
-      address: address ?? this.address,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 }
@@ -184,6 +190,14 @@ class CustomerController extends GetxController {
       <RestaurantProgramModel>[].obs;
   final RxList<ClaimHistoryItemModel> claimHistory =
       <ClaimHistoryItemModel>[].obs;
+
+  // Pagination and caching for claim history
+  final RxBool hasMoreClaimHistory = true.obs;
+  DocumentSnapshot? _lastClaimDocument;
+  int _claimHistoryPageSize = 10;
+
+  // For restaurant programs caching
+  final RxBool isLoadingCachedPrograms = false.obs;
 
   // Profile related properties
   final Rx<CustomerProfileModel?> customerProfile =
@@ -263,6 +277,8 @@ class CustomerController extends GetxController {
     scanHistory.clear();
     allPrograms.clear();
     claimHistory.clear();
+    _lastClaimDocument = null;
+    hasMoreClaimHistory.value = true;
     customerProfile.value = null;
     if (kDebugMode) {
       print("Auth state changed: User logged out. Clearing customer data.");
@@ -337,10 +353,19 @@ class CustomerController extends GetxController {
 
           // Get customer's points for this restaurant
           int customerPoints = 0;
+          DateTime? lastUpdated;
           if (pointsByRestaurant.containsKey(restaurantId)) {
             final restaurantPoints =
                 pointsByRestaurant[restaurantId] as Map<String, dynamic>? ?? {};
             customerPoints = restaurantPoints['points'] as int? ?? 0;
+
+            // Get lastUpdated timestamp if available
+            if (restaurantPoints.containsKey('lastUpdated')) {
+              final timestamp = restaurantPoints['lastUpdated'];
+              if (timestamp is Timestamp) {
+                lastUpdated = timestamp.toDate();
+              }
+            }
 
             // Check if customer has enough points and show a notification to claim reward
             final pointsRequired = programData['pointsRequired'] ?? 10;
@@ -373,6 +398,7 @@ class CustomerController extends GetxController {
             pointsRequired: pointsRequired,
             customerPoints: displayPoints,
             actualPoints: customerPoints,
+            lastUpdated: lastUpdated,
           ));
         } catch (e) {
           // Log error but continue processing other programs
@@ -382,8 +408,38 @@ class CustomerController extends GetxController {
         }
       }
 
+      // Sort programs by lastUpdated (most recent first), then by rewardReady status
+      programs.sort((a, b) {
+        // First, prioritize programs with rewards ready
+        if (a.rewardReady && !b.rewardReady) {
+          return -1;
+        } else if (!a.rewardReady && b.rewardReady) {
+          return 1;
+        }
+
+        // Second, prioritize programs with higher points
+        if (a.customerPoints != b.customerPoints) {
+          return b.customerPoints.compareTo(a.customerPoints);
+        }
+
+        // Third, prioritize recently updated programs
+        if (a.lastUpdated != null && b.lastUpdated != null) {
+          return b.lastUpdated!.compareTo(a.lastUpdated!);
+        } else if (a.lastUpdated != null) {
+          return -1; // a has lastUpdated but b doesn't, so a comes first
+        } else if (b.lastUpdated != null) {
+          return 1; // b has lastUpdated but a doesn't, so b comes first
+        }
+
+        // Finally sort by name
+        return a.restaurantName.compareTo(b.restaurantName);
+      });
+
       // Update the observable list safely
       allPrograms.value = programs;
+
+      // Cache the results
+      await _cacheRestaurantPrograms(programs);
 
       if (kDebugMode) {
         print("Fetched ${programs.length} restaurant programs");
@@ -398,15 +454,83 @@ class CustomerController extends GetxController {
         colorText: Colors.red[900],
       );
 
-      if (kDebugMode) {
-        print("Error fetching restaurant programs: $e");
-      }
-
-      // Ensure we're not showing a loading indicator if there's an error
-      isLoadingPrograms.value = false;
+      // If error, try to load from cache
+      await loadCachedRestaurantPrograms();
     } finally {
       // Always ensure loading state is reset
       isLoadingPrograms.value = false;
+    }
+  }
+
+  // Cache restaurant programs in shared preferences
+  Future<void> _cacheRestaurantPrograms(
+      List<RestaurantProgramModel> programs) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<Map<String, dynamic>> serializedPrograms = programs
+          .map((program) => {
+                'restaurantId': program.restaurantId,
+                'restaurantName': program.restaurantName,
+                'logoUrl': program.logoUrl,
+                'rewardType': program.rewardType,
+                'pointsRequired': program.pointsRequired,
+                'customerPoints': program.customerPoints,
+                'actualPoints': program.actualPoints,
+                'lastUpdated': program.lastUpdated?.millisecondsSinceEpoch,
+              })
+          .toList();
+
+      await prefs.setString(
+          'cached_restaurant_programs', jsonEncode(serializedPrograms));
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error caching restaurant programs: $e");
+      }
+    }
+  }
+
+  // Load cached restaurant programs from shared preferences
+  Future<void> loadCachedRestaurantPrograms() async {
+    if (allPrograms.isNotEmpty || isLoadingPrograms.value) return;
+
+    isLoadingCachedPrograms.value = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString('cached_restaurant_programs');
+
+      if (cachedData != null) {
+        final List<dynamic> decodedData = jsonDecode(cachedData);
+        final List<RestaurantProgramModel> cachedPrograms =
+            decodedData.map((item) {
+          DateTime? lastUpdated;
+          if (item['lastUpdated'] != null) {
+            lastUpdated =
+                DateTime.fromMillisecondsSinceEpoch(item['lastUpdated']);
+          }
+
+          return RestaurantProgramModel(
+            restaurantId: item['restaurantId'],
+            restaurantName: item['restaurantName'],
+            logoUrl: item['logoUrl'] ?? '',
+            rewardType: item['rewardType'],
+            pointsRequired: item['pointsRequired'],
+            customerPoints: item['customerPoints'],
+            actualPoints: item['actualPoints'],
+            lastUpdated: lastUpdated,
+          );
+        }).toList();
+
+        // Only update if we've loaded from cache and no network fetch is in progress
+        if (allPrograms.isEmpty && !isLoadingPrograms.value) {
+          allPrograms.value = cachedPrograms;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error loading cached restaurant programs: $e");
+      }
+    } finally {
+      isLoadingCachedPrograms.value = false;
     }
   }
 
@@ -446,12 +570,14 @@ class CustomerController extends GetxController {
       if (!pointsByRestaurant.containsKey(program.restaurantId)) {
         pointsByRestaurant[program.restaurantId] = {
           'points': 0,
-          'rewardReceived': false
+          'rewardReceived': false,
+          'lastUpdated': FieldValue.serverTimestamp(),
         };
       } else {
         pointsByRestaurant[program.restaurantId] = {
           'points': 0,
-          'rewardReceived': false
+          'rewardReceived': false,
+          'lastUpdated': FieldValue.serverTimestamp(),
         };
       }
 
@@ -649,7 +775,6 @@ class CustomerController extends GetxController {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
 
               // // Close button
               // SizedBox(
@@ -673,15 +798,49 @@ class CustomerController extends GetxController {
               //     ),
               //   ),
               // ),
-              
-              
+
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(Get.context!).pop(); // Close the dialog
+                    // Close the dialog
+                    Navigator.of(Get.context!).pop();
+
+                    // Add debug logs
+                    if (kDebugMode) {
+                      print("DEBUG: Setting tab navigation to rewards tab (2)");
+                    }
+
+                    // Alternative direct approach: navigate to scan history first, then go back to home
                     Get.toNamed(Routes.CUSTOMER_SCAN_HISTORY);
+
+                    // Then after a short delay, go back to home with rewards tab
+                    Future.delayed(Duration(milliseconds: 300), () {
+                      if (kDebugMode) {
+                        print(
+                            "DEBUG: Navigating back to home with rewards tab");
+                      }
+                      Get.offNamed(Routes.CUSTOMER_HOME,
+                          arguments: {'navigateTo': 2});
+
+                      // Continue with the event-based approach as backup
+                      AppEvents.navigateToTab.value = 2;
+
+                      if (kDebugMode) {
+                        print(
+                            "DEBUG: Current AppEvents.navigateToTab value: ${AppEvents.navigateToTab.value}");
+                      }
+                    });
+
+                    // Try again after an even longer delay (backup approach)
+                    Future.delayed(Duration(milliseconds: 2000), () {
+                      if (kDebugMode) {
+                        print(
+                            "DEBUG: Second attempt to trigger tab navigation");
+                      }
+                      AppEvents.navigateToTab.value = 2;
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -732,15 +891,29 @@ class CustomerController extends GetxController {
   Future<void> fetchClaimHistory() async {
     if (userUid.isEmpty) return;
 
+    isLoadingHistory.value = true;
+
     try {
+      // Reset pagination values
+      _lastClaimDocument = null;
+      hasMoreClaimHistory.value = true;
+
       final querySnapshot = await _firestore
           .collection('claims')
           .where('customerId', isEqualTo: userUid)
           .orderBy('claimDate', descending: true)
-          .limit(20)
+          .limit(_claimHistoryPageSize)
           .get();
 
       final List<ClaimHistoryItemModel> claims = [];
+
+      if (querySnapshot.docs.isNotEmpty) {
+        _lastClaimDocument = querySnapshot.docs.last;
+        hasMoreClaimHistory.value =
+            querySnapshot.docs.length >= _claimHistoryPageSize;
+      } else {
+        hasMoreClaimHistory.value = false;
+      }
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
@@ -759,14 +932,141 @@ class CustomerController extends GetxController {
         ));
       }
 
-      claimHistory.assignAll(claims);
-      if (kDebugMode) {
-        print("Fetched ${claims.length} claim history items");
-      }
+      claimHistory.value = claims;
+
+      // Cache the results
+      await _cacheClaimHistory(claims);
     } catch (e) {
       if (kDebugMode) {
         print("Error fetching claim history: $e");
       }
+    } finally {
+      isLoadingHistory.value = false;
+    }
+  }
+
+  // Load more claim history items (pagination)
+  Future<void> loadMoreClaimHistory() async {
+    if (userUid.isEmpty ||
+        isLoadingHistory.value ||
+        !hasMoreClaimHistory.value ||
+        _lastClaimDocument == null) {
+      return;
+    }
+
+    isLoadingHistory.value = true;
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('claims')
+          .where('customerId', isEqualTo: userUid)
+          .orderBy('claimDate', descending: true)
+          .startAfterDocument(_lastClaimDocument!)
+          .limit(_claimHistoryPageSize)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        _lastClaimDocument = querySnapshot.docs.last;
+        hasMoreClaimHistory.value =
+            querySnapshot.docs.length >= _claimHistoryPageSize;
+
+        final newClaims = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          final timestamp =
+              (data['claimDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final verifiedDate = (data['verifiedDate'] as Timestamp?)?.toDate();
+
+          return ClaimHistoryItemModel(
+            id: doc.id,
+            restaurantId: data['restaurantId'] ?? '',
+            restaurantName: data['restaurantName'] ?? 'Unknown Restaurant',
+            rewardType: data['rewardType'] ?? 'Reward',
+            claimDate: timestamp,
+            isVerified: data['isVerified'] ?? false,
+            verifiedDate: verifiedDate,
+          );
+        }).toList();
+
+        claimHistory.addAll(newClaims);
+      } else {
+        hasMoreClaimHistory.value = false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error loading more claim history: $e");
+      }
+    } finally {
+      isLoadingHistory.value = false;
+    }
+  }
+
+  // Refresh claim history - clear and fetch from the beginning
+  Future<void> refreshClaimHistory() async {
+    claimHistory.clear();
+    _lastClaimDocument = null;
+    hasMoreClaimHistory.value = true;
+    return fetchClaimHistory();
+  }
+
+  // Cache claim history in shared preferences
+  Future<void> _cacheClaimHistory(List<ClaimHistoryItemModel> claims) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<Map<String, dynamic>> serializedClaims = claims
+          .map((claim) => {
+                'id': claim.id,
+                'restaurantId': claim.restaurantId,
+                'restaurantName': claim.restaurantName,
+                'rewardType': claim.rewardType,
+                'claimDate': claim.claimDate.millisecondsSinceEpoch,
+                'isVerified': claim.isVerified,
+                'verifiedDate': claim.verifiedDate?.millisecondsSinceEpoch,
+              })
+          .toList();
+
+      await prefs.setString(
+          'cached_claim_history', jsonEncode(serializedClaims));
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error caching claim history: $e");
+      }
+    }
+  }
+
+  // Load cached claim history from shared preferences
+  Future<void> loadCachedClaimHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString('cached_claim_history');
+
+      if (cachedData != null) {
+        final List<dynamic> decodedData = jsonDecode(cachedData);
+        final List<ClaimHistoryItemModel> cachedClaims =
+            decodedData.map((item) {
+          return ClaimHistoryItemModel(
+            id: item['id'],
+            restaurantId: item['restaurantId'],
+            restaurantName: item['restaurantName'],
+            rewardType: item['rewardType'],
+            claimDate: DateTime.fromMillisecondsSinceEpoch(item['claimDate']),
+            isVerified: item['isVerified'],
+            verifiedDate: item['verifiedDate'] != null
+                ? DateTime.fromMillisecondsSinceEpoch(item['verifiedDate'])
+                : null,
+          );
+        }).toList();
+
+        claimHistory.value = cachedClaims;
+      }
+
+      // Fetch fresh data regardless
+      fetchClaimHistory();
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error loading cached claim history: $e");
+      }
+      // Fallback to network fetch
+      fetchClaimHistory();
     }
   }
 
@@ -989,7 +1289,7 @@ class CustomerController extends GetxController {
   Future<bool> updateProfile({
     required String name,
     String? phoneNumber,
-    String? address,
+    DateTime? dateOfBirth,
   }) async {
     if (userUid.isEmpty || customerProfile.value == null) return false;
 
@@ -1000,14 +1300,14 @@ class CustomerController extends GetxController {
       customerProfile.value = customerProfile.value!.copyWith(
         name: name,
         phoneNumber: phoneNumber,
-        address: address,
+        dateOfBirth: dateOfBirth,
       );
 
       // Update in Firestore
       await _firestore.collection('users').doc(userUid).update({
         'name': name,
         'phoneNumber': phoneNumber,
-        'address': address,
+        'dateOfBirth': dateOfBirth,
       });
 
       // Update display name in Firebase Auth if changed

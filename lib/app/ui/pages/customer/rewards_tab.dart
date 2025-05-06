@@ -1,156 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../controllers/customer_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
+import 'package:rizq/app/controllers/customer_controller.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class ScanHistoryPage extends StatefulWidget {
-  const ScanHistoryPage({Key? key}) : super(key: key);
+class RewardsTab extends StatefulWidget {
+  final CustomerController controller;
+
+  const RewardsTab({
+    Key? key,
+    required this.controller,
+  }) : super(key: key);
 
   @override
-  State<ScanHistoryPage> createState() => _ScanHistoryPageState();
+  State<RewardsTab> createState() => _RewardsTabState();
 }
 
-class _ScanHistoryPageState extends State<ScanHistoryPage>
-    with WidgetsBindingObserver {
-  final CustomerController controller = Get.find();
-  late FocusNode _focusNode;
+class _RewardsTabState extends State<RewardsTab>
+    with AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+
+  @override
+  bool get wantKeepAlive => true; // Keep the state when tab is not visible
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _focusNode = FocusNode();
 
-    // Refresh data immediately when page is opened
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshData();
+    // Load cache immediately
+    if (widget.controller.claimHistory.isEmpty &&
+        !widget.controller.isLoadingHistory.value) {
+      widget.controller.loadCachedClaimHistory();
+    }
+
+    // Setup scroll listener for pagination
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
+        !_isLoadingMore &&
+        !widget.controller.isLoadingHistory.value &&
+        widget.controller.hasMoreClaimHistory.value) {
+      _loadMoreData();
+    }
+  }
+
+  Future<void> _loadMoreData() async {
+    setState(() {
+      _isLoadingMore = true;
     });
+
+    await widget.controller.loadMoreClaimHistory();
+
+    setState(() {
+      _isLoadingMore = false;
+    });
+  }
+
+  Future<void> _refreshData() async {
+    return widget.controller.refreshClaimHistory();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _focusNode.dispose();
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Refresh when app comes to foreground
-      _refreshData();
-    }
-  }
-
-  void _refreshData() {
-    controller.refreshClaimHistory();
-    controller.fetchScanHistory();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Focus(
-      focusNode: _focusNode,
-      onFocusChange: (hasFocus) {
-        if (hasFocus) {
-          _refreshData();
-        }
-      },
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            centerTitle: true,
-            title: Image.asset('assets/icons/general-u.png', height: 90),
-            toolbarHeight: 100,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new_outlined,
-                color: MColors.primary,
-              ),
-              onPressed: () => Get.back(),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(60),
-              child: Container(
-                color: Colors.white, // Set your desired background color here
-                child: TabBar(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  labelColor: Theme.of(context).primaryColor,
-                  unselectedLabelColor: Colors.grey,
-                  indicator: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.15),
-                    borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  ),
-                  indicatorColor: Colors.transparent,
-                  indicatorWeight: 0,
-                  tabs: const [
-                    Tab(
-                      icon: Icon(Icons.qr_code_scanner),
-                      child: Text('Claim Rewards'),
-                    ),
-                    Tab(
-                      icon: Icon(Icons.card_giftcard),
-                      child: Text('Points History'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            shadowColor: Colors.transparent,
-          ),
-          body: TabBarView(
-            children: [
-              _buildRewardHistoryTab(),
-              _buildScanHistoryTab(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+    super.build(context);
 
-  Widget _buildScanHistoryTab() {
     return Obx(() {
-      if (controller.isLoadingHistory.value) {
-        return _buildShimmerList();
+      // Show skeleton loading if first load and no cached data
+      if (widget.controller.isLoadingHistory.value &&
+          widget.controller.claimHistory.isEmpty) {
+        return _buildLoadingShimmer();
       }
-      if (controller.scanHistory.isEmpty) {
-        return const Center(child: Text('No scans recorded yet.'));
-      }
-      return RefreshIndicator(
-        onRefresh: () => controller.fetchScanHistory(),
-        child: ListView.builder(
-          itemCount: controller.scanHistory.length,
-          itemBuilder: (context, index) {
-            final historyItem = controller.scanHistory[index];
-            return ListTile(
-              leading: const Icon(Icons.qr_code_scanner_outlined),
-              title: Text(historyItem.restaurantName),
-              subtitle: Text(
-                historyItem.formattedTimestamp,
-              ), // Use formatted date
-              trailing: Text(
-                '+${historyItem.pointsAwarded} pt${historyItem.pointsAwarded > 1 ? 's' : ''}',
-              ),
-            );
-          },
-        ),
-      );
-    });
-  }
 
-  Widget _buildRewardHistoryTab() {
-    return Obx(() {
-      if (controller.isLoadingHistory.value) {
-        return _buildShimmerCards();
-      }
-      if (controller.claimHistory.isEmpty) {
+      if (widget.controller.claimHistory.isEmpty) {
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -173,12 +105,23 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
           ),
         );
       }
+
       return RefreshIndicator(
-        onRefresh: () => controller.refreshClaimHistory(),
+        onRefresh: _refreshData,
         child: ListView.builder(
-          itemCount: controller.claimHistory.length,
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: widget.controller.claimHistory.length +
+              (_isLoadingMore || widget.controller.hasMoreClaimHistory.value
+                  ? 1
+                  : 0),
           itemBuilder: (context, index) {
-            final rewardItem = controller.claimHistory[index];
+            // Show loading indicator at the bottom while pagination loads more items
+            if (index >= widget.controller.claimHistory.length) {
+              return _buildPaginationLoader();
+            }
+
+            final rewardItem = widget.controller.claimHistory[index];
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               elevation: 2,
@@ -341,122 +284,113 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
     });
   }
 
-  // Add shimmer effect for list items
-  Widget _buildShimmerList() {
+  Widget _buildPaginationLoader() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
-      child: ListView.builder(
-        itemCount: 10,
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: Container(
-              width: 24,
-              height: 24,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 20,
+              height: 20,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
             ),
-            title: Container(
-              width: double.infinity,
-              height: 16,
-              color: Colors.white,
-            ),
-            subtitle: Container(
-              width: 150,
+            const SizedBox(width: 8),
+            Container(
+              width: 80,
               height: 12,
-              margin: const EdgeInsets.only(top: 4),
               color: Colors.white,
             ),
-            trailing: Container(
-              width: 40,
-              height: 16,
-              color: Colors.white,
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 
-  // Add shimmer effect for card items
-  Widget _buildShimmerCards() {
+  Widget _buildLoadingShimmer() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
+        itemCount: 8, // Show 8 skeleton items
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemBuilder: (_, __) => Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Avatar placeholder
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              width: 80,
-                              height: 12,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 60,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: double.infinity,
-                    height: 1,
-                    color: Colors.white,
-                  ),
-                  Container(
-                    width: double.infinity,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
                     ),
+                    const SizedBox(width: 12),
+                    // Restaurant name and date placeholder
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 16,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 80,
+                            height: 12,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Status tag placeholder
+                    Container(
+                      width: 60,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: double.infinity,
+                  height: 1,
+                  color: Colors.white,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

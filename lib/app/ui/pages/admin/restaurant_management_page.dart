@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/admin_controller.dart';
+import '../../../ui/theme/widget_themes/cached_image_widget.dart';
+import '../../../ui/theme/widget_themes/shimmer_widget.dart';
 
 class RestaurantManagementPage extends GetView<AdminController> {
   const RestaurantManagementPage({Key? key}) : super(key: key);
@@ -45,7 +47,13 @@ class RestaurantManagementPage extends GetView<AdminController> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ShimmerListView(
+                      itemCount: 5,
+                      itemHeight: 80,
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
@@ -414,21 +422,20 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                         TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 8),
-                                  Image.network(
-                                    data['logoUrl'],
+                                  CachedImageWidget(
+                                    imageUrl: data['logoUrl'] ?? '',
                                     height: 80,
                                     width: 80,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        height: 80,
-                                        width: 80,
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: Text('No Image'),
-                                        ),
-                                      );
-                                    },
+                                    borderRadius: BorderRadius.circular(4),
+                                    errorWidget: Container(
+                                      height: 80,
+                                      width: 80,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Text('No Image'),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
