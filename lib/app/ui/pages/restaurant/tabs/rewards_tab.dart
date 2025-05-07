@@ -128,14 +128,14 @@ class RewardsTab extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: controller.verificationResult.value
                                 .startsWith('Success')
-                            ? Colors.green[50]
-                            : Colors.orange[50],
+                            ? MColors.primary.withOpacity(0.1)
+                            : MColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: controller.verificationResult.value
                                   .startsWith('Success')
-                              ? Colors.green[300]!
-                              : Colors.orange[300]!,
+                              ? MColors.primary.withOpacity(0.3)
+                              : MColors.primary.withOpacity(0.3),
                         ),
                       ),
                       child: Column(
@@ -150,8 +150,8 @@ class RewardsTab extends StatelessWidget {
                                     : Icons.info,
                                 color: controller.verificationResult.value
                                         .startsWith('Success')
-                                    ? Colors.green[700]
-                                    : Colors.orange[700],
+                                    ? MColors.primary
+                                    : MColors.primary.withOpacity(0.7),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -160,8 +160,8 @@ class RewardsTab extends StatelessWidget {
                                   style: TextStyle(
                                     color: controller.verificationResult.value
                                             .startsWith('Success')
-                                        ? Colors.green[700]
-                                        : Colors.orange[700],
+                                        ? MColors.primary
+                                        : MColors.primary.withOpacity(0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -267,7 +267,8 @@ class RewardsTab extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: MColors.primary.withOpacity(0.1),
+                                          color:
+                                              MColors.primary.withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
@@ -276,7 +277,7 @@ class RewardsTab extends StatelessWidget {
                                               ? Icons.verified
                                               : Icons.redeem,
                                           color: reward.isVerified
-                                              ? Colors.green[700]
+                                              ? MColors.primary
                                               : MColors.primary,
                                         ),
                                       ),
@@ -309,7 +310,8 @@ class RewardsTab extends StatelessWidget {
                                                     vertical: 6,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.green[100],
+                                                    color: MColors.primary
+                                                        .withOpacity(0.18),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             20),
@@ -317,7 +319,7 @@ class RewardsTab extends StatelessWidget {
                                                   child: Text(
                                                     '${reward.pointsUsed} points',
                                                     style: TextStyle(
-                                                      color: Colors.green[800],
+                                                      color: MColors.primary,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 12,
@@ -403,27 +405,26 @@ class RewardsTab extends StatelessWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: reward.isVerified
-                                          ? Colors.green[50]
-                                          : Colors.orange[50],
+                                          ? MColors.primary.withOpacity(0.1)
+                                          : MColors.primary.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
                                         color: reward.isVerified
-                                            ? Colors.green[300]!
-                                            : Colors.orange[300]!,
+                                            ? MColors.primary.withOpacity(0.3)
+                                            : MColors.primary.withOpacity(0.3),
                                         width: 1,
                                       ),
                                     ),
                                     child: Row(
                                       children: [
                                         Icon(
-                                          reward.isVerified
-                                              ? Icons.verified_user
-                                              : Icons.pending_outlined,
-                                          size: 16,
-                                          color: reward.isVerified
-                                              ? Colors.green[700]
-                                              : Colors.orange[700],
-                                        ),
+                                            reward.isVerified
+                                                ? Icons.verified_user
+                                                : Icons.pending_outlined,
+                                            size: 16,
+                                            color: reward.isVerified
+                                                ? MColors.primary
+                                                : MColors.primary),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
@@ -433,8 +434,9 @@ class RewardsTab extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: reward.isVerified
-                                                  ? Colors.green[700]
-                                                  : Colors.orange[700],
+                                                  ? MColors.primary
+                                                  : MColors.primary
+                                                      .withOpacity(0.7),
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -460,7 +462,13 @@ class RewardsTab extends StatelessWidget {
                                                   MaterialTapTargetSize
                                                       .shrinkWrap,
                                             ),
-                                            child: const Text('VERIFY NOW'),
+                                            child: const Text(
+                                              'VERIFY NOW',
+                                              style: TextStyle(
+                                                color: MColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                       ],
                                     ),

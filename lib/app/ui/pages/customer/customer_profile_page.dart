@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/customer_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CustomerProfilePage extends GetView<CustomerController> {
   const CustomerProfilePage({Key? key}) : super(key: key);
@@ -26,6 +30,35 @@ class CustomerProfilePage extends GetView<CustomerController> {
         nameController.text = profile.name;
         phoneController.text = profile.phoneNumber ?? '';
         selectedDate.value = profile.dateOfBirth;
+      }
+    }
+
+    // Helper method to encode query parameters
+    String _encodeQueryParameters(Map<String, String> params) {
+      return params.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+    }
+
+    // Helper to launch email
+    Future<void> _launchEmail(String email, String subject) async {
+      final Uri emailLaunchUri = Uri(
+        scheme: 'mailto',
+        path: email,
+        query: _encodeQueryParameters({
+          'subject': subject,
+        }),
+      );
+
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not launch email client',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     }
 
@@ -54,41 +87,307 @@ class CustomerProfilePage extends GetView<CustomerController> {
       }
     }
 
-    AuthController authController = Get.find<AuthController>();
-    return Scaffold(
-      body: Obx(() {
-        if (controller.isLoadingProfile.value) {
-          return _buildProfileLoadingShimmer(context);
-        }
+    // Final confirmation for account deletion
+    void _confirmDeleteAccount() {
+      AuthController authController = Get.find<AuthController>();
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm Account Deletion'),
+          content: const Text(
+              'This action is permanent and cannot be undone. All your data will be deleted. Do you want to proceed?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Execute account deletion
+                authController.deleteAccount();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red[700],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete Account'),
+            ),
+          ],
+        ),
+      );
+    }
 
-        final profile = controller.customerProfile.value;
-        if (profile == null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    // Show account deletion confirmation dialog
+    void _showDeleteAccountConfirmation() {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Account'),
+          content: const Text('Are you sure?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _confirmDeleteAccount();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red[700],
+              ),
+              child: const Text('Yes, I want to delete my account'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show loyalty programs question dialog
+    void _showLoyaltyProgramsQuestion() async {
+      // Get the user's active loyalty programs
+      if (controller.loyaltyCards.isEmpty) {
+        await controller.fetchLoyaltyData();
+      }
+
+      if (controller.loyaltyCards.isEmpty) {
+        Get.snackbar(
+          'No Loyalty Programs',
+          'You don\'t have any active loyalty programs',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Loyalty Program'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: controller.loyaltyCards.length,
+              itemBuilder: (context, index) {
+                final program = controller.loyaltyCards[index];
+                return ListTile(
+                  leading: program.logoUrl.isNotEmpty
+                      ? CircleAvatar(
+                          backgroundImage: NetworkImage(program.logoUrl),
+                        )
+                      : CircleAvatar(
+                          child: Text(program.restaurantName[0]),
+                        ),
+                  title: Text(program.restaurantName),
+                  subtitle: Text(
+                      '${program.points}/${program.pointsRequired} points'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+
+                    // Get restaurant's email from Firestore
+                    try {
+                      DocumentSnapshot restaurantDoc = await FirebaseFirestore
+                          .instance
+                          .collection('restaurants')
+                          .doc(program.restaurantId)
+                          .get();
+
+                      if (restaurantDoc.exists) {
+                        String email =
+                            restaurantDoc.get('email') ?? 'support@rizq.com';
+                        _launchEmail(email,
+                            'Question about loyalty program at ${program.restaurantName}');
+                      } else {
+                        _launchEmail('support@rizq.com',
+                            'Question about loyalty program at ${program.restaurantName}');
+                      }
+                    } catch (e) {
+                      Get.snackbar(
+                        'Error',
+                        'Could not fetch restaurant contact information',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      _launchEmail('support@rizq.com',
+                          'Question about loyalty program at ${program.restaurantName}');
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show Rizq application question dialog
+    void _showRizqAppQuestion() {
+      showDialog(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: (context) => Theme(
+          data: Theme.of(context).copyWith(
+            dialogBackgroundColor: MColors.primary.withOpacity(0.5),
+          ),
+          child: AlertDialog(
+            backgroundColor: MColors.primary.withOpacity(0.5),
+            surfaceTintColor: Colors.transparent,
+            title: const Text(
+              'Contact Rizq Support',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.grey[400],
+                const Text(
+                  'For questions regarding the Rizq app, please contact our support team:',
+                  style: TextStyle(color: Colors.white),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Could not load profile',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => controller.fetchCustomerProfile(),
-                  child: const Text('Retry'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text(
+                      'support@rizq.com',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon:
+                          const Icon(Icons.copy, size: 18, color: Colors.white),
+                      onPressed: () {
+                        Clipboard.setData(
+                            const ClipboardData(text: 'support@rizq.com'));
+                        Get.snackbar(
+                          'Copied',
+                          'Email address copied to clipboard',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _launchEmail(
+                      'support@rizq.com', 'Question about Rizq Application');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: MColors.primary,
+                ),
+                child: const Text('Send Email'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show help options dialog
+    void _showContactUsOptions() {
+      showDialog(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: (context) => Theme(
+          data: Theme.of(context).copyWith(
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            elevation: 8.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Contact Us',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.card_giftcard,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  title: const Text('Question about loyalty program'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showLoyaltyProgramsQuestion();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.app_settings_alt,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  title: const Text('Question about Rizq application'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showRizqAppQuestion();
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    AuthController authController = Get.find<AuthController>();
+    return Scaffold(
+      body: Obx(() {
+        final profile = controller.customerProfile.value;
+
+        // Show shimmer while loading OR if profile is null (indicating we should try loading again)
+        if (controller.isLoadingProfile.value || profile == null) {
+          // If profile is null and not loading, trigger a fetch
+          if (!controller.isLoadingProfile.value && profile == null) {
+            controller.fetchCustomerProfile();
+          }
+          return _buildProfileLoadingShimmer(context);
         }
 
         // Initialize form with current values
@@ -109,7 +408,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                         CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.grey[200],
-                          child: profile.photoUrl != null &&
+                          child: profile!.photoUrl != null &&
                                   profile.photoUrl!.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(60),

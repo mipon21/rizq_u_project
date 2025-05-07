@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -22,6 +23,8 @@ class ReportsPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reports & Analytics'),
+        backgroundColor: MColors.primary,
+
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

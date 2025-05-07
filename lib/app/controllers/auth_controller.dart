@@ -249,4 +249,96 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // Delete user account and related data
+  Future<void> deleteAccount() async {
+    try {
+      isLoading.value = true;
+      User? user = _auth.currentUser;
+
+      if (user != null) {
+        String uid = user.uid;
+
+        // First delete all related data from Firestore based on user role
+        if (userRole.value == 'customer') {
+          // Delete customer-specific collections and documents
+          await _firestore.collection('users').doc(uid).delete();
+
+          // Delete any customer-specific subcollections if they exist
+          // e.g., claimed rewards, scan history, etc.
+          final scanHistoryRef = _firestore
+              .collection('scanHistory')
+              .where('customerId', isEqualTo: uid);
+          final scanHistoryDocs = await scanHistoryRef.get();
+
+          for (var doc in scanHistoryDocs.docs) {
+            await doc.reference.delete();
+          }
+
+          final claimHistoryRef = _firestore
+              .collection('claimHistory')
+              .where('customerId', isEqualTo: uid);
+          final claimHistoryDocs = await claimHistoryRef.get();
+
+          for (var doc in claimHistoryDocs.docs) {
+            await doc.reference.delete();
+          }
+        } else if (userRole.value == 'restaurateur') {
+          // Delete restaurant-specific collections and documents
+          await _firestore.collection('users').doc(uid).delete();
+          await _firestore.collection('restaurants').doc(uid).delete();
+          await _firestore.collection('programs').doc(uid).delete();
+
+          // Delete related QR codes or other data
+          final qrCodesRef = _firestore
+              .collection('qrCodes')
+              .where('restaurantId', isEqualTo: uid);
+          final qrCodeDocs = await qrCodesRef.get();
+
+          for (var doc in qrCodeDocs.docs) {
+            await doc.reference.delete();
+          }
+        }
+
+        // Finally delete the user account from Firebase Auth
+        await user.delete();
+
+        // Clear role on account deletion
+        userRole.value = '';
+
+        if (kDebugMode) {
+          print('Account deleted successfully.');
+        }
+
+        Get.offAllNamed(Routes.LOGIN);
+      } else {
+        throw Exception('No user is currently signed in.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        Get.snackbar(
+          'Re-authentication Required',
+          'Please log out and log in again before deleting your account.',
+          duration: const Duration(seconds: 5),
+        );
+      } else {
+        Get.snackbar(
+          'Account Deletion Failed',
+          e.message ?? 'An unknown error occurred.',
+        );
+      }
+
+      if (kDebugMode) {
+        print(
+            'FirebaseAuthException during account deletion: ${e.code} - ${e.message}');
+      }
+    } catch (e) {
+      Get.snackbar('Account Deletion Failed', 'An unexpected error occurred.');
+      if (kDebugMode) {
+        print('Unexpected error during account deletion: $e');
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

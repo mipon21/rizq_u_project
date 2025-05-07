@@ -31,7 +31,8 @@ class AdminDashboardPage extends GetView<AdminController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('Admin Dashboard',),
+        backgroundColor: MColors.primary,
         actions: [
           IconButton(
             icon: const Icon(Icons.analytics),

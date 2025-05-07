@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 
 class PlanPricingPage extends GetView<AdminController> {
@@ -10,6 +11,7 @@ class PlanPricingPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan Pricing Management'),
+        backgroundColor: MColors.primary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
 import '../../../ui/theme/widget_themes/shimmer_widget.dart';
@@ -22,6 +23,8 @@ class RestaurantManagementPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Restaurant Management'),
+        backgroundColor: MColors.primary,
+
       ),
       body: Column(
         children: [

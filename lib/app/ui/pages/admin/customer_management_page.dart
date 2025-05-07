@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 
 class CustomerManagementPage extends GetView<AdminController> {
@@ -11,7 +12,9 @@ class CustomerManagementPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Customer Management'),
+        backgroundColor: MColors.primary,
       ),
+
       body: Column(
         children: [
           Padding(

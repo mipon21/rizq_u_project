@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../routes/app_pages.dart';
 
@@ -13,6 +14,7 @@ class SubscriptionManagementPage extends GetView<AdminController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscription Management'),
+        backgroundColor: MColors.primary,
         actions: [
           IconButton(
             icon: const Icon(Icons.attach_money),
