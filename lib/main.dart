@@ -1,8 +1,10 @@
 // ignore_for_file: unused_local_variable
 
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -20,11 +22,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Firebase App Check
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-    // Use AppleProvider.appAttest for iOS
-  );
+  // Initialize Firebase App Check with appropriate provider based on platform
+  if (kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+      // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
+      // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
+    );
+  } else {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      // Use AppleProvider.appAttest for iOS
+    );
+  }
 
   await GetStorage.init();
 
@@ -36,7 +46,12 @@ void main() async {
   // Initialize language controller
   final languageController = Get.put(LanguageController());
 
-  runApp(RizqApp(routeObserver: routeObserver));
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => RizqApp(routeObserver: routeObserver),
+    ),
+  );
 }
 
 class RizqApp extends StatelessWidget {
@@ -52,8 +67,8 @@ class RizqApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Rizq Loyalty App',
       theme: MAppTheme.lightTheme,
-      darkTheme: MAppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      // darkTheme: MAppTheme.darkTheme,
+      themeMode: ThemeMode.light,
       initialBinding: InitialBinding(),
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
