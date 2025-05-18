@@ -52,6 +52,38 @@ class ProgramSettingsTab extends StatelessWidget {
                 'Configure Your Reward',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12 ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.4),
+                      spreadRadius: 1,
+                      blurRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text('1 Scan = 1 Point',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold
+                        )),
+                    Text('10 Points = 1 Reward',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold
+                        )),
+                  ],
+                ),
+              ),
               const SizedBox(height: 30),
               const Text(
                 'Select Reward Type:',
@@ -164,7 +196,7 @@ class ProgramSettingsTab extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Custom Reward Option has been taken to consideration',
+                        'Custom reward option has been taken to consideration',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w500,
@@ -276,8 +308,7 @@ class ProgramSettingsTab extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: Icon(Icons.save),
-                  label: const Text('Save Program Settings'),
+                  label: const Text('Save program settings'),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       programController.updateLoyaltyProgram(

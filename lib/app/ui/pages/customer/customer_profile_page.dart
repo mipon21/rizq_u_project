@@ -578,7 +578,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
 
                   // Account information
                   Container(
@@ -615,16 +615,19 @@ class CustomerProfilePage extends GetView<CustomerController> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      authController.logout();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        authController.logout();
+                      },
+                      // style: ElevatedButton.styleFrom(
+                      //   backgroundColor: Colors.red,
+                      //   foregroundColor: Colors.white,
+                      // ),
+                      child: const Text('LOGOUT'),
                     ),
-                    child: const Text('LOGOUT'),
                   ),
                 ],
               ),

@@ -150,6 +150,9 @@ class RestaurantController extends GetxController {
   int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
   int get rewardsIssuedCount => restaurantProfile.value?.rewardsIssued ?? 0;
 
+  // Cache for customer data to avoid repeated queries
+  final Map<String, String> _customerCache = {};
+
   @override
   void onInit() {
     super.onInit();
@@ -753,7 +756,7 @@ class RestaurantController extends GetxController {
     verificationResult.value = '';
   }
 
-  // Fetch the latest 5 scans for this restaurant (with customer name and date)
+  // Fetch the latest scans for this restaurant (with customer name and date)
   Future<void> fetchRecentScans() async {
     if (restaurantUid.isEmpty) return;
     try {
@@ -761,7 +764,6 @@ class RestaurantController extends GetxController {
           .collection('scans')
           .where('restaurantId', isEqualTo: restaurantUid)
           .orderBy('timestamp', descending: true)
-          .limit(5)
           .get();
       final List<Map<String, String>> scans = [];
       for (var doc in querySnapshot.docs) {
@@ -832,37 +834,26 @@ class RestaurantController extends GetxController {
     await fetchScanChartData();
   }
 
-  // Stream of recent scans for live updates
+  // Stream of recent scans for live updates with minimal data for faster loading
   Stream<List<Map<String, dynamic>>> recentScansStream() {
     if (restaurantUid.isEmpty) return const Stream.empty();
+    
     return _firestore
         .collection('scans')
         .where('restaurantId', isEqualTo: restaurantUid)
         .orderBy('timestamp', descending: true)
-        .limit(10)
+        .limit(20) // Limit to just 20 most recent scans for much faster loading
         .snapshots()
-        .asyncMap((snapshot) async {
-      final List<Map<String, dynamic>> scans = [];
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final customerId = data['clientId'] as String?;
-        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
-        final points = data['pointsAwarded'] ?? 1;
-        String customerName = 'Customer';
-        if (customerId != null) {
-          final customerDoc =
-              await _firestore.collection('users').doc(customerId).get();
-          if (customerDoc.exists) {
-            customerName = customerDoc.data()?['name'] ?? 'Customer';
-          }
-        }
-        scans.add({
-          'name': customerName,
-          'date': timestamp,
-          'points': points,
+        .map((snapshot) {
+          // Using .map instead of .asyncMap for faster processing (no async customer data fetching)
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'name': 'Customer', // Skip customer name lookup for faster loading
+              'date': (data['timestamp'] as Timestamp?)?.toDate(),
+              'points': data['pointsAwarded'] ?? 1,
+            };
+          }).toList();
         });
-      }
-      return scans;
-    });
   }
 }

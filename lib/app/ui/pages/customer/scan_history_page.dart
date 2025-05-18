@@ -65,8 +65,8 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
             elevation: 0,
             backgroundColor: Colors.white,
             centerTitle: true,
-            title: Image.asset('assets/icons/general-u.png', height: 90),
-            toolbarHeight: 100,
+            title: Image.asset('assets/icons/general-u.png', height: 70),
+            toolbarHeight: 80,
             leading: IconButton(
               icon: const Icon(
                 Icons.arrow_back_ios_new_outlined,

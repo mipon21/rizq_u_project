@@ -188,9 +188,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
         backgroundColor: Colors.white,
         centerTitle: true,
         title: _currentIndex == 3
-            ? Image.asset('assets/icons/general-u.png', height: 90)
-            : Image.asset('assets/icons/general-u.png', height: 90),
-        toolbarHeight: 100,
+            ? Image.asset('assets/icons/general-u.png', height: 70)
+            : Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
         // Add Help menu only for the profile tab (index 3)
         actions: _currentIndex == 3
             ? [
@@ -766,148 +766,161 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Contact $restaurantName'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Email info with nice styling
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.email,
-                        color: Theme.of(context).primaryColor, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        restaurantEmail,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
+      barrierColor: Colors.black54,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          dialogBackgroundColor: Colors.white,
+        ),
+        child: AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 8.0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text('Contact $restaurantName'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Email info with nice styling
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.email,
+                          color: Theme.of(context).primaryColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SelectableText(
+                          restaurantEmail,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.copy,
-                          color: Theme.of(context).primaryColor),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: restaurantEmail));
-                        Get.snackbar(
-                          'Copied',
-                          'Email address copied to clipboard',
-                          snackPosition: SnackPosition.BOTTOM,
-                          duration: const Duration(seconds: 2),
-                        );
-                      },
-                      tooltip: 'Copy to clipboard',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Subject field
-              Text(
-                'Subject',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: subjectController,
-                decoration: InputDecoration(
-                  hintText: 'Enter subject',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                      IconButton(
+                        icon: Icon(Icons.copy,
+                            color: Theme.of(context).primaryColor),
+                        onPressed: () {
+                          Clipboard.setData(
+                              ClipboardData(text: restaurantEmail));
+                          Get.snackbar(
+                            'Copied',
+                            'Email address copied to clipboard',
+                            snackPosition: SnackPosition.BOTTOM,
+                            duration: const Duration(seconds: 2),
+                          );
+                        },
+                        tooltip: 'Copy to clipboard',
+                      ),
+                    ],
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  fillColor: Colors.white,
-                  filled: true,
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-              // Description field
-              Text(
-                'Description',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: messageController,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  hintText: 'Describe your issue or question',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                // Subject field
+                Text(
+                  'Subject',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
                   ),
-                  contentPadding: const EdgeInsets.all(12),
-                  fillColor: Colors.white,
-                  filled: true,
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Your contact information will be automatically included in the email.',
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                    fontStyle: FontStyle.italic),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
+                const SizedBox(height: 8),
+                TextField(
+                  controller: subjectController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter subject',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-              // Get the profile data for customer information
-              final profile = customerController.customerProfile.value;
-              final userId = authController.currentUserUid;
-
-              // Create a formatted message with footer containing customer information
-              String messageWithFooter = messageController.text +
-                  '\n\n---------------------------' +
-                  '\nSent from Rizq App' +
-                  '\nCustomer Information:' +
-                  '\nName: ${profile?.name ?? "N/A"}' +
-                  '\nEmail: ${profile?.email ?? "N/A"}' +
-                  '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
-                  '\nUser ID: $userId';
-
-              // Launch email with complete information
-              _launchEmailWithBody(
-                  email: restaurantEmail,
-                  subject: subjectController.text,
-                  body: messageWithFooter);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
+                // Description field
+                Text(
+                  'Description',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: messageController,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    hintText: 'Describe your issue or question',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Your contact information will be automatically included in the email.',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic),
+                ),
+              ],
             ),
-            child: const Text('CONTINUE'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+
+                // Get the profile data for customer information
+                final profile = customerController.customerProfile.value;
+                final userId = authController.currentUserUid;
+
+                // Create a formatted message with footer containing customer information
+                String messageWithFooter = messageController.text +
+                    '\n\n---------------------------' +
+                    '\nSent from Rizq App' +
+                    '\nCustomer Information:' +
+                    '\nName: ${profile?.name ?? "N/A"}' +
+                    '\nEmail: ${profile?.email ?? "N/A"}' +
+                    '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
+                    '\nUser ID: $userId';
+
+                // Launch email with complete information
+                _launchEmailWithBody(
+                    email: restaurantEmail,
+                    subject: subjectController.text,
+                    body: messageWithFooter);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('CONTINUE'),
+            ),
+          ],
+        ),
       ),
     );
   }

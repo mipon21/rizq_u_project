@@ -14,7 +14,6 @@ class CustomerManagementPage extends GetView<AdminController> {
         title: const Text('Customer Management'),
         backgroundColor: MColors.primary,
       ),
-
       body: Column(
         children: [
           Padding(
@@ -104,7 +103,17 @@ class CustomerManagementPage extends GetView<AdminController> {
                                       {};
                               int totalPoints = 0;
                               pointsByRestaurant.forEach((_, points) {
-                                totalPoints += (points as int? ?? 0);
+                                if (points is int) {
+                                  totalPoints += points;
+                                } else if (points is Map) {
+                                  // Handle nested map structure if needed
+                                  // You might need to adjust this based on your actual data structure
+                                  points.forEach((_, nestedPoints) {
+                                    if (nestedPoints is int) {
+                                      totalPoints += nestedPoints;
+                                    }
+                                  });
+                                }
                               });
 
                               return DataRow(
@@ -157,7 +166,17 @@ class CustomerManagementPage extends GetView<AdminController> {
                                   {};
                           int totalPoints = 0;
                           pointsByRestaurant.forEach((_, points) {
-                            totalPoints += (points as int? ?? 0);
+                            if (points is int) {
+                              totalPoints += points;
+                            } else if (points is Map) {
+                              // Handle nested map structure if needed
+                              // You might need to adjust this based on your actual data structure
+                              points.forEach((_, nestedPoints) {
+                                if (nestedPoints is int) {
+                                  totalPoints += nestedPoints;
+                                }
+                              });
+                            }
                           });
 
                           return ListTile(
@@ -203,7 +222,17 @@ class CustomerManagementPage extends GetView<AdminController> {
 
     int totalPoints = 0;
     pointsByRestaurant.forEach((_, points) {
-      totalPoints += (points as int? ?? 0);
+      if (points is int) {
+        totalPoints += points;
+      } else if (points is Map) {
+        // Handle nested map structure if needed
+        // You might need to adjust this based on your actual data structure
+        points.forEach((_, nestedPoints) {
+          if (nestedPoints is int) {
+            totalPoints += nestedPoints;
+          }
+        });
+      }
     });
 
     Get.dialog(

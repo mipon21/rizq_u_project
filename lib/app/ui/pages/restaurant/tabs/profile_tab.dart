@@ -40,60 +40,6 @@ class _ProfileTabState extends State<ProfileTab> {
     final authController = Get.find<AuthController>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Profile'),
-        backgroundColor: MColors.primary,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'contact_us') {
-                  _showContactUsDialog(context);
-                } else if (value == 'delete_account') {
-                  _showDeleteAccountConfirmation(context, authController);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'contact_us',
-                  child: Row(
-                    children: [
-                      Icon(Icons.contact_support,
-                          color: MColors.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Contact Us'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'delete_account',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_forever,
-                          color: Colors.red[700], size: 20),
-                      const SizedBox(width: 8),
-                      Text('Account Deletion'),
-                    ],
-                  ),
-                ),
-              ],
-              offset: const Offset(0, 40),
-              icon: const Text(
-                'Help',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Obx(() {
         if (controller.isLoadingProfile.value) {
           return Padding(
@@ -402,15 +348,6 @@ class _ProfileTabState extends State<ProfileTab> {
                               controller, bankDetailsController.text);
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
                       child: Obx(() => controller.isLoadingProfile.value
                           ? SizedBox(
                               width: 20,
@@ -423,37 +360,10 @@ class _ProfileTabState extends State<ProfileTab> {
                           : const Text(
                               'Update',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
                               ),
                             )),
-                    ),
-                  ),
-
-                  const SizedBox(height: 50),
-
-                  // Language Selection
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.language,
-                        color: MColors.primary,
-                      ),
-                      title: Text(
-                        'language'.tr,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      trailing: SizedBox(
-                        width: 100,
-                        child: LanguageSelector(),
-                      ),
                     ),
                   ),
 
@@ -465,7 +375,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       // Logout button
                       SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: () => authController.logout(),
                           child: Text(
                             'logout'.tr,
@@ -476,48 +386,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // Show confirmation dialog before deleting account
-                            Get.dialog(
-                              AlertDialog(
-                                title: Text('delete_account'.tr),
-                                content: Text('delete_account_confirm'.tr),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Get.back(),
-                                    child: Text('cancel'.tr),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Get.back();
-                                      // Handle account deletion
-                                      // authController.deleteAccount();
-                                    },
-                                    child: Text('delete'.tr,
-                                        style:
-                                            TextStyle(color: Colors.red[700])),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red[700],
-                          ),
-                          child: Text(
-                            'delete_account'.tr,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ],

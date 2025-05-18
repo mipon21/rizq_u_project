@@ -2,9 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
+import 'package:rizq/app/utils/constants/colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RegisterPage extends GetView<AuthController> {
   const RegisterPage({Key? key}) : super(key: key);
+
+  // Static method to launch Privacy Policy URL
+  static Future<void> launchPrivacyPolicy() async {
+    // Demo URL - replace with actual privacy policy URL later
+    final Uri url = Uri.parse('https://example.com/privacy-policy');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      Get.snackbar(
+        'Error',
+        'Could not launch the privacy policy page',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Static method to launch Terms and Conditions URL
+  static Future<void> launchTermsAndConditions() async {
+    // Demo URL - replace with actual terms and conditions URL later
+    final Uri url = Uri.parse('https://example.com/terms-and-conditions');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      Get.snackbar(
+        'Error',
+        'Could not launch the terms and conditions page',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +45,10 @@ class RegisterPage extends GetView<AuthController> {
     final RxBool agreedToTerms = false.obs; // Terms and Conditions checkbox
 
     return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -25,9 +57,9 @@ class RegisterPage extends GetView<AuthController> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 50),
-                Image.asset('assets/icons/general-u.png', height: 150),
-                const SizedBox(height: 20),
+                // const SizedBox(height: 50),
+                // Image.asset('assets/icons/general-u.png', height: 150),
+                // const SizedBox(height: 20),
                 Text(
                   'Create Your Account',
                   style: Theme.of(context).textTheme.headlineMedium,
@@ -49,11 +81,30 @@ class RegisterPage extends GetView<AuthController> {
                 const SizedBox(height: 15),
                 TextFormField(
                   controller: passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    // helperText:
+                    //     'Must contain capital letter, \nlowercase letter, \nnumber, and \nspecial character',
+                  ),
                   obscureText: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty || value.length < 6) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 6) {
                       return 'Password must be at least 6 characters';
+                    }
+                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                      return 'Password must contain at least 1 capital letter';
+                    }
+                    if (!RegExp(r'[a-z]').hasMatch(value)) {
+                      return 'Password must contain at least 1 lowercase letter';
+                    }
+                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                      return 'Password must contain at least 1 number';
+                    }
+                    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                      return 'Password must contain at least 1 special character';
                     }
                     return null;
                   },
@@ -120,13 +171,13 @@ class RegisterPage extends GetView<AuthController> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Radio<String>(
-                                value: 'restaurateur',
+                                value: 'restaurant',
                                 groupValue: selectedRole.value,
                                 visualDensity: VisualDensity.compact,
                                 onChanged: (value) =>
                                     selectedRole.value = value!,
                               ),
-                              Text('Restaurateur'),
+                              Text('Restaurant'),
                             ],
                           ),
                         ),
@@ -139,7 +190,32 @@ class RegisterPage extends GetView<AuthController> {
                   () => CheckboxListTile(
                     value: agreedToTerms.value,
                     onChanged: (value) => agreedToTerms.value = value ?? false,
-                    title: const Text('I agree to the Terms and Conditions'),
+                    title: Wrap(
+                      children: [
+                        const Text('I agree to the '),
+                        InkWell(
+                          onTap: () => RegisterPage.launchPrivacyPolicy(),
+                          child: const Text(
+                            'Privacy Policy',
+                            style: TextStyle(
+                              color: MColors.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        const Text(' and '),
+                        InkWell(
+                          onTap: () => RegisterPage.launchTermsAndConditions(),
+                          child: const Text(
+                            'Terms and Conditions',
+                            style: TextStyle(
+                              color: MColors.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                   ),

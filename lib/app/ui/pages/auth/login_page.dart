@@ -13,6 +13,10 @@ class LoginPage extends GetView<AuthController> {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -23,8 +27,6 @@ class LoginPage extends GetView<AuthController> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/icons/general-u.png', height: 150),
-                    const SizedBox(height: 40),
                     Text(
                       'Welcome Back!',
                       style: Theme.of(context).textTheme.headlineMedium,

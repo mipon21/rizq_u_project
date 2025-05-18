@@ -3,7 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/restaurant_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:rizq/app/ui/pages/restaurant/subscription_page.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
+import 'package:flutter/material.dart';
+import 'package:rizq/app/ui/pages/restaurant/dashboard_page.dart';
 
 class DashboardTab extends StatelessWidget {
   const DashboardTab({Key? key}) : super(key: key);
@@ -56,42 +59,6 @@ class DashboardTab extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: MColors.primary,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Starter',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Free Trial',
-                              style: TextStyle(
-                                color: Color(0xFFB2A4D4),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 180,
@@ -110,9 +77,17 @@ class DashboardTab extends StatelessWidget {
                             5;
                         return LineChart(
                           LineChartData(
-                            gridData: FlGridData(show: true),
+                            gridData: FlGridData(show: false),
                             titlesData: FlTitlesData(
                               leftTitles: AxisTitles(
+                                axisNameWidget: const Text(
+                                  'Scans',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                axisNameSize: 22,
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   reservedSize: 40,
@@ -133,6 +108,14 @@ class DashboardTab extends StatelessWidget {
                                 ),
                               ),
                               bottomTitles: AxisTitles(
+                                axisNameWidget: const Text(
+                                  'Days',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                axisNameSize: 22,
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   reservedSize: 32,
@@ -189,154 +172,235 @@ class DashboardTab extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Rewards Given
+                // Left Column: Rewards Given + Subscription
                 Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.4),
-                          spreadRadius: 1,
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          rewardsGiven.toString(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: MColors.primary,
+                  child: Column(
+                    children: [
+                      // Rewards Given Card
+                      GestureDetector(
+                        onTap: () {
+                          // Navigate to rewards tab (index 3), Reward Claims subtab (index 0)
+                          DashboardPage.navigateToTab(3, rewardsSubtabIndex: 0);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.4),
+                                spreadRadius: 1,
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rewardsGiven.toString(),
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: MColors.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Rewards given',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'Rewards given',
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 15,
+                      ),
+                      SizedBox(height: 10),
+                      // Subscription Card
+                      GestureDetector(
+                        onTap: () {
+                          Get.to(() => const SubscriptionPage());
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.4),
+                                spreadRadius: 1,
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Subscription',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: MColors.primary,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'Starter',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              const Text(
+                                'Free Trial',
+                                style: TextStyle(
+                                  color: Color(0xFFB2A4D4),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(width: 10),
                 // Recent Scans
                 Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.4),
-                          spreadRadius: 1,
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Recent scans',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                  child: GestureDetector(
+                    onTap: () {
+                      // Navigate to rewards tab (index 3), Recent Scans subtab (index 1)
+                      DashboardPage.navigateToTab(3, rewardsSubtabIndex: 1);
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.4),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        StreamBuilder<List<Map<String, dynamic>>>(
-                          stream: controller.recentScansStream(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-                            final scans =
-                                (snapshot.data ?? []).take(3).toList();
-                            if (scans.isEmpty) {
-                              return const Text('No recent scans');
-                            }
-                            return Column(
-                              children: scans.map((scan) {
-                                final name = scan['name'] ?? 'Customer';
-                                final date = scan['date'] != null
-                                    ? (scan['date'] is DateTime
-                                        ? (scan['date'] as DateTime)
-                                        : DateTime.tryParse(
-                                            scan['date'].toString()))
-                                    : null;
-                                final points = scan['points'] ?? 1;
-                                final formattedDate = date != null
-                                    ? DateFormat('MMM dd, hha').format(date)
-                                    : '';
-                                return Container(
-                                  padding: const EdgeInsets.all(5),
-                                  margin: const EdgeInsets.only(bottom: 5),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Color(0xFF431EB9).withOpacity(0.1),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Recent scans',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: controller.recentScansStream(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              final scans =
+                                  (snapshot.data ?? []).take(3).toList();
+                              if (scans.isEmpty) {
+                                return const Text('No recent scans');
+                              }
+                              return Column(
+                                children: scans.map((scan) {
+                                  final name = scan['name'] ?? 'Customer';
+                                  final date = scan['date'] != null
+                                      ? (scan['date'] is DateTime
+                                          ? (scan['date'] as DateTime)
+                                          : DateTime.tryParse(
+                                              scan['date'].toString()))
+                                      : null;
+                                  final points = scan['points'] ?? 1;
+                                  final formattedDate = date != null
+                                      ? DateFormat('MMM dd, hha').format(date)
+                                      : '';
+                                  return Container(
+                                    padding: const EdgeInsets.all(5),
+                                    margin: const EdgeInsets.only(bottom: 5),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color:
+                                            Color(0xFF431EB9).withOpacity(0.1),
+                                      ),
                                     ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 6),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              formattedDate,
-                                              style: const TextStyle(
-                                                color: Colors.black54,
-                                                fontSize: 14,
-                                              ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(width: 8),
-                                        // Text(
-                                        //   '+$points',
-                                        //   style: const TextStyle(
-                                        //     color: Colors.green,
-                                        //     fontWeight: FontWeight.bold,
-                                        //     fontSize: 14,
-                                        //   ),
-                                        // ),
-                                      ],
+                                          ),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                formattedDate,
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // Text(
+                                          //   '+$points',
+                                          //   style: const TextStyle(
+                                          //     color: Colors.green,
+                                          //     fontWeight: FontWeight.bold,
+                                          //     fontSize: 14,
+                                          //   ),
+                                          // ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
-                      ],
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

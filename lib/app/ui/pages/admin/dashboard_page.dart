@@ -6,6 +6,7 @@ import '../../../utils/constants/colors.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../ui/theme/widget_themes/admin_notification_panel.dart';
 
 class AdminDashboardPage extends GetView<AdminController> {
   const AdminDashboardPage({Key? key}) : super(key: key);
@@ -31,9 +32,45 @@ class AdminDashboardPage extends GetView<AdminController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard',),
+        title: const Text(
+          'Admin Dashboard',
+        ),
         backgroundColor: MColors.primary,
         actions: [
+          // Replace badges with a simple Stack for notification indicator
+          Obx(() => Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    onPressed: () => _showNotificationsPanel(context),
+                    tooltip: 'Notifications',
+                  ),
+                  if (controller.unreadNotifications.value > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 12,
+                          minHeight: 12,
+                        ),
+                        child: Text(
+                          controller.unreadNotifications.value.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              )),
           IconButton(
             icon: const Icon(Icons.analytics),
             onPressed: () => _showAnalyticsPanel(context),
@@ -62,6 +99,9 @@ class AdminDashboardPage extends GetView<AdminController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildQuickActions(),
+            const SizedBox(height: 24),
+
             const Text(
               'Overview',
               style: TextStyle(
@@ -94,8 +134,92 @@ class AdminDashboardPage extends GetView<AdminController> {
             ),
             const SizedBox(height: 16),
             _buildRecentActivity(),
+
+            // Add pending approvals section
+            const SizedBox(height: 24),
+            _buildPendingApprovalsSection(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Card(
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Quick Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildActionButton(
+                    icon: Icons.restaurant_menu,
+                    label: 'Add Restaurant',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_RESTAURANTS),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildActionButton(
+                    icon: Icons.people,
+                    label: 'Manage Customers',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_CUSTOMERS),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildActionButton(
+                    icon: Icons.attach_money,
+                    label: 'Update Pricing',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_PLAN_PRICING),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildActionButton(
+                    icon: Icons.bar_chart,
+                    label: 'View Reports',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_REPORTS),
+                  ),
+                  const SizedBox(width: 12),
+                  Obx(() => _buildActionButton(
+                        icon: Icons.approval,
+                        label:
+                            'Pending Approvals (${controller.pendingApprovals})',
+                        onPressed: () => _showPendingApprovals(),
+                        color: controller.pendingApprovals.value > 0
+                            ? Colors.orange
+                            : Colors.blue,
+                      )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
+    return ElevatedButton.icon(
+      icon: Icon(icon),
+      label: Text(label),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color ?? MColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -172,6 +296,14 @@ class AdminDashboardPage extends GetView<AdminController> {
               Get.toNamed(Routes.ADMIN_REPORTS);
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.attach_money),
+            title: const Text('Plan Pricing'),
+            onTap: () {
+              Get.back(); // Close drawer
+              Get.toNamed(Routes.ADMIN_PLAN_PRICING);
+            },
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
@@ -205,16 +337,16 @@ class AdminDashboardPage extends GetView<AdminController> {
               color: Colors.green,
             ),
             _buildStatCard(
-              title: 'New This Month',
-              value: controller.newRestaurantsThisMonth.toString(),
-              icon: Icons.new_releases,
-              color: Colors.orange,
+              title: 'Active Subscriptions',
+              value: controller.activeSubscriptions.toString(),
+              icon: Icons.verified,
+              color: Colors.purple,
             ),
             _buildStatCard(
               title: 'Total Revenue',
               value: '\$${controller.totalRevenue.toStringAsFixed(2)}',
               icon: Icons.attach_money,
-              color: Colors.purple,
+              color: Colors.orange,
             ),
           ],
         ));
@@ -228,7 +360,6 @@ class AdminDashboardPage extends GetView<AdminController> {
   }) {
     return SizedBox(
         width: double.infinity,
-        // height: 130,
         child: Card(
           elevation: 3,
           child: Padding(
@@ -250,14 +381,12 @@ class AdminDashboardPage extends GetView<AdminController> {
                     fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -576,6 +705,101 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
+  // Notifications panel
+  void _showNotificationsPanel(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (context, scrollController) {
+            return AdminNotificationPanel(isBottomSheet: true);
+          },
+        );
+      },
+    );
+  }
+
+  // Pending approvals section
+  Widget _buildPendingApprovalsSection() {
+    return Obx(() {
+      if (controller.pendingApprovals.value == 0) {
+        return const SizedBox.shrink(); // Don't show if no pending approvals
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pending Approvals (${controller.pendingApprovals})',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _showPendingApprovals(),
+                child: const Text('View All'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 3,
+            color: Colors.amber.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${controller.pendingApprovals} restaurants waiting for approval',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'New restaurant registrations require your approval before they can start using the platform.',
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => _showPendingApprovals(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: const Text('Review Pending Approvals'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  void _showPendingApprovals() {
+    Get.toNamed(Routes.ADMIN_RESTAURANTS);
+  }
+
+  // Analytics panel
   void _showAnalyticsPanel(BuildContext context) {
     // Fetch analytics data when opening the panel
     controller.fetchAnalyticsData();
