@@ -83,6 +83,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final supportEmail = 'support@rizq.app';
+    final subjectController = TextEditingController();
+    final descriptionController = TextEditingController();
     final List<Widget> _pages = [
       DashboardTab(),
       ProgramSettingsTab(),
@@ -102,7 +105,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: Colors.white,
                     onSelected: (value) {
                       if (value == 'contact_us') {
-                        _showContactUsDialog(context);
+                        // _showContactUsDialog(context);
+                        _launchEmailApp(
+                          supportEmail,
+                          subjectController.text,
+                          descriptionController.text,
+                        );
                       } else if (value == 'delete_account') {
                         _showDeleteAccountConfirmation(context);
                       }
@@ -187,7 +195,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               IconButton(
                 icon: Icon(
-                  Icons.settings_outlined,
+                  Icons.local_activity_outlined,
                   color: _currentIndex == 1
                       ? Theme.of(context).colorScheme.primary
                       : null,
@@ -402,7 +410,10 @@ Restaurant UID: $uid
       );
 
       if (launched) {
-        Navigator.of(Get.context!).pop(); // Close the dialog after launching
+        // Safely pop the dialog if it's still mounted
+        if (Get.isDialogOpen ?? false) {
+          Get.back();
+        }
       } else {
         // Fallback: Show a dialog with the email information that can be copied
         _showEmailCopyDialog(email, subject, completeBody);

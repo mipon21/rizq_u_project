@@ -14,6 +14,8 @@ class ForgotPasswordPage extends GetView<AuthController> {
 
     return Scaffold(
       appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
         iconTheme: IconThemeData(color: MColors.primary),
         leading: IconButton(
           onPressed: () => Get.back(),
@@ -27,7 +29,6 @@ class ForgotPasswordPage extends GetView<AuthController> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Image.asset('assets/icons/general-u.png', height: 150),
               const SizedBox(height: 50),
               const Text(
                 'Enter your email address to receive a password reset link.',

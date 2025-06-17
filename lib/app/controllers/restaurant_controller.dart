@@ -22,6 +22,7 @@ class RestaurantProfileModel {
   final DateTime? trialStartDate;
   final DateTime createdAt;
   final String bankDetails; // New field for bank details
+  final DateTime? subscriptionEnd; // New field for subscription end date
 
   RestaurantProfileModel({
     required this.uid,
@@ -34,6 +35,7 @@ class RestaurantProfileModel {
     this.trialStartDate,
     required this.createdAt,
     this.bankDetails = '', // Default to empty string
+    this.subscriptionEnd, // New parameter
   });
 
   factory RestaurantProfileModel.fromSnapshot(
@@ -53,6 +55,8 @@ class RestaurantProfileModel {
           DateTime.now(), // Fallback for older docs
       bankDetails:
           data['bankDetails'] ?? '', // Get bank details or default to empty
+      subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)
+          ?.toDate(), // Get subscription end date
     );
   }
 
@@ -74,6 +78,13 @@ class RestaurantProfileModel {
     if (!isTrialActive || trialStartDate == null) return 0;
     final expiryDate = trialStartDate!.add(const Duration(days: 60));
     final remaining = expiryDate.difference(DateTime.now()).inDays;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  // Get remaining subscription days
+  int get remainingSubscriptionDays {
+    if (subscriptionEnd == null) return 0;
+    final remaining = subscriptionEnd!.difference(DateTime.now()).inDays;
     return remaining > 0 ? remaining : 0;
   }
 }
@@ -358,6 +369,7 @@ class RestaurantController extends GetxController {
           createdAt: restaurantProfile.value!.createdAt,
           bankDetails:
               restaurantProfile.value!.bankDetails, // Preserve bank details
+          subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
         );
         restaurantProfile.refresh(); // Notify listeners
       }
@@ -407,6 +419,7 @@ class RestaurantController extends GetxController {
             trialStartDate: restaurantProfile.value!.trialStartDate,
             createdAt: restaurantProfile.value!.createdAt,
             bankDetails: restaurantProfile.value!.bankDetails,
+            subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
           );
           restaurantProfile.refresh(); // Notify listeners
         }
@@ -450,6 +463,7 @@ class RestaurantController extends GetxController {
           trialStartDate: restaurantProfile.value!.trialStartDate,
           createdAt: restaurantProfile.value!.createdAt,
           bankDetails: bankDetails, // Update bank details
+          subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
         );
         restaurantProfile.refresh(); // Notify listeners
       }
@@ -837,7 +851,7 @@ class RestaurantController extends GetxController {
   // Stream of recent scans for live updates with minimal data for faster loading
   Stream<List<Map<String, dynamic>>> recentScansStream() {
     if (restaurantUid.isEmpty) return const Stream.empty();
-    
+
     return _firestore
         .collection('scans')
         .where('restaurantId', isEqualTo: restaurantUid)
@@ -845,15 +859,15 @@ class RestaurantController extends GetxController {
         .limit(20) // Limit to just 20 most recent scans for much faster loading
         .snapshots()
         .map((snapshot) {
-          // Using .map instead of .asyncMap for faster processing (no async customer data fetching)
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            return {
-              'name': 'Customer', // Skip customer name lookup for faster loading
-              'date': (data['timestamp'] as Timestamp?)?.toDate(),
-              'points': data['pointsAwarded'] ?? 1,
-            };
-          }).toList();
-        });
+      // Using .map instead of .asyncMap for faster processing (no async customer data fetching)
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'name': 'Customer', // Skip customer name lookup for faster loading
+          'date': (data['timestamp'] as Timestamp?)?.toDate(),
+          'points': data['pointsAwarded'] ?? 1,
+        };
+      }).toList();
+    });
   }
 }

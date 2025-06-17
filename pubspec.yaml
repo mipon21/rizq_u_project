@@ -70,7 +70,7 @@ dependencies:
   # New packages
   syncfusion_flutter_charts: ^29.1.39
   pdf: ^3.10.8
-  csv: ^6.0.0
+  csv: ^5.1.1
   responsive_builder: ^0.7.0
   file_picker: ^10.1.2
   firebase_app_check: ^0.3.2+5
@@ -82,6 +82,7 @@ dependencies:
   path_provider: ^2.1.1
   percent_indicator: ^4.2.5
   flutter_svg: ^2.1.0
+  iconsax_plus: ^1.0.0
 
 dev_dependencies:
   flutter_test:
@@ -99,20 +100,20 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/logo.png"
+  image_path: "assets/icons/s-l.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#FF65C3"
-  adaptive_icon_foreground: "assets/icons/logo.png"
+  adaptive_icon_background: "#5932D2"
+  adaptive_icon_foreground: "assets/icons/s-l.png"
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  color_dark: "#FFFFFF"
+  color: "#5932D2"
+  color_dark: "#5932D2"
   fullscreen: true
-  image: assets/icons/splash.png
-  image_dark: assets/icons/splash.png
+  image: assets/icons/s-l.png
+  image_dark: assets/icons/s-l.png
   android_12:
-    color: "#FFFFFF"
-    color_dark: "#FFFFFF"
-    image: assets/icons/splash.png
-    image_dark: assets/icons/splash.png
+    color: "#5932D2"
+    color_dark: "#5932D2"
+    image: assets/icons/s-l.png
+    image_dark: assets/icons/s-l.png
   web: false

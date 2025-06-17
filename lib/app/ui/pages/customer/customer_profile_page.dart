@@ -16,7 +16,8 @@ class CustomerProfilePage extends GetView<CustomerController> {
   @override
   Widget build(BuildContext context) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController nameController = TextEditingController();
+    final TextEditingController firstNameController = TextEditingController();
+    final TextEditingController lastNameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
     final Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
 
@@ -27,7 +28,11 @@ class CustomerProfilePage extends GetView<CustomerController> {
     void initFormValues() {
       final profile = controller.customerProfile.value;
       if (profile != null) {
-        nameController.text = profile.name;
+        // Split the full name into first and last name
+        final nameParts = profile.name.split(' ');
+        firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
+        lastNameController.text =
+            nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
         phoneController.text = profile.phoneNumber ?? '';
         selectedDate.value = profile.dateOfBirth;
       }
@@ -354,7 +359,9 @@ class CustomerProfilePage extends GetView<CustomerController> {
                   title: const Text('Question about Rizq application'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    _showRizqAppQuestion();
+                    // _showRizqAppQuestion();
+                    _launchEmail(
+                        'support@rizq.com', 'Question about Rizq Application');
                   },
                 ),
               ],
@@ -401,88 +408,47 @@ class CustomerProfilePage extends GetView<CustomerController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Profile Image Section
-                  Center(
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[200],
-                          child: profile!.photoUrl != null &&
-                                  profile.photoUrl!.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(60),
-                                  child: CachedNetworkImage(
-                                    imageUrl: profile.photoUrl!,
-                                    fit: BoxFit.cover,
-                                    width: 120,
-                                    height: 120,
-                                    placeholder: (context, url) => Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) => Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.grey[400],
-                                    ),
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Colors.grey[400],
-                                ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: controller.isUploadingImage.value
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons.camera_alt,
-                                      color: Colors.white,
-                                    ),
-                              onPressed: controller.isUploadingImage.value
-                                  ? null
-                                  : () => controller.uploadProfileImage(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
                   // Profile Fields
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your name';
-                      }
-                      return null;
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: firstNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'First Name',
+                            labelStyle: TextStyle(fontSize: 12),
+                            prefixIcon: Icon(Icons.person),
+                            border: OutlineInputBorder(),
+                            hintStyle: TextStyle(fontSize: 12),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your first name';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: lastNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Last Name',
+                            labelStyle: TextStyle(fontSize: 12),
+                            prefixIcon: Icon(Icons.person),
+                            border: OutlineInputBorder(),
+                            hintStyle: TextStyle(fontSize: 12),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your last name';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
@@ -505,6 +471,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                     controller: phoneController,
                     decoration: const InputDecoration(
                       labelText: 'Phone Number',
+                      labelStyle: TextStyle(fontSize: 12),
                       prefixIcon: Icon(Icons.phone),
                       border: OutlineInputBorder(),
                     ),
@@ -518,6 +485,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                         child: InputDecorator(
                           decoration: const InputDecoration(
                             labelText: 'Date of Birth',
+                            labelStyle: TextStyle(fontSize: 12),
                             prefixIcon: Icon(Icons.calendar_today),
                             border: OutlineInputBorder(),
                           ),
@@ -549,8 +517,12 @@ class CustomerProfilePage extends GetView<CustomerController> {
                           ? null
                           : () {
                               if (formKey.currentState?.validate() ?? false) {
+                                // Combine first and last name
+                                final fullName =
+                                    '${firstNameController.text} ${lastNameController.text}'
+                                        .trim();
                                 controller.updateProfile(
-                                  name: nameController.text,
+                                  name: fullName,
                                   phoneNumber: phoneController.text,
                                   dateOfBirth: selectedDate.value,
                                 );
@@ -570,12 +542,34 @@ class CustomerProfilePage extends GetView<CustomerController> {
                               ),
                             )
                           : const Text(
-                              'SAVE CHANGES',
+                              'Save Changes',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Logout button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        authController.logout();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.red,
+                      ),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -615,20 +609,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        authController.logout();
-                      },
-                      // style: ElevatedButton.styleFrom(
-                      //   backgroundColor: Colors.red,
-                      //   foregroundColor: Colors.white,
-                      // ),
-                      child: const Text('LOGOUT'),
-                    ),
-                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -649,27 +630,29 @@ class CustomerProfilePage extends GetView<CustomerController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Profile Image Shimmer
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
               // Form fields shimmer
-              Container(
-                height: 56,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -704,6 +687,17 @@ class CustomerProfilePage extends GetView<CustomerController> {
               const SizedBox(height: 32),
 
               // Button shimmer
+              Container(
+                height: 48,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Logout button shimmer
               Container(
                 height: 48,
                 width: double.infinity,

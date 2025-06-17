@@ -11,14 +11,28 @@ class QrScannerPage extends StatefulWidget {
   State<StatefulWidget> createState() => _QrScannerPageState();
 }
 
-class _QrScannerPageState extends State<QrScannerPage> {
+class _QrScannerPageState extends State<QrScannerPage>
+    with SingleTickerProviderStateMixin {
   final MobileScannerController cameraController = MobileScannerController();
   final RestaurantController restaurantController = Get.find();
   bool isProcessing = false; // Local flag to prevent multiple scans processing
   bool isTorchOn = false; // <--- Add local state for torch
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+  }
 
   @override
   void dispose() {
+    _animationController.dispose();
     cameraController.dispose(); // Dispose the controller
     super.dispose();
   }
@@ -77,14 +91,16 @@ class _QrScannerPageState extends State<QrScannerPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Stack(
           children: [
-            MobileScanner(
-              controller: cameraController,
-              onDetect: _handleBarcodeDetection,
-              scanWindow: Rect.fromCenter(
-                center: Offset(
-                    size.width / 2, size.height * 0.5), // Center of the screen
-                width: scanAreaWidth,
-                height: scanAreaHeight,
+            Center(
+              child: MobileScanner(
+                controller: cameraController,
+                onDetect: _handleBarcodeDetection,
+                scanWindow: Rect.fromCenter(
+                  center: Offset((size.width - 32) / 2,
+                      size.height * 0.4), // Account for padding
+                  width: scanAreaWidth,
+                  height: scanAreaHeight,
+                ),
               ),
             ),
             // Torch Button - Positioned at top right
@@ -114,18 +130,121 @@ class _QrScannerPageState extends State<QrScannerPage> {
             ),
             // Custom Scan Window Overlay
             Positioned(
-              top: size.height * 0.5 - scanAreaHeight / 1.2,
-              left: size.width / 2 - scanAreaWidth / 2,
-              child: Container(
-                width: scanAreaWidth,
-                height: scanAreaHeight,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.green.withOpacity(0.8),
-                    width: 3.5,
+              top: size.height * 0.4 - scanAreaHeight / 2,
+              left: (size.width - 32) / 2 -
+                  scanAreaWidth / 2, // Account for padding
+              child: Stack(
+                children: [
+                  Container(
+                    width: scanAreaWidth,
+                    height: scanAreaHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                  // Corner decorations
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                          left: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                          right: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                          left: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                          right: BorderSide(
+                              color: Theme.of(context).primaryColor, width: 3),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Scanning line
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, _) {
+                      return Positioned(
+                        top: _animation.value * scanAreaHeight,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 2,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).primaryColor.withOpacity(0),
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withOpacity(0),
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
             // "Verifying Scan..." overlay
@@ -159,7 +278,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
             }),
             // Processing / Instruction Overlay
             Positioned(
-              bottom: 70,
+              top: size.height * 0.1,
               left: 20,
               right: 20,
               child: Center(

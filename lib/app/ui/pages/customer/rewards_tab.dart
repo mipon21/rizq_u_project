@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/customer_controller.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -20,6 +21,15 @@ class _RewardsTabState extends State<RewardsTab>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
+
+  // Define reward icons map for consistency with program settings
+  final Map<String, IconData> rewardIcons = {
+    "Free Dessert": Icons.icecream,
+    "Free Meal": Icons.restaurant,
+    "Free Drink": Icons.local_bar,
+    "Free Appetizer": Icons.fastfood,
+    "default": Icons.card_giftcard,
+  };
 
   @override
   bool get wantKeepAlive => true; // Keep the state when tab is not visible
@@ -136,7 +146,7 @@ class _RewardsTabState extends State<RewardsTab>
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: Colors.purple[700],
+                          backgroundColor: MColors.primary.withOpacity(0.8),
                           child: Icon(
                             rewardItem.isVerified
                                 ? Icons.verified
@@ -174,17 +184,17 @@ class _RewardsTabState extends State<RewardsTab>
                           decoration: BoxDecoration(
                             color: rewardItem.isVerified
                                 ? Colors.green[100]
-                                : Colors.purple[100],
+                                : MColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            rewardItem.isVerified ? 'REDEEMED' : 'CLAIMED',
+                            rewardItem.isVerified ? 'Claimed' : 'To Claim',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               color: rewardItem.isVerified
                                   ? Colors.green[800]
-                                  : Colors.purple[800],
+                                  : MColors.primary,
                             ),
                           ),
                         ),
@@ -194,14 +204,15 @@ class _RewardsTabState extends State<RewardsTab>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.purple[50],
+                        color: MColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            Icons.card_giftcard,
-                            color: Colors.purple[800],
+                            rewardIcons[rewardItem.rewardType] ??
+                                rewardIcons["default"]!,
+                            color: MColors.primary,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -209,7 +220,7 @@ class _RewardsTabState extends State<RewardsTab>
                               rewardItem.rewardType,
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: Colors.purple[800],
+                                color: MColors.primary,
                               ),
                             ),
                           ),
@@ -257,8 +268,8 @@ class _RewardsTabState extends State<RewardsTab>
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(6),
-                                  border:
-                                      Border.all(color: Colors.purple[300]!),
+                                  border: Border.all(
+                                      color: MColors.primary.withOpacity(0.5)!),
                                 ),
                                 child: Text(
                                   rewardItem.id.substring(0, 6).toUpperCase(),
@@ -266,7 +277,7 @@ class _RewardsTabState extends State<RewardsTab>
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 2,
-                                    color: Colors.purple[800],
+                                    color: MColors.primary,
                                   ),
                                 ),
                               ),

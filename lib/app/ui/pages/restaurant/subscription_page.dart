@@ -112,202 +112,73 @@ class SubscriptionPage extends GetView<RestaurantController> {
 
   Widget _buildStatusCard(BuildContext context, RestaurantProfileModel profile,
       Color statusColor, String statusText, IconData statusIcon) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(MSizes.cardRadiusMd),
+    String endDateText = '';
+    if (profile.subscriptionStatus == 'free_trial') {
+      endDateText = '${profile.remainingTrialDays} days remaining';
+    } else if (profile.subscriptionStatus == 'active' &&
+        profile.subscriptionEnd != null) {
+      endDateText =
+          'Ends on ${DateFormat('MMM d, yyyy').format(profile.subscriptionEnd!)}';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(MSizes.borderRadiusMd),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(MSizes.cardRadiusMd),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              MColors.primary.withOpacity(0.9),
-              MColors.primary,
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  statusIcon,
+                  color: statusColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Subscription Status',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          statusIcon,
-                          color: statusColor,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(MSizes.borderRadiusMd),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.card_membership,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            profile.subscriptionPlan.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _getPlanDescription(profile.subscriptionPlan),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (profile.subscriptionStatus == 'free_trial' &&
-                  profile.trialStartDate != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Trial Period',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    LinearPercentIndicator(
-                      animation: true,
-                      animationDuration: 1000,
-                      lineHeight: 10.0,
-                      percent: (60 - profile.remainingTrialDays) / 60,
-                      barRadius: const Radius.circular(16),
-                      progressColor: Colors.amber,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          DateFormat.yMMMd().format(profile.trialStartDate!),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          DateFormat.yMMMd().format(
-                            profile.trialStartDate!.add(
-                              const Duration(days: 60),
-                            ),
-                          ),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.amber.withOpacity(0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            color: Colors.amber,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${profile.remainingTrialDays} days remaining in trial',
-                            style: const TextStyle(
-                              color: Colors.amber,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
             ],
           ),
-        ),
+          if (endDateText.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              endDateText,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

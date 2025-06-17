@@ -374,9 +374,13 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       // Logout button
                       SizedBox(
-                        width: double.infinity,
+                        // width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () => authController.logout(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
                           child: Text(
                             'logout'.tr,
                             style: const TextStyle(

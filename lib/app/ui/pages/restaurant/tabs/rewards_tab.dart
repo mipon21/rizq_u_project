@@ -277,25 +277,30 @@ class RewardClaimsView extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    width: 130,
+                    width: 150,
                     height: 36,
+                    // padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: TextField(
                       controller: searchController,
-                      decoration: InputDecoration(
+                      decoration: InputDecoration().copyWith(
                         contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 12),
+                            vertical: 0, horizontal: 4),
                         hintText: 'Search code',
                         hintStyle:
-                            TextStyle(fontSize: 13, color: Colors.grey[600]),
-                        prefixIcon: Icon(Icons.search,
-                            size: 16, color: Colors.grey[600]),
-                        prefixIconConstraints:
-                            const BoxConstraints(maxWidth: 30, maxHeight: 30),
-                        border: InputBorder.none,
+                            TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(left: 10.0),
+                          child: Icon(Icons.search,
+                              size: 16, color: Colors.grey[600]),
+                        ),
+                        prefixIconConstraints: BoxConstraints(
+                          maxWidth: 80,
+                          maxHeight: 80,
+                        ),
                       ),
                       style: const TextStyle(fontSize: 13),
                       onChanged: (value) {
@@ -422,29 +427,29 @@ class RewardClaimsView extends StatelessWidget {
                                                 SizedBox(
                                                   width: 10,
                                                 ),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: MColors.primary
-                                                        .withOpacity(0.18),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                  child: Text(
-                                                    '${reward.pointsUsed} points',
-                                                    style: TextStyle(
-                                                      color: MColors.primary,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ),
+                                                // Container(
+                                                //   padding: const EdgeInsets
+                                                //       .symmetric(
+                                                //     horizontal: 10,
+                                                //     vertical: 6,
+                                                //   ),
+                                                //   decoration: BoxDecoration(
+                                                //     color: MColors.primary
+                                                //         .withOpacity(0.18),
+                                                //     borderRadius:
+                                                //         BorderRadius.circular(
+                                                //             20),
+                                                //   ),
+                                                //   child: Text(
+                                                //     '${reward.pointsUsed} points',
+                                                //     style: TextStyle(
+                                                //       color: MColors.primary,
+                                                //       fontWeight:
+                                                //           FontWeight.bold,
+                                                //       fontSize: 12,
+                                                //     ),
+                                                //   ),
+                                                // ),
                                               ],
                                             ),
                                             const SizedBox(height: 4),
@@ -678,13 +683,13 @@ class RecentScansView extends StatelessWidget {
                             : 'Unknown time',
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
-                      // trailing: Text(
-                      //   '+${scan['points']} point',
-                      //   style: const TextStyle(
-                      //     color: MColors.primary,
-                      //     fontWeight: FontWeight.bold,
-                      //   ),
-                      // ),
+                      trailing: Text(
+                        '+${scan['points']} point',
+                        style: const TextStyle(
+                          color: MColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),

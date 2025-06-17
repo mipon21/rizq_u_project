@@ -8,11 +8,13 @@ import 'package:intl/intl.dart'; // For date formatting
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:flutter/material.dart'; // For Material Design
 import 'package:image_picker/image_picker.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import '../routes/app_pages.dart';
 import '../ui/pages/customer/scan_history_page.dart';
 import '../utils/app_events.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:rizq/app/utils/snackbar_utils.dart';
 
 // Represents the data needed for a loyalty card display
 class LoyaltyCardModel {
@@ -341,13 +343,19 @@ class CustomerController extends GetxController {
           final programData = programDoc.data();
           final restaurantId = programDoc.id;
 
-          // Get restaurant details
+          // Get restaurant data (moved to the top of the loop)
           final restaurantDoc = await _firestore
               .collection('restaurants')
               .doc(restaurantId)
-              .get();
-          if (!restaurantDoc.exists || restaurantDoc.data() == null)
+              .get()
+              .timeout(const Duration(seconds: 5));
+
+          if (!restaurantDoc.exists) {
+            if (kDebugMode) {
+              print("Restaurant document not found for ID: $restaurantId");
+            }
             continue; // Skip if restaurant doesn't exist
+          }
 
           final restaurantData = restaurantDoc.data()!;
 
@@ -358,6 +366,16 @@ class CustomerController extends GetxController {
             final restaurantPoints =
                 pointsByRestaurant[restaurantId] as Map<String, dynamic>? ?? {};
             customerPoints = restaurantPoints['points'] as int? ?? 0;
+
+            if (kDebugMode) {
+              print(
+                  "DEBUG: Program ${programDoc.id} - restaurantId: $restaurantId, customerPoints: $customerPoints");
+            }
+
+            // Only show the program if the customer has at least 1 point
+            if (customerPoints == 0) {
+              continue;
+            }
 
             // Get lastUpdated timestamp if available
             if (restaurantPoints.containsKey('lastUpdated')) {
@@ -375,11 +393,20 @@ class CustomerController extends GetxController {
                 'Reward Ready!',
                 'You\'ve reached enough points for ${restaurantData['name']}! Claim your reward.',
                 duration: const Duration(seconds: 5),
-                backgroundColor: Colors.purple[100],
-                colorText: Colors.purple[900],
+                backgroundColor: Colors.white,
+                // borderColor: MColors.primary,
+                // borderWidth: 0.5,
+                // borderRadius: 10,
+                dismissDirection: DismissDirection.vertical,
+                isDismissible: true,
+                colorText: MColors.primary,
                 snackPosition: SnackPosition.TOP,
               );
             }
+          }
+          // Skip if customer has 0 points and therefore no scans at this restaurant
+          else if (customerPoints == 0) {
+            continue;
           }
 
           // Get the points required for this program
@@ -1417,52 +1444,78 @@ class CustomerController extends GetxController {
 
   // Check if customer has any rewards ready to claim
   Future<void> checkForRewardsReadyToClaim() async {
-    if (userUid.isEmpty) return;
-
     try {
-      final userDoc = await _firestore.collection('users').doc(userUid).get();
-      if (!userDoc.exists || userDoc.data() == null) return;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
-      final pointsByRestaurant =
-          userDoc.data()!['pointsByRestaurant'] as Map<String, dynamic>? ?? {};
-      List<String> rewardsReadyRestaurants = [];
+      // Only show snackbar if we're on the customer home tab
+      if (Get.currentRoute != Routes.CUSTOMER_HOME) return;
 
-      for (var entry in pointsByRestaurant.entries) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final pointsData = userData['points'] as Map<String, dynamic>? ?? {};
+      final rewardsReady = <String>[];
+
+      for (final entry in pointsData.entries) {
         final restaurantId = entry.key;
-        final pointsData = entry.value as Map<String, dynamic>;
-        final points = pointsData['points'] as int? ?? 0;
+        final points = entry.value as int? ?? 0;
 
-        if (points >= 10) {
-          // Get restaurant name
-          final restaurantDoc = await _firestore
-              .collection('restaurants')
-              .doc(restaurantId)
-              .get();
-          if (restaurantDoc.exists && restaurantDoc.data() != null) {
-            final restaurantName =
-                restaurantDoc.data()!['name'] ?? 'Unknown Restaurant';
-            rewardsReadyRestaurants.add(restaurantName);
-          }
+        final programDoc = await FirebaseFirestore.instance
+            .collection('restaurant_programs')
+            .doc(restaurantId)
+            .get();
 
-          // Only get the first restaurant with a ready reward to avoid overwhelming the user
-          if (rewardsReadyRestaurants.isNotEmpty) break;
+        if (!programDoc.exists) continue;
+
+        final programData = programDoc.data() as Map<String, dynamic>;
+        final requiredPoints = programData['required_points'] as int? ?? 0;
+
+        if (points >= requiredPoints) {
+          final restaurantName =
+              programData['restaurant_name'] as String? ?? 'Unknown Restaurant';
+          rewardsReady.add(restaurantName);
         }
       }
 
-      if (rewardsReadyRestaurants.isNotEmpty) {
-        Get.snackbar(
-          'Claim Your Reward!',
-          'You have a reward ready to claim at ${rewardsReadyRestaurants.first}. Claim it to continue earning points!',
-          duration: const Duration(seconds: 6),
-          backgroundColor: Colors.purple[100],
-          colorText: Colors.purple[900],
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(10),
-        );
+      if (rewardsReady.isNotEmpty) {
+        for (final restaurantName in rewardsReady) {
+          // Double check we're still on the customer home tab before showing snackbar
+          if (Get.currentRoute == Routes.CUSTOMER_HOME) {
+            Get.closeAllSnackbars();
+            Get.snackbar(
+              'Reward Available!',
+              'You have a reward ready to claim at $restaurantName',
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.white,
+              colorText: Colors.purple,
+              snackPosition: SnackPosition.TOP,
+              dismissDirection: DismissDirection.vertical,
+              isDismissible: true,
+              icon: const Icon(Icons.card_giftcard, color: Colors.purple),
+            );
+          }
+        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error checking for rewards ready to claim: $e");
+      print('Error checking for rewards: $e');
+      if (Get.currentRoute == Routes.CUSTOMER_HOME) {
+        Get.snackbar(
+          'Error',
+          'Failed to check for rewards',
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.red.shade50,
+          colorText: Colors.red.shade900,
+          snackPosition: SnackPosition.BOTTOM,
+          dismissDirection: DismissDirection.vertical,
+          isDismissible: true,
+          icon: const Icon(Icons.error_outline, color: Colors.red),
+        );
       }
     }
   }

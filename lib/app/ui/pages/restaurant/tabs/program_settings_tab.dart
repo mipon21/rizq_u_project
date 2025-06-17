@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:rizq/app/controllers/program_controller.dart';
 import 'package:intl/intl.dart';
 
@@ -58,7 +60,7 @@ class ProgramSettingsTab extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12 ),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.withOpacity(0.4),
@@ -71,16 +73,14 @@ class ProgramSettingsTab extends StatelessWidget {
                   children: [
                     Text('1 Scan = 1 Point',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold
-                        )),
+                            fontSize: 18,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold)),
                     Text('10 Points = 1 Reward',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold
-                        )),
+                            fontSize: 18,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -152,26 +152,26 @@ class ProgramSettingsTab extends StatelessWidget {
                   ],
                 );
               }),
-              const SizedBox(height: 15),
+              // const SizedBox(height: 15),
 
-              TextFormField(
-                controller: rewardTypeController,
-                decoration: InputDecoration(
-                  labelText: 'Reward Description (e.g., Free Coffee)',
-                  hintText: 'Enter custom reward...',
-                  prefixIcon: Icon(Icons.card_giftcard),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onChanged: (value) => selectedRewardType.value = value,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a reward description';
-                  }
-                  return null;
-                },
-              ),
+              // TextFormField(
+              //   controller: rewardTypeController,
+              //   decoration: InputDecoration(
+              //     labelText: 'Reward Description (e.g., Free Coffee)',
+              //     hintText: 'Enter custom reward...',
+              //     prefixIcon: Icon(Icons.card_giftcard),
+              //     border: OutlineInputBorder(
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //   ),
+              //   onChanged: (value) => selectedRewardType.value = value,
+              //   validator: (value) {
+              //     if (value == null || value.isEmpty) {
+              //       return 'Please enter a reward description';
+              //     }
+              //     return null;
+              //   },
+              // ),
               const SizedBox(height: 15),
               // Highlighted custom reward text
               Container(
@@ -249,15 +249,6 @@ class ProgramSettingsTab extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                'N.B.',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
                               Text(
                                 'Points Required for Reward:',
                                 style: TextStyle(

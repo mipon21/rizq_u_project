@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/customer_controller.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -21,16 +22,13 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab>
-    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-
     // Load data when first opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Try to load cached data first if available
@@ -51,20 +49,6 @@ class _HomeTabState extends State<HomeTab>
   }
 
   @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Refresh data when app comes back to foreground
-      widget.refreshData();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     super.build(context);
 
@@ -78,7 +62,7 @@ class _HomeTabState extends State<HomeTab>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Programmes de fidélité',
+                'Loyalty programs',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -164,15 +148,16 @@ class _HomeTabState extends State<HomeTab>
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   elevation: 0,
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: Colors.grey.shade200,
+                      color: MColors.grey.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -180,16 +165,16 @@ class _HomeTabState extends State<HomeTab>
                           children: [
                             // Restaurant logo or placeholder
                             CircleAvatar(
-                              radius: 20,
+                              radius: 16,
                               backgroundColor: _getAvatarColor(index),
                               child: program.logoUrl.isNotEmpty
                                   ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(16),
                                       child: CachedNetworkImage(
                                         imageUrl: program.logoUrl,
                                         fit: BoxFit.cover,
-                                        width: 40,
-                                        height: 40,
+                                        width: 32,
+                                        height: 32,
                                         placeholder: (context, url) =>
                                             Container(
                                           width: 40,
@@ -237,8 +222,6 @@ class _HomeTabState extends State<HomeTab>
                                     ),
                             ),
                             const SizedBox(width: 12),
-
-                            // Restaurant name and points
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,49 +231,51 @@ class _HomeTabState extends State<HomeTab>
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${program.customerPoints} / ${program.pointsRequired}',
+                                    '${program.customerPoints}/${program.pointsRequired} points',
                                     style: TextStyle(
+                                      fontSize: 14,
                                       color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-
-                            // Status tag
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: program.rewardReady
-                                    ? Colors.purple[100]
-                                    : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                program.rewardReady
-                                    ? 'Récompense\nobtenue'
-                                    : 'En cours',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: program.rewardReady
-                                      ? Colors.purple[900]
-                                      : Colors.grey[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                            program.rewardReady
+                                ? SizedBox(
+                                    width: 80,
+                                    child: ClaimButton(
+                                      program: program,
+                                      onPressed: () =>
+                                          widget.showClaimConfirmation(program),
+                                    ),
+                                  )
+                                : Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'In progress',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         // Progress bar
                         ClipRRect(
@@ -298,7 +283,7 @@ class _HomeTabState extends State<HomeTab>
                           child: LinearProgressIndicator(
                             value:
                                 program.customerPoints / program.pointsRequired,
-                            minHeight: 6,
+                            minHeight: 4,
                             backgroundColor: Colors.grey[200],
                             valueColor: AlwaysStoppedAnimation<Color>(
                               _getProgressColor(index, program.rewardReady),
@@ -306,7 +291,7 @@ class _HomeTabState extends State<HomeTab>
                           ),
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
 
                         // Reward text
                         Text(
@@ -318,17 +303,6 @@ class _HomeTabState extends State<HomeTab>
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-
-                        // Claim button (only if reward is ready)
-                        if (program.rewardReady)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: ClaimButton(
-                              program: program,
-                              onPressed: () =>
-                                  widget.showClaimConfirmation(program),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -351,15 +325,19 @@ class _HomeTabState extends State<HomeTab>
     return colors[index % colors.length]!;
   }
 
-  Color _getProgressColor(int index, bool isReady) {
-    if (isReady) return Colors.purple;
+  // Color _getProgressColor(int index, bool isReady) {
+  //   if (isReady) return Colors.purple;
 
-    final colors = [
-      Colors.orange,
-      Colors.purple[800],
-      Colors.red[400],
-    ];
-    return colors[index % colors.length]!;
+  //   final colors = [
+  //     Colors.orange,
+  //     Colors.purple[800],
+  //     Colors.red[400],
+  //   ];
+  //   return colors[index % colors.length]!;
+  // }
+
+  Color _getProgressColor(int index, bool isReady) {
+    return Theme.of(context).colorScheme.primary;
   }
 
   // Update the _buildLoadingShimmer method with a more realistic card loading effect
@@ -381,7 +359,7 @@ class _HomeTabState extends State<HomeTab>
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -389,14 +367,14 @@ class _HomeTabState extends State<HomeTab>
                   children: [
                     // Shimmer for restaurant logo
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 32,
+                      height: 32,
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     // Shimmer for restaurant name and points
                     Expanded(
                       child: Column(
@@ -404,16 +382,16 @@ class _HomeTabState extends State<HomeTab>
                         children: [
                           Container(
                             width: 120,
-                            height: 16,
+                            height: 14,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Container(
                             width: 80,
-                            height: 12,
+                            height: 10,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
@@ -425,7 +403,7 @@ class _HomeTabState extends State<HomeTab>
                     // Shimmer for status tag
                     Container(
                       width: 60,
-                      height: 24,
+                      height: 20,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(4),
@@ -433,34 +411,34 @@ class _HomeTabState extends State<HomeTab>
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 // Shimmer for progress bar
                 Container(
                   width: double.infinity,
-                  height: 6,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 // Shimmer for reward description
                 Container(
                   width: 150,
-                  height: 14,
+                  height: 12,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 // Shimmer for claim button
                 Container(
                   width: double.infinity,
-                  height: 40,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ],
@@ -502,7 +480,7 @@ class _ClaimButtonState extends State<ClaimButton>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Curves.easeInOut,
@@ -534,34 +512,31 @@ class _ClaimButtonState extends State<ClaimButton>
                       highlightColor: Colors.grey.shade100,
                       child: Container(
                         width: double.infinity,
-                        height: 40,
+                        height: 28,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                       ),
                     )
                   : ElevatedButton(
                       onPressed: widget.onPressed,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.shade700,
+                        backgroundColor: MColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        minimumSize: const Size(0, 28),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        elevation: 4,
+                        elevation: 1,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.card_giftcard, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'RÉCLAMER MAINTENANT',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      child: const Text(
+                        'CLAIM',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
             ),

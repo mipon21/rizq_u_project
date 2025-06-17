@@ -257,6 +257,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
         elevation: 8,
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -284,42 +288,53 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   void _showClaimConfirmation(dynamic program) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Réclamer ${program.rewardType}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Êtes-vous sûr de vouloir réclamer cette récompense chez ${program.restaurantName}?',
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Vos points seront remis à zéro après réclamation.',
-              style: TextStyle(
-                fontStyle: FontStyle.italic,
-                color: Colors.grey,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          dialogBackgroundColor: Colors.white,
+        ),
+        child: AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 8.0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text('Claim ${program.rewardType}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to claim this reward at ${program.restaurantName}?',
               ),
+              const SizedBox(height: 12),
+              const Text(
+                'Your points will be reset after claiming.',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                controller.claimReward(program);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade700,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ANNULER'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              controller.claimReward(program);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple.shade700,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('CONFIRMER'),
-          ),
-        ],
       ),
     );
   }
@@ -385,7 +400,27 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                 title: const Text('Question about Rizq application'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  _showRizqAppQuestion();
+
+                  // Get the profile data for customer information
+                  final profile =
+                      Get.find<CustomerController>().customerProfile.value;
+                  final userId = Get.find<AuthController>().currentUserUid;
+
+                  // Create a formatted message with footer containing customer information
+                  String messageWithFooter = '' +
+                      '\n\n---------------------------' +
+                      '\nSent from Rizq App' +
+                      '\nCustomer Information:' +
+                      '\nName: ${profile?.name ?? "N/A"}' +
+                      '\nEmail: ${profile?.email ?? "N/A"}' +
+                      '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
+                      '\nUser ID: $userId';
+
+                  // Launch email with complete information
+                  _launchEmailWithBody(
+                      email: 'support@rizq.com',
+                      subject: 'Question about Rizq Application',
+                      body: messageWithFooter);
                 },
               ),
             ],
@@ -495,9 +530,33 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                   title: Text(program.restaurantName),
                   subtitle: Text(
                       '${program.points}/${program.pointsRequired} points'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(context).pop();
-                    _fetchRestaurantEmailAndShowContactForm(program);
+
+                    // Get the profile data for customer information
+                    final profile = customerController.customerProfile.value;
+                    final userId = Get.find<AuthController>().currentUserUid;
+
+                    // Create a formatted message with footer containing customer information
+                    String messageWithFooter = '' +
+                        '\n\n---------------------------' +
+                        '\nSent from Rizq App' +
+                        '\nCustomer Information:' +
+                        '\nName: ${profile?.name ?? "N/A"}' +
+                        '\nEmail: ${profile?.email ?? "N/A"}' +
+                        '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
+                        '\nUser ID: $userId';
+
+                    // Get restaurant email
+                    String restaurantEmail =
+                        await _getRestaurantEmail(program.restaurantId);
+
+                    // Launch email with complete information
+                    _launchEmailWithBody(
+                        email: restaurantEmail,
+                        subject:
+                            'Question about loyalty program at ${program.restaurantName}',
+                        body: messageWithFooter);
                   },
                 );
               },

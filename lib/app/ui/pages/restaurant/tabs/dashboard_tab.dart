@@ -28,143 +28,161 @@ class DashboardTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Stats Card
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18)),
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          scanCount.toString(),
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: MColors.primary,
+            GestureDetector(
+              onTap: () {
+                DashboardPage.navigateToTab(3, rewardsSubtabIndex: 1);
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            scanCount.toString(),
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: MColors.primary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Scans this month',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 16,
+                          const SizedBox(width: 16),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 180,
-                      child: Obx(() {
-                        final chartData = controller.scanChartData;
-                        if (controller.isLoadingProfile.value) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-                        if (chartData.isEmpty) {
-                          return const Center(
-                              child: Text('No scan data for this month'));
-                        }
-                        final maxY = chartData.map((e) => e.y).fold<double>(
-                                0, (prev, y) => y > prev ? y : prev) +
-                            5;
-                        return LineChart(
-                          LineChartData(
-                            gridData: FlGridData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                axisNameWidget: const Text(
-                                  'Scans',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 12,
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Scans this month',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 180,
+                        child: Obx(() {
+                          final chartData = controller.scanChartData;
+                          if (controller.isLoadingProfile.value) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          if (chartData.isEmpty) {
+                            return const Center(
+                                child: Text('No scan data for this month'));
+                          }
+                          final maxY = chartData.map((e) => e.y).fold<double>(
+                                  0, (prev, y) => y > prev ? y : prev) +
+                              5;
+                          return GestureDetector(
+                            onTap: () {
+                              DashboardPage.navigateToTab(3,
+                                  rewardsSubtabIndex: 1);
+                            },
+                            child: LineChart(
+                              LineChartData(
+                                gridData: FlGridData(show: false),
+                                titlesData: FlTitlesData(
+                                  leftTitles: AxisTitles(
+                                    axisNameWidget: const Text(
+                                      'Scans',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    axisNameSize: 22,
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      interval: 50,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value % 50 == 0) {
+                                          return Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 12,
+                                            ),
+                                            textAlign: TextAlign.left,
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    axisNameWidget: const Text(
+                                      'Date',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    axisNameSize: 22,
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 30,
+                                      interval: 5,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value % 5 == 0) {
+                                          final date = DateTime.now().subtract(
+                                              Duration(
+                                                  days: 30 - value.toInt()));
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 8.0),
+                                            child: Text(
+                                              DateFormat('MM/dd').format(date),
+                                              style: const TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                  ),
+                                  rightTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  topTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
                                   ),
                                 ),
-                                axisNameSize: 22,
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  interval: 50,
-                                  getTitlesWidget: (value, meta) {
-                                    if (value % 50 == 0) {
-                                      return Text(
-                                        value.toInt().toString(),
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
-                                        ),
-                                        textAlign: TextAlign.left,
-                                      );
-                                    }
-                                    return const SizedBox.shrink();
-                                  },
-                                ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                axisNameWidget: const Text(
-                                  'Days',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 12,
+                                borderData: FlBorderData(show: false),
+                                minX: 0,
+                                maxX: 30,
+                                minY: 0,
+                                maxY: maxY,
+                                lineBarsData: [
+                                  LineChartBarData(
+                                    spots: chartData,
+                                    isCurved: true,
+                                    curveSmoothness: 0.4,
+                                    color: MColors.primary,
+                                    barWidth: 3,
+                                    dotData: FlDotData(show: true),
+                                    belowBarData: BarAreaData(
+                                      show: true,
+                                      color: MColors.primary.withOpacity(0.08),
+                                    ),
                                   ),
-                                ),
-                                axisNameSize: 22,
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 32,
-                                  interval: 5,
-                                  getTitlesWidget: (value, meta) {
-                                    if (value % 5 == 0 && value > 0) {
-                                      return Text(
-                                        '${value.toInt()}d',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
-                                        ),
-                                      );
-                                    }
-                                    return const SizedBox.shrink();
-                                  },
-                                ),
-                              ),
-                              topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
+                                ],
                               ),
                             ),
-                            borderData: FlBorderData(show: false),
-                            minX: chartData.first.x,
-                            maxX: chartData.last.x,
-                            minY: 0,
-                            maxY: maxY,
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: chartData,
-                                isCurved: true,
-                                curveSmoothness: 0.4,
-                                color: MColors.primary,
-                                barWidth: 3,
-                                dotData: FlDotData(show: true),
-                                belowBarData: BarAreaData(
-                                  show: true,
-                                  color: MColors.primary.withOpacity(0.08),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-                  ],
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
