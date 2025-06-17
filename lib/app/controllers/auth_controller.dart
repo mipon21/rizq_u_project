@@ -116,8 +116,13 @@ class AuthController extends GetxController {
   Future<void> register(String email, String password, String role) async {
     try {
       isLoading.value = true;
+      // Normalize role: treat 'restaurant' as 'restaurateur'
+      String normalizedRole = role;
+      if (role == 'restaurant') {
+        normalizedRole = 'restaurateur';
+      }
       // Validate role
-      if (role != 'customer' && role != 'restaurateur') {
+      if (normalizedRole != 'customer' && normalizedRole != 'restaurateur') {
         throw Exception('Invalid role specified.');
       }
 
@@ -135,14 +140,14 @@ class AuthController extends GetxController {
         await _firestore.collection('users').doc(user.uid).set({
           'uid': cleanString(user.uid),
           'email': cleanString(email),
-          'role': cleanString(role),
+          'role': cleanString(normalizedRole),
           'createdAt': FieldValue.serverTimestamp(),
           // Initialize points map for customers
-          if (role == 'customer') 'pointsByRestaurant': {},
+          if (normalizedRole == 'customer') 'pointsByRestaurant': {},
         });
 
         // Create restaurant document if restaurateur
-        if (role == 'restaurateur') {
+        if (normalizedRole == 'restaurateur') {
           await _firestore.collection('restaurants').doc(user.uid).set({
             'uid': cleanString(user.uid), // Link to auth UID
             'name': '', // To be set up later
@@ -164,10 +169,11 @@ class AuthController extends GetxController {
         }
 
         // Update local role and let the listener handle navigation
-        userRole.value = role;
+        userRole.value = normalizedRole;
         // No need to navigate manually, _setInitialScreen handles it via the stream
         if (kDebugMode) {
-          print('Registration successful for ${user.email}, role: $role');
+          print(
+              'Registration successful for ${user.email}, role: $normalizedRole');
         }
       }
     } on FirebaseAuthException catch (e) {
