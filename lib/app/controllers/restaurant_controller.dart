@@ -16,7 +16,7 @@ class RestaurantProfileModel {
   final String name;
   final String address;
   final String logoUrl;
-  final String subscriptionPlan; // e.g., 'free_trial', 'plan_100'
+  final String subscriptionPlan; // e.g., 'free_trial', custom plan ID
   final String subscriptionStatus; // e.g., 'active', 'inactive', 'free_trial'
   final int currentScanCount;
   final DateTime? trialStartDate;

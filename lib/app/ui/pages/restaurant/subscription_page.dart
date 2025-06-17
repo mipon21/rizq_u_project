@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:rizq/app/controllers/restaurant_controller.dart';
+import 'package:rizq/app/controllers/admin_controller.dart';
+import 'package:rizq/app/models/subscription_plan_model.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:rizq/app/utils/constants/sizes.dart';
 
@@ -11,6 +13,8 @@ class SubscriptionPage extends GetView<RestaurantController> {
 
   @override
   Widget build(BuildContext context) {
+    final adminController = Get.find<AdminController>();
+
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/icons/general-u.png', height: 70),
@@ -101,7 +105,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
               const SizedBox(height: 24),
               _buildUsageCard(context, profile),
               const SizedBox(height: 24),
-              _buildSubscriptionPlans(context, profile),
+              _buildSubscriptionPlans(context, profile, adminController),
               const SizedBox(height: 32),
             ],
           ),
@@ -184,21 +188,36 @@ class SubscriptionPage extends GetView<RestaurantController> {
   }
 
   Widget _buildUsageCard(BuildContext context, RestaurantProfileModel profile) {
-    // Calculate scan limit based on plan
+    // Get plan details from custom subscription plans
+    final adminController = Get.find<AdminController>();
+    SubscriptionPlanModel? currentPlan;
+
+    if (adminController.subscriptionPlans.isNotEmpty) {
+      try {
+        currentPlan = adminController.subscriptionPlans.firstWhere(
+          (plan) => plan.id == profile.subscriptionPlan,
+        );
+      } catch (e) {
+        // Plan not found, use default values
+        currentPlan = null;
+      }
+    }
+
+    // Calculate scan limit and usage percentage
     int scanLimit = 0;
     double usagePercentage = 0.0;
 
-    if (profile.subscriptionPlan == 'plan_100') {
-      scanLimit = 100;
-      usagePercentage = profile.currentScanCount / 100;
-    } else if (profile.subscriptionPlan == 'plan_250') {
-      scanLimit = 250;
-      usagePercentage = profile.currentScanCount / 250;
-    } else if (profile.subscriptionPlan == 'plan_unlimited') {
-      scanLimit = -1; // unlimited
-      usagePercentage = 0.0;
+    if (currentPlan != null) {
+      scanLimit = currentPlan.scanLimit;
+      if (scanLimit > 0) {
+        usagePercentage = profile.currentScanCount / scanLimit;
+      } else {
+        // Unlimited plan
+        scanLimit = -1;
+        usagePercentage = 0.0;
+      }
     } else {
-      // Free trial
+      // Fallback for free trial or unknown plans
       scanLimit = 100;
       usagePercentage = profile.currentScanCount / 100;
     }
@@ -333,8 +352,8 @@ class SubscriptionPage extends GetView<RestaurantController> {
     );
   }
 
-  Widget _buildSubscriptionPlans(
-      BuildContext context, RestaurantProfileModel profile) {
+  Widget _buildSubscriptionPlans(BuildContext context,
+      RestaurantProfileModel profile, AdminController adminController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -345,54 +364,72 @@ class SubscriptionPage extends GetView<RestaurantController> {
               ),
         ),
         const SizedBox(height: 16),
-        _buildPlanCard(
-          context,
-          name: 'Basic',
-          description: 'For small businesses',
-          features: [
-            'Up to 100 customer scans',
-            'Basic analytics',
-            'Email support'
-          ],
-          price: '\$99.99',
-          planCode: 'plan_100',
-          isCurrentPlan: profile.subscriptionPlan == 'plan_100',
-          color: Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildPlanCard(
-          context,
-          name: 'Standard',
-          description: 'Most popular choice',
-          features: [
-            'Up to 250 customer scans',
-            'Enhanced analytics',
-            'Priority email support',
-            'Custom branding'
-          ],
-          price: '\$199.99',
-          planCode: 'plan_250',
-          isCurrentPlan: profile.subscriptionPlan == 'plan_250',
-          color: Colors.green,
-          isRecommended: true,
-        ),
-        const SizedBox(height: 12),
-        _buildPlanCard(
-          context,
-          name: 'Premium',
-          description: 'For growing businesses',
-          features: [
-            'Unlimited customer scans',
-            'Advanced analytics & reporting',
-            'Priority support',
-            'API access',
-            'Dedicated account manager'
-          ],
-          price: '\$299.99',
-          planCode: 'plan_unlimited',
-          isCurrentPlan: profile.subscriptionPlan == 'plan_unlimited',
-          color: MColors.primary,
-        ),
+
+        // Show custom subscription plans
+        Obx(() {
+          if (adminController.isLoadingSubscriptionPlans.value) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          final activePlans = adminController.activeSubscriptionPlans;
+
+          if (activePlans.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.subscriptions_outlined,
+                        size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No subscription plans available',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please contact support for available plans',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return Column(
+            children: activePlans.asMap().entries.map((entry) {
+              final index = entry.key;
+              final plan = entry.value;
+              final isCurrentPlan = profile.subscriptionPlan == plan.id;
+
+              return Column(
+                children: [
+                  _buildCustomPlanCard(
+                    context,
+                    plan: plan,
+                    isCurrentPlan: isCurrentPlan,
+                    isRecommended: index == 1, // Make second plan recommended
+                  ),
+                  if (index < activePlans.length - 1)
+                    const SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
+          );
+        }),
+
         const SizedBox(height: 24),
         if (!profile.isSubscriptionActive) ...[
           SizedBox(
@@ -441,17 +478,21 @@ class SubscriptionPage extends GetView<RestaurantController> {
     );
   }
 
-  Widget _buildPlanCard(
+  Widget _buildCustomPlanCard(
     BuildContext context, {
-    required String name,
-    required String description,
-    required List<String> features,
-    required String price,
-    required String planCode,
+    required SubscriptionPlanModel plan,
     required bool isCurrentPlan,
-    required Color color,
     bool isRecommended = false,
   }) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      MColors.primary,
+      Colors.orange,
+      Colors.purple
+    ];
+    final color = colors[plan.id.hashCode % colors.length];
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -471,39 +512,41 @@ class SubscriptionPage extends GetView<RestaurantController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            plan.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                          const SizedBox(height: 4),
+                          Text(
+                            plan.description,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          price,
+                          plan.formattedPrice,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Text(
-                          '/month',
-                          style: TextStyle(
+                        Text(
+                          'for ${plan.formattedDuration}',
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
                           ),
@@ -515,25 +558,55 @@ class SubscriptionPage extends GetView<RestaurantController> {
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 8),
-                ...features.map((feature) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: color,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              feature,
-                              style: const TextStyle(fontSize: 14),
+
+                // Plan details
+                Row(
+                  children: [
+                    _buildPlanDetailChip(
+                      icon: Icons.qr_code_scanner,
+                      label: plan.formattedScanLimit,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPlanDetailChip(
+                      icon: Icons.calendar_today,
+                      label: plan.formattedDuration,
+                      color: Colors.orange,
+                    ),
+                  ],
+                ),
+
+                if (plan.features.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Features:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...plan.features.map((feature) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: color,
+                              size: 16,
                             ),
-                          ),
-                        ],
-                      ),
-                    )),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                feature,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+
                 const SizedBox(height: 16),
                 if (isCurrentPlan)
                   Container(
@@ -585,6 +658,36 @@ class SubscriptionPage extends GetView<RestaurantController> {
     );
   }
 
+  Widget _buildPlanDetailChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSubscriptionDialog(
       BuildContext context, RestaurantProfileModel profile) {
     // For demonstration, show a mock subscription dialog
@@ -632,21 +735,6 @@ class SubscriptionPage extends GetView<RestaurantController> {
         ],
       ),
     );
-  }
-
-  String _getPlanDescription(String planCode) {
-    switch (planCode) {
-      case 'plan_100':
-        return 'Basic Plan - Up to 100 scans';
-      case 'plan_250':
-        return 'Standard Plan - Up to 250 scans';
-      case 'plan_unlimited':
-        return 'Premium Plan - Unlimited scans';
-      case 'free_trial':
-        return 'Free Trial - Up to 100 scans';
-      default:
-        return 'Custom Plan';
-    }
   }
 
   Color _getProgressColor(double percentage) {

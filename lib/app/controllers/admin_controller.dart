@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
+import '../models/subscription_plan_model.dart';
 
 class AdminController extends GetxController {
   static AdminController get instance => Get.find();
@@ -34,9 +35,10 @@ class AdminController extends GetxController {
   final RxInt activeSubscriptions = 0.obs;
   final RxInt pendingApprovals = 0.obs;
 
-  // Subscription plan pricing
-  final RxMap<String, double> planPrices = <String, double>{}.obs;
-  final RxBool isPricingLoading = false.obs;
+  // Custom subscription plans
+  final RxList<SubscriptionPlanModel> subscriptionPlans =
+      <SubscriptionPlanModel>[].obs;
+  final RxBool isLoadingSubscriptionPlans = false.obs;
 
   // Observable variables for loyalty program data
   final RxList<Map<String, dynamic>> loyaltyPrograms =
@@ -74,8 +76,8 @@ class AdminController extends GetxController {
     super.onInit();
     // Check if user is already logged in as admin
     checkAdminAuth();
-    // Load subscription plan prices
-    loadPlanPrices();
+    // Load custom subscription plans
+    loadSubscriptionPlans();
     // Load admin notifications
     loadNotifications();
   }
@@ -237,93 +239,418 @@ class AdminController extends GetxController {
     }
   }
 
-  // Load subscription plan prices from Firestore
-  Future<void> loadPlanPrices() async {
-    isPricingLoading.value = true;
+  // Load custom subscription plans
+  Future<void> loadSubscriptionPlans() async {
+    isLoadingSubscriptionPlans.value = true;
     try {
-      // Get default plans document from subscription_plans collection
-      final plansDoc = await _firestore
-          .collection('subscription_plans')
-          .doc('default')
+      final snapshot = await _firestore
+          .collection('custom_subscription_plans')
+          .orderBy('createdAt', descending: true)
           .get();
 
-      if (plansDoc.exists) {
-        // If document exists, load prices
-        final data = plansDoc.data() as Map<String, dynamic>;
-
-        // Initialize with defaults if not present
-        planPrices.value = {
-          'plan_100': (data['plan_100'] as num?)?.toDouble() ?? 99.99,
-          'plan_250': (data['plan_250'] as num?)?.toDouble() ?? 199.99,
-          'plan_unlimited':
-              (data['plan_unlimited'] as num?)?.toDouble() ?? 299.99,
-        };
-      } else {
-        // If no document exists, create one with default prices
-        await _firestore.collection('subscription_plans').doc('default').set({
-          'plan_100': 99.99,
-          'plan_250': 199.99,
-          'plan_unlimited': 299.99,
-          'updatedAt': Timestamp.now(),
-        });
-
-        // Set default prices in observable
-        planPrices.value = {
-          'plan_100': 99.99,
-          'plan_250': 199.99,
-          'plan_unlimited': 299.99,
-        };
+      final List<SubscriptionPlanModel> plans = [];
+      for (var doc in snapshot.docs) {
+        plans.add(SubscriptionPlanModel.fromFirestore(doc));
       }
+
+      subscriptionPlans.value = plans;
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading plan prices: $e');
+        print('Error loading subscription plans: $e');
       }
       Get.snackbar(
         'Error',
-        'Failed to load subscription plan prices',
+        'Failed to load subscription plans',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
     } finally {
-      isPricingLoading.value = false;
+      isLoadingSubscriptionPlans.value = false;
     }
   }
 
-  // Update subscription plan prices
-  Future<void> updatePlanPrices(Map<String, double> newPrices) async {
-    isPricingLoading.value = true;
+  // Create a new subscription plan
+  Future<void> createSubscriptionPlan({
+    required String name,
+    required String description,
+    required int scanLimit,
+    required int durationDays,
+    required double price,
+    String currency = 'MAD',
+    required List<String> features,
+  }) async {
     try {
-      await _firestore.collection('subscription_plans').doc('default').update({
-        'plan_100': newPrices['plan_100'],
-        'plan_250': newPrices['plan_250'],
-        'plan_unlimited': newPrices['plan_unlimited'],
-        'updatedAt': Timestamp.now(),
-      });
+      final plan = SubscriptionPlanModel(
+        id: '', // Will be set by Firestore
+        name: name,
+        description: description,
+        scanLimit: scanLimit,
+        durationDays: durationDays,
+        price: price,
+        currency: currency,
+        isActive: true,
+        createdAt: DateTime.now(),
+        features: features,
+      );
 
-      // Update local observable
-      planPrices.value = newPrices;
+      await _firestore
+          .collection('custom_subscription_plans')
+          .add(plan.toFirestore());
+
+      // Reload plans
+      await loadSubscriptionPlans();
 
       Get.snackbar(
         'Success',
-        'Subscription plan prices updated successfully',
+        'Subscription plan created successfully',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating plan prices: $e');
+        print('Error creating subscription plan: $e');
       }
       Get.snackbar(
         'Error',
-        'Failed to update subscription plan prices',
+        'Failed to create subscription plan: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-    } finally {
-      isPricingLoading.value = false;
+    }
+  }
+
+  // Update a subscription plan
+  Future<void> updateSubscriptionPlan({
+    required String planId,
+    required String name,
+    required String description,
+    required int scanLimit,
+    required int durationDays,
+    required double price,
+    String currency = 'MAD',
+    required bool isActive,
+    required List<String> features,
+  }) async {
+    try {
+      final updatedPlan = SubscriptionPlanModel(
+        id: planId,
+        name: name,
+        description: description,
+        scanLimit: scanLimit,
+        durationDays: durationDays,
+        price: price,
+        currency: currency,
+        isActive: isActive,
+        createdAt: DateTime.now(), // Keep original creation date
+        updatedAt: DateTime.now(),
+        features: features,
+      );
+
+      await _firestore
+          .collection('custom_subscription_plans')
+          .doc(planId)
+          .update(updatedPlan.toFirestore());
+
+      // Reload plans
+      await loadSubscriptionPlans();
+
+      Get.snackbar(
+        'Success',
+        'Subscription plan updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating subscription plan: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to update subscription plan: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Delete a subscription plan
+  Future<void> deleteSubscriptionPlan(String planId) async {
+    try {
+      await _firestore
+          .collection('custom_subscription_plans')
+          .doc(planId)
+          .delete();
+
+      // Reload plans
+      await loadSubscriptionPlans();
+
+      Get.snackbar(
+        'Success',
+        'Subscription plan deleted successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting subscription plan: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to delete subscription plan: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Toggle subscription plan active status
+  Future<void> toggleSubscriptionPlanStatus(
+      String planId, bool isActive) async {
+    try {
+      await _firestore
+          .collection('custom_subscription_plans')
+          .doc(planId)
+          .update({
+        'isActive': isActive,
+        'updatedAt': Timestamp.now(),
+      });
+
+      // Reload plans
+      await loadSubscriptionPlans();
+
+      Get.snackbar(
+        'Success',
+        'Subscription plan status updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error toggling subscription plan status: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to update subscription plan status: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Get active subscription plans (for restaurants to see)
+  List<SubscriptionPlanModel> get activeSubscriptionPlans {
+    return subscriptionPlans.where((plan) => plan.isActive).toList();
+  }
+
+  // Assign subscription plan to restaurant
+  Future<void> assignSubscriptionPlanToRestaurant({
+    required String restaurantId,
+    required String planId,
+    required int durationDays,
+  }) async {
+    try {
+      // Get the subscription plan details
+      final plan = subscriptionPlans.firstWhere((p) => p.id == planId);
+
+      // Calculate start and end dates
+      final now = DateTime.now();
+      final endDate = now.add(Duration(days: durationDays));
+
+      // Update restaurant subscription
+      await _firestore.collection('restaurants').doc(restaurantId).update({
+        'subscriptionPlan': planId,
+        'subscriptionStatus': 'active',
+        'subscriptionStart': Timestamp.fromDate(now),
+        'subscriptionEnd': Timestamp.fromDate(endDate),
+        'currentScanCount': 0, // Reset scan count for new subscription
+        'updatedAt': Timestamp.now(),
+      });
+
+      // Record subscription assignment
+      await _firestore.collection('subscriptions').add({
+        'restaurantId': restaurantId,
+        'planId': planId,
+        'planName': plan.name,
+        'planPrice': plan.price,
+        'planCurrency': plan.currency,
+        'durationDays': durationDays,
+        'startDate': Timestamp.fromDate(now),
+        'endDate': Timestamp.fromDate(endDate),
+        'status': 'active',
+        'assignedBy': _auth.currentUser?.uid,
+        'assignedAt': Timestamp.now(),
+        'amountPaid': 0.0, // Admin assignment, no payment
+        'paymentStatus': 'admin_assigned',
+      });
+
+      Get.snackbar(
+        'Success',
+        'Subscription plan assigned successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error assigning subscription plan: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to assign subscription plan: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Extend restaurant subscription
+  Future<void> extendRestaurantSubscription({
+    required String restaurantId,
+    required int additionalDays,
+  }) async {
+    try {
+      // Get current restaurant data
+      final restaurantDoc =
+          await _firestore.collection('restaurants').doc(restaurantId).get();
+
+      if (!restaurantDoc.exists) {
+        throw 'Restaurant not found';
+      }
+
+      final data = restaurantDoc.data()!;
+      final currentEndDate = data['subscriptionEnd'] as Timestamp?;
+
+      if (currentEndDate == null) {
+        throw 'No active subscription found';
+      }
+
+      // Calculate new end date
+      final newEndDate =
+          currentEndDate.toDate().add(Duration(days: additionalDays));
+
+      // Update restaurant subscription
+      await _firestore.collection('restaurants').doc(restaurantId).update({
+        'subscriptionEnd': Timestamp.fromDate(newEndDate),
+        'updatedAt': Timestamp.now(),
+      });
+
+      // Record extension
+      await _firestore.collection('subscriptions').add({
+        'restaurantId': restaurantId,
+        'planId': data['subscriptionPlan'],
+        'planName': data['subscriptionPlan'],
+        'durationDays': additionalDays,
+        'startDate': Timestamp.now(),
+        'endDate': Timestamp.fromDate(newEndDate),
+        'status': 'extension',
+        'assignedBy': _auth.currentUser?.uid,
+        'assignedAt': Timestamp.now(),
+        'amountPaid': 0.0,
+        'paymentStatus': 'admin_extended',
+        'note': 'Subscription extended by admin',
+      });
+
+      Get.snackbar(
+        'Success',
+        'Subscription extended successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error extending subscription: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to extend subscription: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Bulk assign subscription plan to multiple restaurants
+  Future<void> bulkAssignSubscriptionPlan({
+    required List<String> restaurantIds,
+    required String planId,
+    required int durationDays,
+  }) async {
+    try {
+      // Get the subscription plan details
+      final plan = subscriptionPlans.firstWhere((p) => p.id == planId);
+
+      // Calculate start and end dates
+      final now = DateTime.now();
+      final endDate = now.add(Duration(days: durationDays));
+
+      // Use batch write for better performance
+      final batch = _firestore.batch();
+
+      for (final restaurantId in restaurantIds) {
+        // Update restaurant subscription
+        final restaurantRef =
+            _firestore.collection('restaurants').doc(restaurantId);
+        batch.update(restaurantRef, {
+          'subscriptionPlan': planId,
+          'subscriptionStatus': 'active',
+          'subscriptionStart': Timestamp.fromDate(now),
+          'subscriptionEnd': Timestamp.fromDate(endDate),
+          'currentScanCount': 0, // Reset scan count for new subscription
+          'updatedAt': Timestamp.now(),
+        });
+
+        // Record subscription assignment
+        final subscriptionRef = _firestore.collection('subscriptions').doc();
+        batch.set(subscriptionRef, {
+          'restaurantId': restaurantId,
+          'planId': planId,
+          'planName': plan.name,
+          'planPrice': plan.price,
+          'planCurrency': plan.currency,
+          'durationDays': durationDays,
+          'startDate': Timestamp.fromDate(now),
+          'endDate': Timestamp.fromDate(endDate),
+          'status': 'active',
+          'assignedBy': _auth.currentUser?.uid,
+          'assignedAt': Timestamp.now(),
+          'amountPaid': 0.0, // Admin assignment, no payment
+          'paymentStatus': 'admin_assigned',
+        });
+      }
+
+      // Commit the batch
+      await batch.commit();
+
+      Get.snackbar(
+        'Success',
+        'Subscription plan assigned to ${restaurantIds.length} restaurants successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error bulk assigning subscription plan: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to assign subscription plan: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 

@@ -11,7 +11,7 @@ import '../ui/pages/admin/customer_management_page.dart';
 import '../ui/pages/admin/dashboard_page.dart';
 import '../ui/pages/admin/reports_page.dart';
 import '../ui/pages/admin/restaurant_management_page.dart';
-import '../ui/pages/admin/subscription_management_page.dart';
+import '../ui/pages/admin/custom_subscription_plans_page.dart';
 import '../ui/pages/auth/login_page.dart';
 import '../ui/pages/auth/register_page.dart';
 import '../ui/pages/auth/forgot_password_page.dart';
@@ -24,7 +24,6 @@ import '../ui/pages/restaurant/dashboard_page.dart';
 import '../ui/pages/restaurant/tabs/qr_scanner_page.dart';
 import '../ui/pages/restaurant/subscription_page.dart';
 import '../ui/pages/splash_page.dart';
-import '../ui/pages/admin/plan_pricing_page.dart';
 
 part 'app_routes.dart';
 
@@ -126,20 +125,14 @@ class AppPages {
       middlewares: adminMiddleware,
     ),
     GetPage(
-      name: Routes.ADMIN_SUBSCRIPTIONS,
-      page: () => const SubscriptionManagementPage(),
-      binding: AdminBinding(),
-      middlewares: adminMiddleware,
-    ),
-    GetPage(
       name: Routes.ADMIN_REPORTS,
       page: () => const ReportsPage(),
       binding: AdminBinding(),
       middlewares: adminMiddleware,
     ),
     GetPage(
-      name: Routes.ADMIN_PLAN_PRICING,
-      page: () => const PlanPricingPage(),
+      name: Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS,
+      page: () => const CustomSubscriptionPlansPage(),
       binding: AdminBinding(),
       middlewares: adminMiddleware,
     ),

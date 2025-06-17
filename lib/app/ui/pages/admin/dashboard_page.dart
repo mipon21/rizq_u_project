@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../utils/constants/colors.dart';
+import '../../../utils/sample_data_creator.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../ui/theme/widget_themes/admin_notification_panel.dart';
+import '../../../utils/subscription_migration_helper.dart';
 
 class AdminDashboardPage extends GetView<AdminController> {
   const AdminDashboardPage({Key? key}) : super(key: key);
@@ -177,9 +179,10 @@ class AdminDashboardPage extends GetView<AdminController> {
                   ),
                   const SizedBox(width: 12),
                   _buildActionButton(
-                    icon: Icons.attach_money,
-                    label: 'Update Pricing',
-                    onPressed: () => Get.toNamed(Routes.ADMIN_PLAN_PRICING),
+                    icon: Icons.subscriptions,
+                    label: 'Custom Plans',
+                    onPressed: () =>
+                        Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS),
                   ),
                   const SizedBox(width: 12),
                   _buildActionButton(
@@ -281,14 +284,6 @@ class AdminDashboardPage extends GetView<AdminController> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.payment),
-            title: const Text('Subscriptions'),
-            onTap: () {
-              Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_SUBSCRIPTIONS);
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.bar_chart),
             title: const Text('Reports'),
             onTap: () {
@@ -297,11 +292,11 @@ class AdminDashboardPage extends GetView<AdminController> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.attach_money),
-            title: const Text('Plan Pricing'),
+            leading: const Icon(Icons.subscriptions),
+            title: const Text('Custom Plans'),
             onTap: () {
               Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_PLAN_PRICING);
+              Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS);
             },
           ),
           const Divider(),

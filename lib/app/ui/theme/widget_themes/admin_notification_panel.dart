@@ -179,7 +179,7 @@ class AdminNotificationPanel extends StatelessWidget {
       if (Get.isBottomSheetOpen ?? false) {
         Get.back(); // Close notification panel
       }
-      Get.toNamed(Routes.ADMIN_SUBSCRIPTIONS);
+      Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS);
     }
   }
 }

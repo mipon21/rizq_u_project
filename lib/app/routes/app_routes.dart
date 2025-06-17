@@ -27,7 +27,6 @@ abstract class Routes {
   static const ADMIN_DASHBOARD = '/admin/dashboard';
   static const ADMIN_RESTAURANTS = '/admin/restaurants';
   static const ADMIN_CUSTOMERS = '/admin/customers';
-  static const ADMIN_SUBSCRIPTIONS = '/admin/subscriptions';
   static const ADMIN_REPORTS = '/admin/reports';
-  static const ADMIN_PLAN_PRICING = '/admin/plan-pricing';
+  static const ADMIN_CUSTOM_SUBSCRIPTION_PLANS = '/admin/custom-subscription-plans';
 }
