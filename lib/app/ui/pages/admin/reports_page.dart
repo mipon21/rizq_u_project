@@ -385,7 +385,7 @@ class ReportsPage extends GetView<AdminController> {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 24),
+              Icon(icon, color: color, size: (24).isFinite && 24 > 0 ? 24 : 24),
               const SizedBox(width: 8),
               Text(
                 title,
