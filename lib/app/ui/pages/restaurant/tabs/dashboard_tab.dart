@@ -7,6 +7,7 @@ import 'package:rizq/app/ui/pages/restaurant/subscription_page.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:rizq/app/ui/pages/restaurant/dashboard_page.dart';
+import 'package:rizq/app/controllers/admin_controller.dart';
 
 class DashboardTab extends StatelessWidget {
   const DashboardTab({Key? key}) : super(key: key);
@@ -270,32 +271,82 @@ class DashboardTab extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: MColors.primary,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  'Starter',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              const Text(
-                                'Free Trial',
-                                style: TextStyle(
-                                  color: Color(0xFFB2A4D4),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 30),
+                              Obx(() {
+                                final profile =
+                                    controller.restaurantProfile.value;
+                                if (profile == null) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+
+                                // Determine package / plan name
+                                String packageName;
+                                if (profile.subscriptionStatus ==
+                                    'free_trial') {
+                                  packageName = 'Free Trial';
+                                } else {
+                                  // Try to fetch readable name from admin controller
+                                  String fallbackName = profile
+                                          .subscriptionPlan.capitalizeFirst ??
+                                      profile.subscriptionPlan;
+                                  try {
+                                    final adminController =
+                                        Get.find<AdminController>();
+                                    final plan = adminController
+                                        .subscriptionPlans
+                                        .firstWhere((p) =>
+                                            p.id == profile.subscriptionPlan);
+                                    fallbackName = plan.name;
+                                  } catch (_) {
+                                    // Keep fallbackName
+                                  }
+                                  packageName = fallbackName;
+                                }
+
+                                // Determine end date / remaining days text
+                                String endDateText = '';
+                                if (profile.subscriptionStatus ==
+                                    'free_trial') {
+                                  endDateText =
+                                      '${profile.remainingTrialDays} days remaining';
+                                } else if (profile.subscriptionEnd != null) {
+                                  endDateText = 'Ends on '
+                                      '${DateFormat('MMM d, yyyy').format(profile.subscriptionEnd!)}';
+                                }
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: MColors.primary,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        packageName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 15),
+                                    if (endDateText.isNotEmpty)
+                                      Text(
+                                        endDateText,
+                                        style: const TextStyle(
+                                          color: Color(0xFFB2A4D4),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    const SizedBox(height: 30),
+                                  ],
+                                );
+                              }),
                             ],
                           ),
                         ),

@@ -219,7 +219,7 @@ class RewardClaimsView extends StatelessWidget {
                                         .startsWith('Success')
                                     ? MColors.primary
                                     : MColors.primary.withOpacity(0.7),
-                                size: 16,
+                                size: (16).isFinite && 16 > 0 ? 16 : 16,
                               ),
                               const SizedBox(width: 6),
                               Expanded(

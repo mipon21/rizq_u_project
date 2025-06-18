@@ -87,7 +87,13 @@ class CachedImageWidget extends StatelessWidget {
       child: Icon(
         Icons.image_not_supported_outlined,
         color: Colors.grey[400],
-        size: (width != null && height != null) ? (width! + height!) / 6 : 24,
+        size: ((width != null && height != null) &&
+                (width!.isFinite && height!.isFinite) &&
+                (width! > 0 && height! > 0))
+            ? ((width! + height!) / 6).isFinite && ((width! + height!) / 6) > 0
+                ? (width! + height!) / 6
+                : 24
+            : 24,
       ),
     );
   }
@@ -171,7 +177,7 @@ class CircularCachedImage extends StatelessWidget {
       child: Icon(
         Icons.image_not_supported_outlined,
         color: Colors.grey[400],
-        size: radius,
+        size: (radius.isFinite && radius > 0) ? radius : 24,
       ),
     );
   }

@@ -132,15 +132,15 @@ class _ProfileTabState extends State<ProfileTab> {
                   const SizedBox(height: 30),
 
                   // Restaurant name field (editable)
-                  _buildEditableField(
-                    context,
-                    'Restaurant Name',
-                    nameController,
-                    isRequired: true,
-                    validator: (value) => value?.isEmpty ?? true
-                        ? 'Restaurant name is required'
-                        : null,
-                  ),
+                  // _buildEditableField(
+                  //   context,
+                  //   'Restaurant Name',
+                  //   nameController,
+                  //   isRequired: true,
+                  //   validator: (value) => value?.isEmpty ?? true
+                  //       ? 'Restaurant name is required'
+                  //       : null,
+                  // ),
 
                   // Email field (Non Edidable)
                   _buildEditableField(
@@ -152,64 +152,103 @@ class _ProfileTabState extends State<ProfileTab> {
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Email is required' : null,
                   ),
+                  const SizedBox(height: 25),
 
-                  // Logo field
-                  _buildLabelWithDivider('Logo'),
-                  InkWell(
-                    onTap: () {
-                      controller.pickAndUploadLogo();
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: profile.logoUrl.isNotEmpty
-                                ? CachedImageWidget(
-                                    imageUrl: profile.logoUrl,
-                                    width: 24,
-                                    height: 24,
-                                    borderRadius: BorderRadius.circular(2),
-                                    fit: BoxFit.cover,
-                                  )
-                                : Icon(Icons.image,
-                                    color: Colors.grey[400], size: 16),
+                  // Restaurant Registration Information (Read-only)
+                  _buildLabelWithDivider('Registration Information'),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Restaurant Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 10),
-                          Obx(() => controller.isLoadingUpload.value
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: MColors.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildReadOnlyField('Restaurant Name', profile.name),
+                        _buildReadOnlyField(
+                            'Owner Name', profile.ownerName ?? 'Not provided'),
+                        _buildReadOnlyField('Support Email',
+                            profile.supportEmail ?? 'Not provided'),
+                        _buildReadOnlyField(
+                            'Bank Details', profile.bankDetails),
+                        _buildReadOnlyField('IBAN Number',
+                            profile.ibanNumber ?? 'Not provided'),
+                        const SizedBox(height: 16),
+
+                        // National ID Images
+                        if (profile.ownerNationalIdFront != null ||
+                            profile.ownerNationalIdBack != null) ...[
+                          const Text(
+                            'National ID Documents',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              if (profile.ownerNationalIdFront != null)
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      const Text('Front Side',
+                                          style: TextStyle(fontSize: 12)),
+                                      const SizedBox(height: 4),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: CachedImageWidget(
+                                          imageUrl:
+                                              profile.ownerNationalIdFront!,
+                                          width: double.infinity,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                )
-                              : Text(
-                                  'Change logo',
-                                  style: TextStyle(
-                                    color: MColors.primary,
-                                    fontSize: 14,
+                                ),
+                              if (profile.ownerNationalIdFront != null &&
+                                  profile.ownerNationalIdBack != null)
+                                const SizedBox(width: 8),
+                              if (profile.ownerNationalIdBack != null)
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      const Text('Back Side',
+                                          style: TextStyle(fontSize: 12)),
+                                      const SizedBox(height: 4),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: CachedImageWidget(
+                                          imageUrl:
+                                              profile.ownerNationalIdBack!,
+                                          width: double.infinity,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                )),
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 25),
-
                   // Subscription section
                   _buildLabelWithDivider('Subscription'),
                   Container(
@@ -320,52 +359,52 @@ class _ProfileTabState extends State<ProfileTab> {
 
                   const SizedBox(height: 25),
 
-                  // Banking details (editable)
-                  _buildLabelWithDivider('Banking Details'),
-                  _buildEditableField(
-                    context,
-                    null,
-                    bankDetailsController,
-                    hint: 'Enter your bank IBAN number',
-                  ),
+                  // // Banking details (editable)
+                  // _buildLabelWithDivider('Banking Details'),
+                  // _buildEditableField(
+                  //   context,
+                  //   null,
+                  //   bankDetailsController,
+                  //   hint: 'Enter your bank IBAN number',
+                  // ),
 
-                  const SizedBox(height: 10),
+                  // const SizedBox(height: 10),
 
-                  // Update button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState?.validate() ?? false) {
-                          // Save all changes
-                          controller.updateRestaurantDetails(
-                            nameController.text,
-                            emailController.text,
-                          );
+                  // // Update button
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: ElevatedButton(
+                  //     onPressed: () {
+                  //       if (formKey.currentState?.validate() ?? false) {
+                  //         // Save all changes
+                  //         controller.updateRestaurantDetails(
+                  //           nameController.text,
+                  //           emailController.text,
+                  //         );
 
-                          // Update bank details
-                          _updateBankDetails(
-                              controller, bankDetailsController.text);
-                        }
-                      },
-                      child: Obx(() => controller.isLoadingProfile.value
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Update',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            )),
-                    ),
-                  ),
+                  //         // Update bank details
+                  //         _updateBankDetails(
+                  //             controller, bankDetailsController.text);
+                  //       }
+                  //     },
+                  //     child: Obx(() => controller.isLoadingProfile.value
+                  //         ? SizedBox(
+                  //             width: 20,
+                  //             height: 20,
+                  //             child: CircularProgressIndicator(
+                  //               strokeWidth: 2,
+                  //               color: Colors.white,
+                  //             ),
+                  //           )
+                  //         : const Text(
+                  //             'Update',
+                  //             style: TextStyle(
+                  //               fontSize: 13,
+                  //               fontWeight: FontWeight.w400,
+                  //             ),
+                  //           )),
+                  //   ),
+                  // ),
 
                   const SizedBox(height: 20),
 
@@ -374,12 +413,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       // Logout button
                       SizedBox(
-                        // width: double.infinity,
+                        width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () => authController.logout(),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.grey[300],
+                            foregroundColor: Colors.red,
                           ),
                           child: Text(
                             'logout'.tr,
@@ -737,13 +776,6 @@ Restaurant UID: $uid
   }
 
   // Method to update bank details
-  void _updateBankDetails(RestaurantController controller, String bankDetails) {
-    if (bankDetails.isEmpty) return;
-
-    // Use controller method to update bank details
-    controller.updateBankDetails(bankDetails);
-  }
-
   Widget _buildEditableField(
     BuildContext context,
     String? label,
@@ -844,6 +876,32 @@ Restaurant UID: $uid
           const SizedBox(height: 8),
         ],
       ),
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

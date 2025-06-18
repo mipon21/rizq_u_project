@@ -82,17 +82,86 @@ class AuthController extends GetxController {
   }
 
   // Navigates user based on their role
-  void _navigateBasedOnRole() {
+  void _navigateBasedOnRole() async {
     if (userRole.value == 'customer') {
       if (kDebugMode) {
         print('Navigating to Customer Home.');
       }
       Get.offAllNamed(Routes.CUSTOMER_HOME);
     } else if (userRole.value == 'restaurateur') {
-      if (kDebugMode) {
-        print('Navigating to Restaurant Dashboard.');
+      // Check if restaurant needs approval
+      try {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(_firebaseUser.value!.uid)
+            .get();
+        final approvalStatus = userDoc.data()?['approvalStatus'] ?? 'pending';
+
+        if (approvalStatus == 'pending') {
+          // Check if registration data exists
+          final registrationDoc = await _firestore
+              .collection('restaurant_registrations')
+              .doc(_firebaseUser.value!.uid)
+              .get();
+
+          if (registrationDoc.exists) {
+            final registrationData = registrationDoc.data()!;
+            final registrationStatus =
+                registrationData['approvalStatus'] ?? 'pending';
+
+            if (registrationStatus == 'pending') {
+              if (kDebugMode) {
+                print(
+                    'Restaurant pending approval, navigating to pending approval page.');
+              }
+              Get.offAllNamed(Routes.RESTAURANT_PENDING_APPROVAL);
+              return;
+            } else if (registrationStatus == 'rejected') {
+              if (kDebugMode) {
+                print(
+                    'Restaurant rejected, navigating to pending approval page.');
+              }
+              Get.offAllNamed(Routes.RESTAURANT_PENDING_APPROVAL);
+              return;
+            } else if (registrationStatus == 'approved') {
+              // Update user document to reflect approval
+              await _firestore
+                  .collection('users')
+                  .doc(_firebaseUser.value!.uid)
+                  .update({
+                'approvalStatus': 'approved',
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+          } else {
+            // No registration data, redirect to registration
+            if (kDebugMode) {
+              print(
+                  'No registration data found, navigating to restaurant registration.');
+            }
+            Get.offAllNamed(Routes.RESTAURANT_REGISTRATION);
+            return;
+          }
+        } else if (approvalStatus == 'rejected') {
+          if (kDebugMode) {
+            print('Restaurant rejected, navigating to pending approval page.');
+          }
+          Get.offAllNamed('/restaurant-pending-approval');
+          return;
+        }
+
+        // If approved or no approval status needed, go to dashboard
+        if (kDebugMode) {
+          print('Navigating to Restaurant Dashboard.');
+        }
+        Get.offAllNamed(Routes.RESTAURANT_DASHBOARD);
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking restaurant approval status: $e');
+        }
+        // Fallback to dashboard
+        Get.offAllNamed(Routes.RESTAURANT_DASHBOARD);
       }
-      Get.offAllNamed(Routes.RESTAURANT_DASHBOARD);
     } else if (userRole.value == 'admin') {
       print('Admin role detected, navigating to admin dashboard');
       Get.offAllNamed(Routes.ADMIN_DASHBOARD);
@@ -144,33 +213,30 @@ class AuthController extends GetxController {
           'createdAt': FieldValue.serverTimestamp(),
           // Initialize points map for customers
           if (normalizedRole == 'customer') 'pointsByRestaurant': {},
+          // Add approval status for restaurants
+          if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
         });
 
-        // Create restaurant document if restaurateur
-        if (normalizedRole == 'restaurateur') {
-          await _firestore.collection('restaurants').doc(user.uid).set({
-            'uid': cleanString(user.uid), // Link to auth UID
-            'name': '', // To be set up later
-            'address': '',
-            'logoUrl': '',
-            'subscriptionPlan': 'free_trial', // Default plan
-            'subscriptionStatus': 'free_trial', // Initial status
-            'currentScanCount': 0,
-            'trialStartDate': FieldValue.serverTimestamp(),
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-          // Also create an initial program document
-          await _firestore.collection('programs').doc(user.uid).set({
-            'restaurantId': user.uid,
-            'rewardType': 'Free Drink', // Default reward
-            'pointsRequired': 10, // Standard 10 points
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        // For customers, create their data immediately
+        if (normalizedRole == 'customer') {
+          // Customer registration is complete, navigate to customer home
+          userRole.value = normalizedRole;
+          if (kDebugMode) {
+            print('Customer registration successful for ${user.email}');
+          }
+        } else if (normalizedRole == 'restaurateur') {
+          // For restaurants, redirect to registration form
+          userRole.value = normalizedRole;
+          if (kDebugMode) {
+            print(
+                'Restaurant user created, redirecting to registration form for ${user.email}');
+          }
+          // Navigate to restaurant registration page
+          Get.offAllNamed('/restaurant-registration');
+          return;
         }
 
-        // Update local role and let the listener handle navigation
-        userRole.value = normalizedRole;
-        // No need to navigate manually, _setInitialScreen handles it via the stream
+        // No need to navigate manually for customers, _setInitialScreen handles it via the stream
         if (kDebugMode) {
           print(
               'Registration successful for ${user.email}, role: $normalizedRole');

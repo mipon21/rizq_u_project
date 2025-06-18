@@ -162,46 +162,60 @@ class AdminDashboardPage extends GetView<AdminController> {
               ),
             ),
             const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildActionButton(
-                    icon: Icons.restaurant_menu,
-                    label: 'Add Restaurant',
-                    onPressed: () => Get.toNamed(Routes.ADMIN_RESTAURANTS),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildActionButton(
-                    icon: Icons.people,
-                    label: 'Manage Customers',
-                    onPressed: () => Get.toNamed(Routes.ADMIN_CUSTOMERS),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildActionButton(
-                    icon: Icons.subscriptions,
-                    label: 'Custom Plans',
-                    onPressed: () =>
-                        Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildActionButton(
-                    icon: Icons.bar_chart,
-                    label: 'View Reports',
-                    onPressed: () => Get.toNamed(Routes.ADMIN_REPORTS),
-                  ),
-                  const SizedBox(width: 12),
-                  Obx(() => _buildActionButton(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Pending approvals first
+                SizedBox(
+                  width: double.infinity,
+                  child: Obx(() => _buildActionButton(
                         icon: Icons.approval,
                         label:
                             'Pending Approvals (${controller.pendingApprovals})',
                         onPressed: () => _showPendingApprovals(),
                         color: controller.pendingApprovals.value > 0
                             ? Colors.orange
-                            : Colors.blue,
+                            : null,
                       )),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    icon: Icons.restaurant_menu,
+                    label: 'Add Restaurant',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_RESTAURANTS),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    icon: Icons.people,
+                    label: 'Manage Customers',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_CUSTOMERS),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    icon: Icons.subscriptions,
+                    label: 'Custom Plans',
+                    onPressed: () =>
+                        Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    icon: Icons.bar_chart,
+                    label: 'View Reports',
+                    onPressed: () => Get.toNamed(Routes.ADMIN_REPORTS),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -216,13 +230,29 @@ class AdminDashboardPage extends GetView<AdminController> {
     Color? color,
   }) {
     return ElevatedButton.icon(
-      icon: Icon(icon),
-      label: Text(label),
+      icon: Icon(
+        icon,
+        color: color ?? MColors.primary,
+      ),
+      label: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color ?? MColors.primary,
+          fontSize: 12,
+        ),
+      ),
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color ?? MColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        backgroundColor: Colors.white,
+        foregroundColor: (color ?? MColors.primary).withOpacity(0.8),
+        shadowColor: Colors.grey.shade200,
+        elevation: 1,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        side: BorderSide(color: color ?? MColors.primary, width: 1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -314,8 +344,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     return Obx(() => GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          childAspectRatio: 0.9,
+          crossAxisCount: 3,
+          childAspectRatio: 0.8,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
           children: [
@@ -357,6 +387,7 @@ class AdminDashboardPage extends GetView<AdminController> {
         width: double.infinity,
         child: Card(
           elevation: 3,
+          color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
@@ -365,14 +396,14 @@ class AdminDashboardPage extends GetView<AdminController> {
               children: [
                 Icon(
                   icon,
-                  size: 36,
+                  size: 28,
                   color: color,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
@@ -381,7 +412,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -791,7 +822,7 @@ class AdminDashboardPage extends GetView<AdminController> {
   }
 
   void _showPendingApprovals() {
-    Get.toNamed(Routes.ADMIN_RESTAURANTS);
+    Get.toNamed(Routes.ADMIN_RESTAURANT_REGISTRATIONS);
   }
 
   // Analytics panel

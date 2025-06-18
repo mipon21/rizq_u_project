@@ -213,6 +213,7 @@ class _RewardsTabState extends State<RewardsTab>
                             rewardIcons[rewardItem.rewardType] ??
                                 rewardIcons["default"]!,
                             color: MColors.primary,
+                            size: 24,
                           ),
                           const SizedBox(width: 12),
                           Expanded(

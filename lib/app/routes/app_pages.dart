@@ -11,15 +11,18 @@ import '../ui/pages/admin/customer_management_page.dart';
 import '../ui/pages/admin/dashboard_page.dart';
 import '../ui/pages/admin/reports_page.dart';
 import '../ui/pages/admin/restaurant_management_page.dart';
+import '../ui/pages/admin/restaurant_registrations_page.dart';
 import '../ui/pages/admin/custom_subscription_plans_page.dart';
 import '../ui/pages/auth/login_page.dart';
 import '../ui/pages/auth/register_page.dart';
+import '../ui/pages/auth/restaurant_registration_page.dart';
 import '../ui/pages/auth/forgot_password_page.dart';
 import '../ui/pages/customer/customer_home_page.dart';
 import '../ui/pages/customer/scan_history_page.dart';
 import '../ui/pages/customer/qr_code_page.dart';
 import '../ui/pages/customer/customer_profile_page.dart';
 import '../ui/pages/restaurant/dashboard_page.dart';
+import '../ui/pages/restaurant/pending_approval_page.dart';
 
 import '../ui/pages/restaurant/tabs/qr_scanner_page.dart';
 import '../ui/pages/restaurant/subscription_page.dart';
@@ -99,6 +102,16 @@ class AppPages {
       page: () => const SubscriptionPage(),
       binding: RestaurantBinding(),
     ),
+    GetPage(
+      name: Routes.RESTAURANT_REGISTRATION,
+      page: () => const RestaurantRegistrationPage(),
+      binding: RestaurantBinding(),
+    ),
+    GetPage(
+      name: Routes.RESTAURANT_PENDING_APPROVAL,
+      page: () => const PendingApprovalPage(),
+      binding: RestaurantBinding(),
+    ),
     // Admin Routes
     GetPage(
       name: Routes.ADMIN_LOGIN,
@@ -115,6 +128,12 @@ class AppPages {
     GetPage(
       name: Routes.ADMIN_RESTAURANTS,
       page: () => const RestaurantManagementPage(),
+      binding: AdminBinding(),
+      middlewares: adminMiddleware,
+    ),
+    GetPage(
+      name: Routes.ADMIN_RESTAURANT_REGISTRATIONS,
+      page: () => const RestaurantRegistrationsPage(),
       binding: AdminBinding(),
       middlewares: adminMiddleware,
     ),

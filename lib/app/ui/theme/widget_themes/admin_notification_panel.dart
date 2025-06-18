@@ -76,6 +76,7 @@ class AdminNotificationPanel extends StatelessWidget {
                     child: Icon(
                       _getNotificationIcon(type),
                       color: _getNotificationColor(type),
+                      size: 24,
                     ),
                   ),
                   title: Text(

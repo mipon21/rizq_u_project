@@ -223,7 +223,7 @@ class AdminController extends GetxController {
 
       // Count pending restaurant approvals
       final pendingApprovalSnapshot = await _firestore
-          .collection('restaurants')
+          .collection('restaurant_registrations')
           .where('approvalStatus', isEqualTo: 'pending')
           .get();
       pendingApprovals.value = pendingApprovalSnapshot.docs.length;
@@ -755,30 +755,94 @@ class AdminController extends GetxController {
   }
 
   // Approve a restaurant
-  Future<void> approveRestaurant(String restaurantId) async {
+  Future<void> approveRestaurant(String registrationId) async {
     try {
-      // Get restaurant data
-      final restaurantDoc =
-          await _firestore.collection('restaurants').doc(restaurantId).get();
-      final restaurantData = restaurantDoc.data();
+      // 1. Get restaurant registration data
+      DocumentSnapshot<Map<String, dynamic>> registrationSnapshot =
+          await _firestore
+              .collection('restaurant_registrations')
+              .doc(registrationId)
+              .get();
 
-      if (restaurantData == null) {
-        throw 'Restaurant not found';
+      // Fallback: if the provided id is actually the restaurant UID rather than registration doc id
+      if (!registrationSnapshot.exists) {
+        final query = await _firestore
+            .collection('restaurant_registrations')
+            .where('uid', isEqualTo: registrationId)
+            .limit(1)
+            .get();
+
+        if (query.docs.isNotEmpty) {
+          registrationSnapshot = query.docs.first;
+        }
       }
 
-      // Update restaurant status
-      await _firestore.collection('restaurants').doc(restaurantId).update({
+      if (!registrationSnapshot.exists) {
+        throw 'Restaurant registration not found';
+      }
+
+      final registrationData = registrationSnapshot.data()!;
+      final String restaurantUid = registrationData['uid'] ?? registrationId;
+      final String restaurantName =
+          registrationData['restaurantName'] ?? 'Unknown Restaurant';
+
+      // 2. Update registration document
+      await registrationSnapshot.reference.update({
         'approvalStatus': 'approved',
         'approvedAt': Timestamp.now(),
+        'updatedAt': Timestamp.now(),
       });
 
-      // Create notification for admin
+      // 3. Update user document (if exists)
+      await _firestore.collection('users').doc(restaurantUid).set({
+        'approvalStatus': 'approved',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 4. Create / update restaurant document
+      await _firestore.collection('restaurants').doc(restaurantUid).set({
+        'uid': restaurantUid,
+        'restaurantName': registrationData['restaurantName'] ?? '',
+        'name':
+            registrationData['restaurantName'] ?? '', // keep backward-compat
+        'ownerName': registrationData['ownerName'] ?? '',
+        'address': registrationData['address'] ?? '',
+        'email': registrationData['email'] ?? '',
+        'logoUrl': registrationData['logoUrl'] ?? '',
+        'supportEmail': registrationData['supportEmail'] ?? '',
+        'bankDetails': registrationData['bankDetails'] ?? '',
+        'ibanNumber': registrationData['ibanNumber'] ?? '',
+        'subscriptionPlan': 'free_trial',
+        'subscriptionStatus': 'free_trial',
+        'currentScanCount': 0,
+        'trialStartDate': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'approvalStatus': 'approved',
+        'approvedAt': Timestamp.now(),
+        'isSuspended': false,
+        'isActive': true,
+      }, SetOptions(merge: true));
+
+      // 5. Ensure loyalty program exists
+      await _firestore.collection('programs').doc(restaurantUid).set({
+        'restaurantId': restaurantUid,
+        'rewardType': 'Free Drink',
+        'pointsRequired': 10,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 6. Notify admin team
       await createAdminNotification(
         title: 'Restaurant Approved',
-        message: 'Restaurant "${restaurantData['name']}" has been approved',
+        message: 'Restaurant "$restaurantName" has been approved',
         type: 'restaurant_approval',
-        relatedId: restaurantId,
+        relatedId: restaurantUid,
       );
+
+      // 7. Refresh metrics
+      await fetchDashboardMetrics();
 
       Get.snackbar(
         'Success',
@@ -804,29 +868,47 @@ class AdminController extends GetxController {
   // Reject a restaurant
   Future<void> rejectRestaurant(String restaurantId, String reason) async {
     try {
-      // Get restaurant data
-      final restaurantDoc =
-          await _firestore.collection('restaurants').doc(restaurantId).get();
-      final restaurantData = restaurantDoc.data();
+      // Get restaurant registration data
+      final registrationDoc = await _firestore
+          .collection('restaurant_registrations')
+          .doc(restaurantId)
+          .get();
 
-      if (restaurantData == null) {
-        throw 'Restaurant not found';
+      if (!registrationDoc.exists) {
+        throw 'Restaurant registration not found';
       }
 
-      // Update restaurant status
-      await _firestore.collection('restaurants').doc(restaurantId).update({
+      final registrationData = registrationDoc.data()!;
+      final restaurantName =
+          registrationData['restaurantName'] ?? 'Unknown Restaurant';
+
+      // Update registration status
+      await _firestore
+          .collection('restaurant_registrations')
+          .doc(restaurantId)
+          .update({
         'approvalStatus': 'rejected',
         'rejectionReason': reason,
         'rejectedAt': Timestamp.now(),
+        'updatedAt': Timestamp.now(),
+      });
+
+      // Update user document
+      await _firestore.collection('users').doc(restaurantId).update({
+        'approvalStatus': 'rejected',
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       // Create notification for admin
       await createAdminNotification(
         title: 'Restaurant Rejected',
-        message: 'Restaurant "${restaurantData['name']}" has been rejected',
+        message: 'Restaurant "$restaurantName" has been rejected',
         type: 'restaurant_rejection',
         relatedId: restaurantId,
       );
+
+      // Refresh dashboard metrics
+      await fetchDashboardMetrics();
 
       Get.snackbar(
         'Success',

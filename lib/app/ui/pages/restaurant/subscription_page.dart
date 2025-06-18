@@ -145,7 +145,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
                 child: Icon(
                   statusIcon,
                   color: statusColor,
-                  size: 24,
+                  size: (24).isFinite && 24 > 0 ? 24 : 16,
                 ),
               ),
               const SizedBox(width: 16),
@@ -323,7 +323,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
             child: Icon(
               icon,
               color: color,
-              size: 24,
+              size: (24).isFinite && 24 > 0 ? 24 : 16,
             ),
           ),
           const SizedBox(width: 16),
@@ -593,7 +593,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
                             Icon(
                               Icons.check_circle,
                               color: color,
-                              size: 16,
+                              size: (16).isFinite && 16 > 0 ? 16 : 16,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -673,7 +673,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: (16).isFinite && 16 > 0 ? 16 : 16, color: color),
           const SizedBox(width: 4),
           Text(
             label,

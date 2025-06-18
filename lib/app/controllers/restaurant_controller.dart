@@ -23,6 +23,12 @@ class RestaurantProfileModel {
   final DateTime createdAt;
   final String bankDetails; // New field for bank details
   final DateTime? subscriptionEnd; // New field for subscription end date
+  // Registration fields
+  final String? ownerName;
+  final String? supportEmail;
+  final String? ibanNumber;
+  final String? ownerNationalIdFront;
+  final String? ownerNationalIdBack;
 
   RestaurantProfileModel({
     required this.uid,
@@ -36,6 +42,11 @@ class RestaurantProfileModel {
     required this.createdAt,
     this.bankDetails = '', // Default to empty string
     this.subscriptionEnd, // New parameter
+    this.ownerName,
+    this.supportEmail,
+    this.ibanNumber,
+    this.ownerNationalIdFront,
+    this.ownerNationalIdBack,
   });
 
   factory RestaurantProfileModel.fromSnapshot(
@@ -57,6 +68,12 @@ class RestaurantProfileModel {
           data['bankDetails'] ?? '', // Get bank details or default to empty
       subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)
           ?.toDate(), // Get subscription end date
+      // Registration fields
+      ownerName: data['ownerName'],
+      supportEmail: data['supportEmail'],
+      ibanNumber: data['ibanNumber'],
+      ownerNationalIdFront: data['ownerNationalIdFront'],
+      ownerNationalIdBack: data['ownerNationalIdBack'],
     );
   }
 
@@ -343,43 +360,48 @@ class RestaurantController extends GetxController {
     }
   }
 
-  Future<void> updateRestaurantDetails(
-    String newName,
-    String newAddress,
-  ) async {
-    if (restaurantUid.isEmpty) return;
-    isLoadingProfile.value = true; // Use profile loading state
-    try {
-      await _firestore.collection('restaurants').doc(restaurantUid).update({
-        'name': newName,
-        'address': newAddress,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      // Update local state immediately for better UX
-      if (restaurantProfile.value != null) {
-        restaurantProfile.value = RestaurantProfileModel(
-          uid: restaurantProfile.value!.uid,
-          name: newName, // Update name
-          address: newAddress, // Update address
-          logoUrl: restaurantProfile.value!.logoUrl,
-          subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
-          subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
-          currentScanCount: restaurantProfile.value!.currentScanCount,
-          trialStartDate: restaurantProfile.value!.trialStartDate,
-          createdAt: restaurantProfile.value!.createdAt,
-          bankDetails:
-              restaurantProfile.value!.bankDetails, // Preserve bank details
-          subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
-        );
-        restaurantProfile.refresh(); // Notify listeners
-      }
-      Get.snackbar('Success', 'Restaurant details updated.');
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to update details: $e');
-    } finally {
-      isLoadingProfile.value = false;
-    }
-  }
+  // Future<void> updateRestaurantDetails(
+  //   String newName,
+  //   String newAddress,
+  // ) async {
+  //   if (restaurantUid.isEmpty) return;
+  //   isLoadingProfile.value = true; // Use profile loading state
+  //   try {
+  //     await _firestore.collection('restaurants').doc(restaurantUid).update({
+  //       'name': newName,
+  //       'address': newAddress,
+  //       'updatedAt': FieldValue.serverTimestamp(),
+  //     });
+  //     // Update local state immediately for better UX
+  //     if (restaurantProfile.value != null) {
+  //       restaurantProfile.value = RestaurantProfileModel(
+  //         uid: restaurantProfile.value!.uid,
+  //         name: newName, // Update name
+  //         address: newAddress, // Update address
+  //         logoUrl: restaurantProfile.value!.logoUrl,
+  //         subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
+  //         subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
+  //         currentScanCount: restaurantProfile.value!.currentScanCount,
+  //         trialStartDate: restaurantProfile.value!.trialStartDate,
+  //         createdAt: restaurantProfile.value!.createdAt,
+  //         bankDetails:
+  //             restaurantProfile.value!.bankDetails, // Preserve bank details
+  //         subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
+  //         ownerName: restaurantProfile.value!.ownerName,
+  //         supportEmail: restaurantProfile.value!.supportEmail,
+  //         ibanNumber: restaurantProfile.value!.ibanNumber,
+  //         ownerNationalIdFront: restaurantProfile.value!.ownerNationalIdFront,
+  //         ownerNationalIdBack: restaurantProfile.value!.ownerNationalIdBack,
+  //       );
+  //       restaurantProfile.refresh(); // Notify listeners
+  //     }
+  //     Get.snackbar('Success', 'Restaurant details updated.');
+  //   } catch (e) {
+  //     Get.snackbar('Error', 'Failed to update details: $e');
+  //   } finally {
+  //     isLoadingProfile.value = false;
+  //   }
+  // }
 
   Future<void> pickAndUploadLogo() async {
     if (restaurantUid.isEmpty) return;
@@ -420,6 +442,11 @@ class RestaurantController extends GetxController {
             createdAt: restaurantProfile.value!.createdAt,
             bankDetails: restaurantProfile.value!.bankDetails,
             subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
+            ownerName: restaurantProfile.value!.ownerName,
+            supportEmail: restaurantProfile.value!.supportEmail,
+            ibanNumber: restaurantProfile.value!.ibanNumber,
+            ownerNationalIdFront: restaurantProfile.value!.ownerNationalIdFront,
+            ownerNationalIdBack: restaurantProfile.value!.ownerNationalIdBack,
           );
           restaurantProfile.refresh(); // Notify listeners
         }
@@ -439,48 +466,53 @@ class RestaurantController extends GetxController {
   }
 
   // Method to update bank details in Firestore
-  Future<void> updateBankDetails(String bankDetails) async {
-    if (restaurantUid.isEmpty) return;
+  // Future<void> updateBankDetails(String bankDetails) async {
+  //   if (restaurantUid.isEmpty) return;
 
-    final RxBool isUpdatingBank = true.obs;
-    try {
-      // Update Firestore
-      await _firestore.collection('restaurants').doc(restaurantUid).update({
-        'bankDetails': bankDetails,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+  //   final RxBool isUpdatingBank = true.obs;
+  //   try {
+  //     // Update Firestore
+  //     await _firestore.collection('restaurants').doc(restaurantUid).update({
+  //       'bankDetails': bankDetails,
+  //       'updatedAt': FieldValue.serverTimestamp(),
+  //     });
 
-      // Update local state
-      if (restaurantProfile.value != null) {
-        restaurantProfile.value = RestaurantProfileModel(
-          uid: restaurantProfile.value!.uid,
-          name: restaurantProfile.value!.name,
-          address: restaurantProfile.value!.address,
-          logoUrl: restaurantProfile.value!.logoUrl,
-          subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
-          subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
-          currentScanCount: restaurantProfile.value!.currentScanCount,
-          trialStartDate: restaurantProfile.value!.trialStartDate,
-          createdAt: restaurantProfile.value!.createdAt,
-          bankDetails: bankDetails, // Update bank details
-          subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
-        );
-        restaurantProfile.refresh(); // Notify listeners
-      }
+  //     // Update local state
+  //     if (restaurantProfile.value != null) {
+  //       restaurantProfile.value = RestaurantProfileModel(
+  //         uid: restaurantProfile.value!.uid,
+  //         name: restaurantProfile.value!.name,
+  //         address: restaurantProfile.value!.address,
+  //         logoUrl: restaurantProfile.value!.logoUrl,
+  //         subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
+  //         subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
+  //         currentScanCount: restaurantProfile.value!.currentScanCount,
+  //         trialStartDate: restaurantProfile.value!.trialStartDate,
+  //         createdAt: restaurantProfile.value!.createdAt,
+  //         bankDetails: bankDetails, // Update bank details
+  //         subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
+  //         ownerName: restaurantProfile.value!.ownerName,
+  //         supportEmail: restaurantProfile.value!.supportEmail,
+  //         ibanNumber: restaurantProfile.value!.ibanNumber,
+  //         ownerNationalIdFront: restaurantProfile.value!.ownerNationalIdFront,
+  //         ownerNationalIdBack: restaurantProfile.value!.ownerNationalIdBack,
+  //       );
+  //       restaurantProfile.refresh(); // Notify listeners
+  //     }
 
-      Get.snackbar('Success', 'Bank details updated successfully');
-      if (kDebugMode) {
-        print("Bank details updated for $restaurantUid");
-      }
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to update bank details: $e');
-      if (kDebugMode) {
-        print("Error updating bank details for $restaurantUid: $e");
-      }
-    } finally {
-      isUpdatingBank.value = false;
-    }
-  }
+  //     Get.snackbar('Success', 'Bank details updated successfully');
+  //     if (kDebugMode) {
+  //       print("Bank details updated for $restaurantUid");
+  //     }
+  //   } catch (e) {
+  //     Get.snackbar('Error', 'Failed to update bank details: $e');
+  //     if (kDebugMode) {
+  //       print("Error updating bank details for $restaurantUid: $e");
+  //     }
+  //   } finally {
+  //     isUpdatingBank.value = false;
+  //   }
+  // }
 
   Future<void> processQrScan(String customerUid) async {
     if (restaurantUid.isEmpty) {

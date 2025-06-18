@@ -21,6 +21,8 @@ abstract class Routes {
   static const RESTAURANT_PROGRAM_CONFIG = '/restaurant/program-config';
   static const RESTAURANT_QR_SCANNER = '/restaurant/qr-scanner';
   static const RESTAURANT_SUBSCRIPTION = '/restaurant/subscription';
+  static const RESTAURANT_REGISTRATION = '/restaurant-registration';
+  static const RESTAURANT_PENDING_APPROVAL = '/restaurant-pending-approval';
 
   // Admin Routes
   static const ADMIN_LOGIN = '/admin/login';
@@ -28,5 +30,8 @@ abstract class Routes {
   static const ADMIN_RESTAURANTS = '/admin/restaurants';
   static const ADMIN_CUSTOMERS = '/admin/customers';
   static const ADMIN_REPORTS = '/admin/reports';
-  static const ADMIN_CUSTOM_SUBSCRIPTION_PLANS = '/admin/custom-subscription-plans';
+  static const ADMIN_CUSTOM_SUBSCRIPTION_PLANS =
+      '/admin/custom-subscription-plans';
+  static const ADMIN_RESTAURANT_REGISTRATIONS =
+      '/admin/restaurant-registrations';
 }

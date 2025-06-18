@@ -200,7 +200,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                         Icon(
                           Icons.check_circle,
                           color: Colors.green,
-                          size: 16,
+                          size: (16).isFinite && 16 > 0 ? 16 : 16,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -271,7 +271,11 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(
+            icon,
+            size: (16).isFinite && 16 > 0 ? 16 : 16,
+            color: color,
+          ),
           const SizedBox(width: 4),
           Text(
             label,
