@@ -344,8 +344,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     return Obx(() => GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          childAspectRatio: 0.8,
+          crossAxisCount: 2,
+          childAspectRatio: 1.0,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
           children: [

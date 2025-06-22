@@ -24,7 +24,6 @@ class ReportsPage extends GetView<AdminController> {
       appBar: AppBar(
         title: const Text('Reports & Analytics'),
         backgroundColor: MColors.primary,
-
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -41,33 +40,45 @@ class ReportsPage extends GetView<AdminController> {
                     children: [
                       const Text('Select report type and date range:'),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Report Type',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: 'subscriptions',
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'subscriptions',
-                            child: Text('Subscription Revenue'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'registrations',
-                            child: Text('Restaurant Registrations'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'customers',
-                            child: Text('Customer Growth'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'scans',
-                            child: Text('Scan Activity'),
-                          ),
-                        ],
-                        onChanged: (value) {},
-                      ),
-                      const SizedBox(height: 16),
+                      Obx(() => DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Report Type',
+                              border: OutlineInputBorder(),
+                            ),
+                            value: controller.selectedReportType.value,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'subscriptions',
+                                child: Text('Subscription Revenue'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'registrations',
+                                child: Text('Restaurant Registrations'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'customers',
+                                child: Text('Customer Growth'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'scans',
+                                child: Text('Scan Activity'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'reward_claims',
+                                child: Text('Reward Claims'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'recent_activities',
+                                child: Text('Recent Activities'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                controller.selectedReportType.value = value;
+                              }
+                            },
+                          )),
+                      SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -90,7 +101,7 @@ class ReportsPage extends GetView<AdminController> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: TextFormField(
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'End Date',
                                 border: OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.calendar_today),
@@ -115,7 +126,7 @@ class ReportsPage extends GetView<AdminController> {
                               width: double.infinity,
                               child: ElevatedButton.icon(
                                 onPressed: () => _generateReport('csv'),
-                                icon: const Icon(Icons.download),
+                                icon: Icon(Icons.download),
                                 label: const Text('Export CSV'),
                               ),
                             ),
@@ -615,26 +626,62 @@ class ReportsPage extends GetView<AdminController> {
     );
   }
 
-  void _generateReport(String format) {
-    // Implementation would create and download the report file
-    Get.snackbar(
-      'Report Generation',
-      'Generating ${format.toUpperCase()} report...',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.blue,
-      colorText: Colors.white,
+  void _generateReport(String format) async {
+    // Show loading indicator
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
     );
 
-    // In a real app, this would generate the actual report
-    Future.delayed(const Duration(seconds: 2), () {
-      Get.snackbar(
-        'Report Ready',
-        'Your ${format.toUpperCase()} report has been generated and downloaded',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    });
+    try {
+      if (format == 'csv') {
+        switch (controller.selectedReportType.value) {
+          case 'subscriptions':
+            await controller.exportSubscriptionsToCSV();
+            break;
+          case 'registrations':
+            await controller.exportRestaurantsToCSV();
+            break;
+          case 'customers':
+            await controller.exportCustomersToCSV();
+            break;
+          case 'scans':
+          case 'recent_activities':
+            await controller.exportScansToCSV();
+            break;
+          case 'reward_claims':
+            await controller.exportRewardClaimsToCSV();
+            break;
+          default:
+            Get.snackbar('Error', 'Unknown report type selected');
+        }
+      } else {
+        switch (controller.selectedReportType.value) {
+          case 'subscriptions':
+            await controller.exportSubscriptionsToPDF();
+            break;
+          case 'registrations':
+            await controller.exportRestaurantsToPDF();
+            break;
+          case 'customers':
+            await controller.exportCustomersToPDF();
+            break;
+          case 'scans':
+          case 'recent_activities':
+            await controller.exportScansToPDF();
+            break;
+          case 'reward_claims':
+            await controller.exportRewardClaimsToPDF();
+            break;
+          default:
+            Get.snackbar('Error', 'Unknown report type selected');
+        }
+      }
+    } finally {
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+    }
   }
 }
 

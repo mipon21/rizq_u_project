@@ -11,6 +11,10 @@ import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription_plan_model.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:file_saver/file_saver.dart';
+import 'dart:typed_data';
 
 class AdminController extends GetxController {
   static AdminController get instance => Get.find();
@@ -70,6 +74,7 @@ class AdminController extends GetxController {
   final RxString customerSearchQuery = ''.obs;
   final RxString selectedRestaurantFilter = 'all'.obs;
   final RxString selectedCustomerFilter = 'all'.obs;
+  final RxString selectedReportType = 'subscriptions'.obs;
 
   @override
   void onInit() {
@@ -980,14 +985,21 @@ class AdminController extends GetxController {
       // Convert to CSV
       String csv = const ListToCsvConverter().convert(csvData);
 
-      // Save file
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+
+      await FileSaver.instance.saveFile(
+        name: 'restaurants_export_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        ext: 'csv',
+      );
+
+      // Also drop copy for sharing
       final directory = await getApplicationDocumentsDirectory();
       final path =
           '${directory.path}/restaurants_export_${DateTime.now().millisecondsSinceEpoch}.csv';
       final file = File(path);
-      await file.writeAsString(csv);
+      await file.writeAsBytes(bytes);
 
-      // Share file
       await Share.shareFiles([path], text: 'Restaurants Export Data');
 
       isLoading.value = false;
@@ -1058,14 +1070,20 @@ class AdminController extends GetxController {
       // Convert to CSV
       String csv = const ListToCsvConverter().convert(csvData);
 
-      // Save file
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+
+      await FileSaver.instance.saveFile(
+        name: 'customers_export_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        ext: 'csv',
+      );
+
       final directory = await getApplicationDocumentsDirectory();
       final path =
           '${directory.path}/customers_export_${DateTime.now().millisecondsSinceEpoch}.csv';
       final file = File(path);
-      await file.writeAsString(csv);
+      await file.writeAsBytes(bytes);
 
-      // Share file
       await Share.shareFiles([path], text: 'Customers Export Data');
 
       isLoading.value = false;
@@ -1081,6 +1099,152 @@ class AdminController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    }
+  }
+
+  // Export subscriptions data to CSV
+  Future<void> exportSubscriptionsToCSV() async {
+    try {
+      isLoading.value = true;
+
+      // Get all subscriptions
+      final subsSnapshot = await _firestore.collection('subscriptions').get();
+
+      // Prepare CSV
+      List<List<dynamic>> csvData = [];
+      csvData.add([
+        'ID',
+        'Restaurant ID',
+        'Plan',
+        'Amount Paid',
+        'Status',
+        'Start Date',
+        'End Date',
+        'Created At'
+      ]);
+
+      for (var doc in subsSnapshot.docs) {
+        final data = doc.data();
+        String createdAtStr = '';
+        if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
+          createdAtStr = DateFormat('yyyy-MM-dd HH:mm')
+              .format((data['createdAt'] as Timestamp).toDate());
+        }
+        String startDateStr = '';
+        if (data['startDate'] != null && data['startDate'] is Timestamp) {
+          startDateStr = DateFormat('yyyy-MM-dd')
+              .format((data['startDate'] as Timestamp).toDate());
+        }
+        String endDateStr = '';
+        if (data['endDate'] != null && data['endDate'] is Timestamp) {
+          endDateStr = DateFormat('yyyy-MM-dd')
+              .format((data['endDate'] as Timestamp).toDate());
+        }
+
+        csvData.add([
+          doc.id,
+          data['restaurantId'] ?? 'N/A',
+          data['plan'] ?? 'N/A',
+          data['amountPaid'] ?? 0,
+          data['status'] ?? 'N/A',
+          startDateStr,
+          endDateStr,
+          createdAtStr,
+        ]);
+      }
+
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+
+      await FileSaver.instance.saveFile(
+        name: 'subscriptions_export_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        ext: 'csv',
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final path =
+          '${directory.path}/subscriptions_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+
+      await Share.shareFiles([path], text: 'Subscriptions Export Data');
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting subscriptions: $e');
+      }
+      Get.snackbar('Error', 'Failed to export subscriptions: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  // Export scan activity to CSV
+  Future<void> exportScansToCSV() async {
+    try {
+      isLoading.value = true;
+
+      final scansSnapshot = await _firestore.collection('scans').get();
+
+      List<List<dynamic>> csvData = [];
+      csvData.add([
+        'ID',
+        'Restaurant ID',
+        'Customer ID',
+        'Points Awarded',
+        'Timestamp'
+      ]);
+
+      for (var doc in scansSnapshot.docs) {
+        final data = doc.data();
+        String timestampStr = '';
+        if (data['timestamp'] != null && data['timestamp'] is Timestamp) {
+          timestampStr = DateFormat('yyyy-MM-dd HH:mm')
+              .format((data['timestamp'] as Timestamp).toDate());
+        }
+
+        csvData.add([
+          doc.id,
+          data['restaurantId'] ?? 'N/A',
+          data['clientId'] ?? 'N/A',
+          data['pointsAwarded'] ?? 0,
+          timestampStr,
+        ]);
+      }
+
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+
+      await FileSaver.instance.saveFile(
+        name: 'scans_export_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        ext: 'csv',
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final path =
+          '${directory.path}/scans_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+
+      await Share.shareFiles([path], text: 'Scan Activity Export Data');
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting scans: $e');
+      }
+      Get.snackbar('Error', 'Failed to export scan activity: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
     }
   }
 
@@ -1531,6 +1695,407 @@ class AdminController extends GetxController {
         print('Error fetching loyalty stats: $e');
       }
       rethrow;
+    }
+  }
+
+  // ===== PDF EXPORT HELPERS =====
+  Future<String> _exportTableToPDF({
+    required List<List<dynamic>> tableData,
+    required String baseFilename,
+    required String shareText,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Table.fromTextArray(
+            headers: tableData.first.map((e) => e.toString()).toList(),
+            data: tableData
+                .skip(1)
+                .map((row) => row.map((e) => e.toString()).toList())
+                .toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            border: pw.TableBorder.all(),
+            cellAlignment: pw.Alignment.centerLeft,
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFE0E0E0)),
+          ),
+        ],
+      ),
+    );
+
+    final bytes = await pdf.save();
+
+    // Let user pick location
+    await FileSaver.instance.saveFile(
+      name: '${baseFilename}_${DateTime.now().millisecondsSinceEpoch}',
+      bytes: bytes,
+      ext: 'pdf',
+    );
+
+    // Also place a copy in app documents for sharing
+    final directory = await getApplicationDocumentsDirectory();
+    final path =
+        '${directory.path}/${baseFilename}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final file = File(path);
+    await file.writeAsBytes(bytes);
+
+    await Share.shareFiles([path], text: shareText);
+    return path;
+  }
+
+  // Export functions to PDF
+  Future<void> exportRestaurantsToPDF() async {
+    try {
+      isLoading.value = true;
+
+      final restaurantsSnapshot =
+          await _firestore.collection('restaurants').get();
+
+      List<List<dynamic>> pdfData = [];
+      pdfData.add([
+        'ID',
+        'Name',
+        'Email',
+        'Phone',
+        'Address',
+        'Subscription Plan',
+        'Subscription Status',
+        'Created At',
+        'Approval Status'
+      ]);
+
+      for (var doc in restaurantsSnapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] as Timestamp?;
+        String createdAtStr = createdAt != null
+            ? DateFormat('yyyy-MM-dd HH:mm').format(createdAt.toDate())
+            : 'N/A';
+
+        pdfData.add([
+          doc.id,
+          data['name'] ?? 'N/A',
+          data['email'] ?? 'N/A',
+          data['phone'] ?? 'N/A',
+          data['address'] ?? 'N/A',
+          data['subscriptionPlan'] ?? 'No plan',
+          data['subscriptionStatus'] ?? 'inactive',
+          createdAtStr,
+          data['approvalStatus'] ?? 'pending'
+        ]);
+      }
+
+      await _exportTableToPDF(
+        tableData: pdfData,
+        baseFilename: 'restaurants_export',
+        shareText: 'Restaurants Export Data (PDF)',
+      );
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting restaurants PDF: $e');
+      }
+      Get.snackbar('Error', 'Failed to export restaurant PDF: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  Future<void> exportCustomersToPDF() async {
+    try {
+      isLoading.value = true;
+
+      final customersSnapshot = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'customer')
+          .get();
+
+      List<List<dynamic>> pdfData = [];
+      pdfData.add([
+        'ID',
+        'Name',
+        'Email',
+        'Phone',
+        'Created At',
+        'Last Login',
+        'Total Scans'
+      ]);
+
+      for (var doc in customersSnapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] as Timestamp?;
+        String createdAtStr = createdAt != null
+            ? DateFormat('yyyy-MM-dd HH:mm').format(createdAt.toDate())
+            : 'N/A';
+
+        final lastLogin = data['lastLogin'] as Timestamp?;
+        String lastLoginStr = lastLogin != null
+            ? DateFormat('yyyy-MM-dd HH:mm').format(lastLogin.toDate())
+            : 'Never';
+
+        pdfData.add([
+          doc.id,
+          '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
+          data['email'] ?? 'N/A',
+          data['phone'] ?? 'N/A',
+          createdAtStr,
+          lastLoginStr,
+          data['totalScans'] ?? 0,
+        ]);
+      }
+
+      await _exportTableToPDF(
+        tableData: pdfData,
+        baseFilename: 'customers_export',
+        shareText: 'Customers Export Data (PDF)',
+      );
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting customers PDF: $e');
+      }
+      Get.snackbar('Error', 'Failed to export customers PDF: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  Future<void> exportSubscriptionsToPDF() async {
+    try {
+      isLoading.value = true;
+      final subsSnapshot = await _firestore.collection('subscriptions').get();
+
+      List<List<dynamic>> pdfData = [];
+      pdfData.add([
+        'ID',
+        'Restaurant ID',
+        'Plan',
+        'Amount Paid',
+        'Status',
+        'Start Date',
+        'End Date',
+        'Created At'
+      ]);
+
+      for (var doc in subsSnapshot.docs) {
+        final data = doc.data();
+        String createdAtStr = '';
+        if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
+          createdAtStr = DateFormat('yyyy-MM-dd HH:mm')
+              .format((data['createdAt'] as Timestamp).toDate());
+        }
+        String startDateStr = '';
+        if (data['startDate'] != null && data['startDate'] is Timestamp) {
+          startDateStr = DateFormat('yyyy-MM-dd')
+              .format((data['startDate'] as Timestamp).toDate());
+        }
+        String endDateStr = '';
+        if (data['endDate'] != null && data['endDate'] is Timestamp) {
+          endDateStr = DateFormat('yyyy-MM-dd')
+              .format((data['endDate'] as Timestamp).toDate());
+        }
+
+        pdfData.add([
+          doc.id,
+          data['restaurantId'] ?? 'N/A',
+          data['plan'] ?? 'N/A',
+          data['amountPaid'] ?? 0,
+          data['status'] ?? 'N/A',
+          startDateStr,
+          endDateStr,
+          createdAtStr,
+        ]);
+      }
+
+      await _exportTableToPDF(
+        tableData: pdfData,
+        baseFilename: 'subscriptions_export',
+        shareText: 'Subscriptions Export Data (PDF)',
+      );
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting subscriptions PDF: $e');
+      }
+      Get.snackbar('Error', 'Failed to export subscriptions PDF: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  Future<void> exportScansToPDF() async {
+    try {
+      isLoading.value = true;
+      final scansSnapshot = await _firestore.collection('scans').get();
+
+      List<List<dynamic>> pdfData = [];
+      pdfData.add([
+        'ID',
+        'Restaurant ID',
+        'Customer ID',
+        'Points Awarded',
+        'Timestamp'
+      ]);
+
+      for (var doc in scansSnapshot.docs) {
+        final data = doc.data();
+        String timestampStr = '';
+        if (data['timestamp'] != null && data['timestamp'] is Timestamp) {
+          timestampStr = DateFormat('yyyy-MM-dd HH:mm')
+              .format((data['timestamp'] as Timestamp).toDate());
+        }
+
+        pdfData.add([
+          doc.id,
+          data['restaurantId'] ?? 'N/A',
+          data['clientId'] ?? 'N/A',
+          data['pointsAwarded'] ?? 0,
+          timestampStr,
+        ]);
+      }
+
+      await _exportTableToPDF(
+        tableData: pdfData,
+        baseFilename: 'scans_export',
+        shareText: 'Scan Activity Export Data (PDF)',
+      );
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting scans PDF: $e');
+      }
+      Get.snackbar('Error', 'Failed to export scan PDFs: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  // ===== Reward Claims Export =====
+  Future<void> exportRewardClaimsToCSV() async {
+    try {
+      isLoading.value = true;
+
+      final claimsSnapshot = await _firestore.collection('claims').get();
+
+      List<List<dynamic>> csvData = [];
+      csvData.add([
+        'ID',
+        'Restaurant Name',
+        'Customer ID',
+        'Reward Type',
+        'Points Used',
+        'Claim Date'
+      ]);
+
+      for (var doc in claimsSnapshot.docs) {
+        final data = doc.data();
+        final claimDate = data['claimDate'] as Timestamp?;
+        String claimDateStr = claimDate != null
+            ? DateFormat('yyyy-MM-dd HH:mm').format(claimDate.toDate())
+            : 'N/A';
+
+        csvData.add([
+          doc.id,
+          data['restaurantName'] ?? 'Unknown',
+          data['customerId'] ?? 'Unknown',
+          data['rewardType'] ?? 'Unknown',
+          data['pointsUsed'] ?? 0,
+          claimDateStr,
+        ]);
+      }
+
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+
+      await FileSaver.instance.saveFile(
+        name: 'reward_claims_export_${DateTime.now().millisecondsSinceEpoch}',
+        bytes: bytes,
+        ext: 'csv',
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final path =
+          '${directory.path}/reward_claims_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+
+      await Share.shareFiles([path], text: 'Reward Claims Export Data');
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting reward claims CSV: $e');
+      }
+      Get.snackbar('Error', 'Failed to export reward claims: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  Future<void> exportRewardClaimsToPDF() async {
+    try {
+      isLoading.value = true;
+
+      final claimsSnapshot = await _firestore.collection('claims').get();
+
+      List<List<dynamic>> pdfData = [];
+      pdfData.add([
+        'ID',
+        'Restaurant Name',
+        'Customer ID',
+        'Reward Type',
+        'Points Used',
+        'Claim Date'
+      ]);
+
+      for (var doc in claimsSnapshot.docs) {
+        final data = doc.data();
+        final claimDate = data['claimDate'] as Timestamp?;
+        String claimDateStr = claimDate != null
+            ? DateFormat('yyyy-MM-dd HH:mm').format(claimDate.toDate())
+            : 'N/A';
+
+        pdfData.add([
+          doc.id,
+          data['restaurantName'] ?? 'Unknown',
+          data['customerId'] ?? 'Unknown',
+          data['rewardType'] ?? 'Unknown',
+          data['pointsUsed'] ?? 0,
+          claimDateStr,
+        ]);
+      }
+
+      await _exportTableToPDF(
+          tableData: pdfData,
+          baseFilename: 'reward_claims_export',
+          shareText: 'Reward Claims Export Data (PDF)');
+
+      isLoading.value = false;
+    } catch (e) {
+      isLoading.value = false;
+      if (kDebugMode) {
+        print('Error exporting reward claims PDF: $e');
+      }
+      Get.snackbar('Error', 'Failed to export reward claims PDF: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
     }
   }
 }
