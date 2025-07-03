@@ -109,7 +109,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Aucun programme de fidélité disponible',
+                        'No loyalty program available',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -118,14 +118,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Revenez plus tard pour voir les programmes disponibles',
+                        'Scan the QR code to see the loyalty programs',
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: widget.refreshData,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Actualiser'),
+                        label: const Text('Refresh'),
                       ),
                     ],
                   ),

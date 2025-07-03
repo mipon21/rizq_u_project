@@ -13,44 +13,53 @@ class RewardsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final RestaurantController controller = Get.find<RestaurantController>();
 
-    return DefaultTabController(
-      length: 2,
-      initialIndex: initialTabIndex,
-      child: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TabBar(
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: MColors.primary,
+    return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: DefaultTabController(
+        length: 2,
+        initialIndex: initialTabIndex,
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
               ),
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey.shade700,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(text: "Reward Claims"),
-                Tab(text: "Recent Scans"),
-              ],
+              child: TabBar(
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: MColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.grey.shade700,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                tabs: const [
+                  Tab(text: "Reward Claims"),
+                  Tab(text: "Recent Scans"),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                // Rewards Claims Tab
-                RewardClaimsView(controller: controller),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Rewards Claims Tab
+                  RewardClaimsView(controller: controller),
 
-                // Recent Scans Tab
-                RecentScansView(controller: controller),
-              ],
+                  // Recent Scans Tab
+                  RecentScansView(controller: controller),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

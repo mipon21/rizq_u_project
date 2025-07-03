@@ -42,10 +42,13 @@ class QrCodePage extends GetView<CustomerController> {
                       // embeddedImageStyle: QrEmbeddedImageStyle(size: Size(40, 40)),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Present this code to the restaurateur to collect points.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: const Text(
+                        'Present this code to the restaurants to collect points.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     // SelectableText(userUid), // Optional: Show UID for debugging

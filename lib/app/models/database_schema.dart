@@ -48,8 +48,8 @@ class DatabaseSchema {
     'ibanNumber': 'String',
     'subscriptionPlanId': 'String (Reference to subscription_plans)',
     'subscriptionStatus': 'String (active|inactive|trial|expired)',
-    'subscriptionStartDate': 'Timestamp?',
-    'subscriptionEndDate': 'Timestamp?',
+    'subscriptionStart': 'Timestamp?',
+    'subscriptionEnd': 'Timestamp?',
     'currentScanCount': 'int',
     'trialStartDate': 'Timestamp?',
     'approvalStatus': 'String (pending|approved|rejected)',
@@ -234,7 +234,7 @@ class DatabaseSchema {
     },
     {
       'collection': 'restaurants',
-      'fields': ['subscriptionStatus', 'subscriptionEndDate'],
+      'fields': ['subscriptionStatus', 'subscriptionEnd'],
       'order': 'asc',
     },
   ];

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
@@ -7,6 +8,7 @@ import '../../../ui/theme/widget_themes/cached_image_widget.dart';
 import '../../../ui/theme/widget_themes/shimmer_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/subscription_plan_model.dart';
+import 'package:intl/intl.dart';
 
 class RestaurantManagementPage extends GetView<AdminController> {
   const RestaurantManagementPage({Key? key}) : super(key: key);
@@ -27,6 +29,13 @@ class RestaurantManagementPage extends GetView<AdminController> {
         title: const Text('Restaurant Management'),
         backgroundColor: MColors.primary,
         actions: [
+          // Debug: Show restaurant counts
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.info),
+              onPressed: () => _showRestaurantCounts(context),
+              tooltip: 'Show Restaurant Info (Debug)',
+            ),
           IconButton(
             icon: const Icon(Icons.file_download),
             onPressed: () => controller.exportRestaurantsToCSV(),
@@ -100,6 +109,21 @@ class RestaurantManagementPage extends GetView<AdminController> {
                       return const Center(child: Text('No restaurants found'));
                     }
 
+                    // Debug: Log restaurant data
+                    if (kDebugMode) {
+                      print('📊 Restaurant Management Page Data:');
+                      print('   - Total restaurants loaded: ${snapshot.data!.docs.length}');
+                      final approvalStatuses = <String, int>{};
+                      for (var doc in snapshot.data!.docs) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final status = data['approvalStatus'] ?? 'unknown';
+                        approvalStatuses[status] = (approvalStatuses[status] ?? 0) + 1;
+                      }
+                      approvalStatuses.forEach((status, count) {
+                        print('   - $status: $count restaurants');
+                      });
+                    }
+
                     // Filter by search query if provided
                     var filteredDocs = snapshot.data!.docs;
                     if (controller.restaurantSearchQuery.isNotEmpty) {
@@ -137,6 +161,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                   DataColumn(label: Text('Name')),
                                   DataColumn(label: Text('Email')),
                                   DataColumn(label: Text('Subscription')),
+                                  DataColumn(label: Text('Expiry Date')),
                                   DataColumn(label: Text('Status')),
                                   DataColumn(label: Text('Approval')),
                                   DataColumn(label: Text('Actions')),
@@ -148,6 +173,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                   final email = data['email'] ?? 'No email';
                                   final subscriptionPlan =
                                       data['subscriptionPlan'] ?? 'No plan';
+                                  final subscriptionEndDate = data['subscriptionEnd'] as Timestamp?;
                                   final subscriptionStatus =
                                       data['subscriptionStatus'] ?? 'inactive';
                                   final isSuspended =
@@ -161,17 +187,35 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                       DataCell(Text(email)),
                                       DataCell(Text(_getPlanDisplayName(
                                           subscriptionPlan))),
+                                      DataCell(Text(_formatExpiryDate(subscriptionEndDate))),
                                       DataCell(
-                                        Chip(
-                                          label: Text(
-                                            subscriptionStatus,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Chip(
+                                              label: Text(
+                                                subscriptionStatus,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              backgroundColor: _getStatusColor(
+                                                  subscriptionStatus),
                                             ),
-                                          ),
-                                          backgroundColor: _getStatusColor(
-                                              subscriptionStatus),
+                                            if (isSuspended)
+                                              const Chip(
+                                                label: Text(
+                                                  'SUSPENDED',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                          ],
                                         ),
                                       ),
                                       DataCell(
@@ -250,6 +294,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                               final name = data['name'] ?? 'Unknown';
                               final subscriptionPlan =
                                   data['subscriptionPlan'] ?? 'No plan';
+                              final subscriptionEndDate = data['subscriptionEnd'] as Timestamp?;
                               final subscriptionStatus =
                                   data['subscriptionStatus'] ?? 'inactive';
                               final isSuspended = data['isSuspended'] ?? false;
@@ -263,8 +308,12 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                   children: [
                                     Text(
                                         'Plan: ${_getPlanDisplayName(subscriptionPlan)}'),
+                                    Text(
+                                        'Expires: ${_formatExpiryDate(subscriptionEndDate)}'),
                                     const SizedBox(height: 4),
-                                    Row(
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
                                       children: [
                                         Chip(
                                           label: Text(
@@ -280,7 +329,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                           materialTapTargetSize:
                                               MaterialTapTargetSize.shrinkWrap,
                                         ),
-                                        const SizedBox(width: 8),
                                         Chip(
                                           label: Text(
                                             approvalStatus,
@@ -296,6 +344,21 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                           materialTapTargetSize:
                                               MaterialTapTargetSize.shrinkWrap,
                                         ),
+                                        if (isSuspended)
+                                          const Chip(
+                                            label: Text(
+                                              'SUSPENDED',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            padding: EdgeInsets.zero,
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -485,51 +548,209 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
   void _showEditDialog(
       BuildContext context, String restaurantId, Map<String, dynamic> data) {
-    final nameController = TextEditingController(text: data['name']);
-    final emailController = TextEditingController(text: data['email']);
-    final phoneController = TextEditingController(text: data['phone']);
-    final addressController = TextEditingController(text: data['address']);
-    final subscriptionPlanController =
-        TextEditingController(text: data['subscriptionPlan']);
-    final subscriptionStatusController =
-        TextEditingController(text: data['subscriptionStatus']);
+    // Initialize controllers with current data
+    final restaurantNameController = TextEditingController(text: data['restaurantName'] ?? data['name'] ?? '');
+    final ownerNameController = TextEditingController(text: data['ownerName'] ?? '');
+    final emailController = TextEditingController(text: data['email'] ?? '');
+    final supportEmailController = TextEditingController(text: data['supportEmail'] ?? '');
+    final bankDetailsController = TextEditingController(text: data['bankDetails'] ?? '');
+    final ibanController = TextEditingController(text: data['ibanNumber'] ?? '');
+    
+    // Non-editable display data
+    final logoUrl = data['logoUrl'] ?? '';
+    final nationalIdFront = data['ownerNationalIdFront'] ?? '';
+    final nationalIdBack = data['ownerNationalIdBack'] ?? '';
+    final createdAt = data['createdAt'];
+    final approvalStatus = data['approvalStatus'] ?? 'unknown';
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Edit ${data['name']}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                ),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone'),
-                ),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                ),
-                TextField(
-                  controller: subscriptionPlanController,
-                  decoration:
-                      const InputDecoration(labelText: 'Subscription Plan'),
-                ),
-                TextField(
-                  controller: subscriptionStatusController,
-                  decoration:
-                      const InputDecoration(labelText: 'Subscription Status'),
-                ),
-              ],
+          title: Text('Edit Restaurant: ${data['restaurantName'] ?? data['name'] ?? 'Unknown'}'),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Restaurant Logo (Display Only)
+                  if (logoUrl.isNotEmpty) ...[
+                    const Text(
+                      'Restaurant Logo',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedImageWidget(
+                          imageUrl: logoUrl,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Restaurant Information Section
+                  const Text(
+                    'Restaurant Information',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: restaurantNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Restaurant Name *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: ownerNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Owner Name *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Contact Information Section
+                  const Text(
+                    'Contact Information',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Primary Email *',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: supportEmailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Support Email',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.support_agent),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Bank Information Section
+                  const Text(
+                    'Bank Information',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: bankDetailsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Bank Details',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.account_balance),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: ibanController,
+                    decoration: const InputDecoration(
+                      labelText: 'IBAN Number',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.credit_card),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Account Information (Read-Only)
+                  const Text(
+                    'Account Information',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoRow('Restaurant ID', restaurantId),
+                        _buildInfoRow('Approval Status', approvalStatus.toUpperCase()),
+                        if (createdAt != null)
+                          _buildInfoRow('Registration Date', 
+                            (createdAt as Timestamp).toDate().toString().split(' ')[0]),
+                      ],
+                    ),
+                  ),
+
+                  // National ID Documents (Display Only)
+                  if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Owner Identity Documents (View Only)',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (nationalIdFront.isNotEmpty)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text('National ID - Front'),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedImageWidget(
+                                    imageUrl: nationalIdFront,
+                                    width: double.infinity,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (nationalIdFront.isNotEmpty && nationalIdBack.isNotEmpty)
+                          const SizedBox(width: 16),
+                        if (nationalIdBack.isNotEmpty)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text('National ID - Back'),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedImageWidget(
+                                    imageUrl: nationalIdBack,
+                                    width: double.infinity,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -539,27 +760,50 @@ class RestaurantManagementPage extends GetView<AdminController> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // Validate required fields
+                if (restaurantNameController.text.trim().isEmpty ||
+                    ownerNameController.text.trim().isEmpty ||
+                    emailController.text.trim().isEmpty) {
+                  Get.snackbar(
+                    'Validation Error',
+                    'Please fill in all required fields (marked with *)',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+
                 try {
+                  // Update restaurant document with comprehensive data
                   await FirebaseFirestore.instance
                       .collection('restaurants')
                       .doc(restaurantId)
                       .update({
-                    'name': nameController.text,
-                    'email': emailController.text,
-                    'phone': phoneController.text,
-                    'address': addressController.text,
-                    'subscriptionPlan': subscriptionPlanController.text,
-                    'subscriptionStatus': subscriptionStatusController.text,
+                    'restaurantName': restaurantNameController.text.trim(),
+                    'name': restaurantNameController.text.trim(), // Keep both for compatibility
+                    'ownerName': ownerNameController.text.trim(),
+                    'email': emailController.text.trim(),
+                    'supportEmail': supportEmailController.text.trim(),
+                    'bankDetails': bankDetailsController.text.trim(),
+                    'ibanNumber': ibanController.text.trim(),
+                    'updatedAt': FieldValue.serverTimestamp(),
                   });
 
                   Get.back();
                   Get.snackbar(
                     'Success',
-                    'Restaurant updated successfully',
+                    'Restaurant information updated successfully',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.green,
                     colorText: Colors.white,
                   );
+
+                  if (kDebugMode) {
+                    print('Restaurant updated: ${restaurantNameController.text}');
+                    print('Owner: ${ownerNameController.text}');
+                    print('Email: ${emailController.text}');
+                  }
                 } catch (e) {
                   Get.snackbar(
                     'Error',
@@ -570,7 +814,11 @@ class RestaurantManagementPage extends GetView<AdminController> {
                   );
                 }
               },
-              child: const Text('Save'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Save Changes'),
             ),
           ],
         );
@@ -578,113 +826,298 @@ class RestaurantManagementPage extends GetView<AdminController> {
     );
   }
 
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showRestaurantDetails(
       BuildContext context, String restaurantId, Map<String, dynamic> data) {
-    final name = data['name'] ?? 'Unknown';
+    // Extract all data fields
+    final restaurantName = data['restaurantName'] ?? data['name'] ?? 'Unknown';
+    final ownerName = data['ownerName'] ?? 'Not provided';
     final email = data['email'] ?? 'No email';
-    final phone = data['phone'] ?? 'No phone';
-    final address = data['address'] ?? 'No address';
-    final subscriptionPlan = data['subscriptionPlan'] ?? 'No plan';
-    final subscriptionStatus = data['subscriptionStatus'] ?? 'inactive';
+    final supportEmail = data['supportEmail'] ?? 'Not provided';
+    final bankDetails = data['bankDetails'] ?? 'Not provided';
+    final ibanNumber = data['ibanNumber'] ?? 'Not provided';
     final isSuspended = data['isSuspended'] ?? false;
     final approvalStatus = data['approvalStatus'] ?? 'pending';
-    final logoUrl = data['logoUrl'];
+    final createdAt = data['createdAt'];
+    final logoUrl = data['logoUrl'] ?? '';
+    final nationalIdFront = data['ownerNationalIdFront'] ?? '';
+    final nationalIdBack = data['ownerNationalIdBack'] ?? '';
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(name),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: logoUrl != null
-                      ? CachedImageWidget(
+          title: Text('Restaurant Details: $restaurantName'),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Restaurant Logo (Display Only)
+                  if (logoUrl.isNotEmpty) ...[
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedImageWidget(
                           imageUrl: logoUrl,
-                          width: 100,
-                          height: 100,
+                          width: 120,
+                          height: 120,
                           fit: BoxFit.cover,
-                          borderRadius: BorderRadius.circular(50),
-                        )
-                      : const CircleAvatar(
-                          radius: 50,
-                          child: Icon(Icons.restaurant, size: 50),
                         ),
-                ),
-                const SizedBox(height: 16),
-                _detailRow('Email', email),
-                _detailRow('Phone', phone),
-                _detailRow('Address', address),
-                _detailRow(
-                    'Subscription Plan', _getPlanDisplayName(subscriptionPlan),
-                    color: _getStatusColor(subscriptionStatus)),
-                _detailRow('Subscription Status', subscriptionStatus,
-                    color: _getStatusColor(subscriptionStatus)),
-                _detailRow(
-                    'Account Status', isSuspended ? 'Suspended' : 'Active',
-                    color: isSuspended ? Colors.red : Colors.green),
-                _detailRow('Approval Status', approvalStatus,
-                    color: _getApprovalStatusColor(approvalStatus)),
-              ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ] else ...[
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.restaurant,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Restaurant Information Section
+                  _buildSectionTitle('Restaurant Information'),
+                  const SizedBox(height: 8),
+                  _buildInfoCard([
+                    _buildDetailRow('Restaurant Name', restaurantName),
+                    _buildDetailRow('Owner Name', ownerName),
+                  ]),
+                  const SizedBox(height: 16),
+
+                  // Contact Information Section
+                  _buildSectionTitle('Contact Information'),
+                  const SizedBox(height: 8),
+                  _buildInfoCard([
+                    _buildDetailRow('Primary Email', email),
+                    _buildDetailRow('Support Email', supportEmail),
+                  ]),
+                  const SizedBox(height: 16),
+
+                  // Bank Information Section
+                  _buildSectionTitle('Bank Information'),
+                  const SizedBox(height: 8),
+                  _buildInfoCard([
+                    _buildDetailRow('Bank Details', bankDetails),
+                    _buildDetailRow('IBAN Number', ibanNumber),
+                  ]),
+                  const SizedBox(height: 16),
+
+                  // Account Information Section
+                  _buildSectionTitle('Account Information'),
+                  const SizedBox(height: 8),
+                  _buildInfoCard([
+                    _buildDetailRow('Restaurant ID', restaurantId),
+                    _buildDetailRow('Account Status', 
+                      isSuspended ? 'Suspended' : 'Active',
+                      valueColor: isSuspended ? Colors.red : Colors.green),
+                    _buildDetailRow('Approval Status', approvalStatus.toUpperCase(),
+                      valueColor: _getApprovalStatusColor(approvalStatus)),
+                    if (createdAt != null)
+                      _buildDetailRow('Registration Date', 
+                        (createdAt as Timestamp).toDate().toString().split(' ')[0]),
+                  ]),
+
+                  // National ID Documents (Display Only)
+                  if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildSectionTitle('Owner Identity Documents'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (nationalIdFront.isNotEmpty)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'National ID - Front',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedImageWidget(
+                                    imageUrl: nationalIdFront,
+                                    width: double.infinity,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (nationalIdFront.isNotEmpty && nationalIdBack.isNotEmpty)
+                          const SizedBox(width: 16),
+                        if (nationalIdBack.isNotEmpty)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'National ID - Back',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedImageWidget(
+                                    imageUrl: nationalIdBack,
+                                    width: double.infinity,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           actions: [
-            if (approvalStatus == 'pending')
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    label: const Text('Approve'),
-                    onPressed: () {
-                      Get.back();
-                      controller.approveRestaurant(restaurantId);
-                    },
-                  ),
-                  TextButton.icon(
-                    icon: const Icon(Icons.close, color: Colors.red),
-                    label: const Text('Reject'),
-                    onPressed: () {
-                      Get.back();
-                      _showRejectDialog(context, restaurantId);
-                    },
-                  ),
-                ],
-              ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            // Action buttons in a more organized layout
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton.icon(
-                  icon: const Icon(Icons.subscriptions, color: Colors.blue),
-                  label: const Text('Assign Plan'),
-                  onPressed: () {
-                    Get.back();
-                    _showAssignSubscriptionDialog(context, restaurantId, data);
-                  },
+                // Approve/Reject buttons (only for pending restaurants)
+                if (approvalStatus == 'pending')
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.check, size: 16),
+                            label: const Text('Approve'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () {
+                              Get.back();
+                              controller.approveRestaurant(restaurantId);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.close, size: 16),
+                            label: const Text('Reject'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () {
+                              Get.back();
+                              _showRejectDialog(context, restaurantId);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                
+                // Main action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.subscriptions, color: Colors.blue),
+                        label: const Text('Assign Plan'),
+                        onPressed: () {
+                          Get.back();
+                          _showAssignSubscriptionDialog(context, restaurantId, data);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.schedule, color: Colors.orange),
+                        label: const Text('Extend'),
+                        onPressed: () {
+                          Get.back();
+                          _showExtendSubscriptionDialog(context, restaurantId);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                TextButton.icon(
-                  icon: const Icon(Icons.schedule, color: Colors.orange),
-                  label: const Text('Extend'),
-                  onPressed: () {
-                    Get.back();
-                    _showExtendSubscriptionDialog(context, restaurantId);
-                  },
+                
+                // Bottom action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.back();
+                          _showEditDialog(context, restaurantId, data);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Edit'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('Close'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Get.back();
-                _showEditDialog(context, restaurantId, data);
-              },
-              child: const Text('Edit'),
             ),
           ],
         );
@@ -776,43 +1209,102 @@ class RestaurantManagementPage extends GetView<AdminController> {
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                color: valueColor ?? Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddRestaurantDialog(BuildContext context) {
-    final nameController = TextEditingController();
     final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
     final passwordController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add New Restaurant'),
+          title: const Text('Create Restaurant Login Credentials'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: nameController,
-                  decoration:
-                      const InputDecoration(labelText: 'Restaurant Name *'),
+                const Text(
+                  'Create login credentials for a new restaurant. The restaurant owner will use these credentials to login and complete their registration process.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: emailController,
-                  decoration: const InputDecoration(labelText: 'Email *'),
+                  decoration: const InputDecoration(
+                    labelText: 'Restaurant Email *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                    helperText: 'This will be used as the restaurant login email',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: passwordController,
-                  decoration: const InputDecoration(labelText: 'Password *'),
+                  decoration: const InputDecoration(
+                    labelText: 'Password *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                    helperText: 'Minimum 6 characters',
+                  ),
                   obscureText: true,
-                ),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone'),
-                ),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
                 ),
               ],
             ),
@@ -824,12 +1316,22 @@ class RestaurantManagementPage extends GetView<AdminController> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.trim().isEmpty ||
-                    emailController.text.trim().isEmpty ||
+                if (emailController.text.trim().isEmpty ||
                     passwordController.text.isEmpty) {
                   Get.snackbar(
                     'Error',
                     'Please fill in all required fields',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+
+                if (passwordController.text.length < 6) {
+                  Get.snackbar(
+                    'Error',
+                    'Password must be at least 6 characters long',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.red,
                     colorText: Colors.white,
@@ -845,24 +1347,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                     password: passwordController.text,
                   );
 
-                  // Create restaurant document
-                  await FirebaseFirestore.instance
-                      .collection('restaurants')
-                      .doc(userCredential.user!.uid)
-                      .set({
-                    'name': nameController.text.trim(),
-                    'email': emailController.text.trim(),
-                    'phone': phoneController.text.trim(),
-                    'address': addressController.text.trim(),
-                    'subscriptionPlan': 'free_trial',
-                    'subscriptionStatus': 'inactive',
-                    'isSuspended': false,
-                    'approvalStatus': 'approved',
-                    'createdAt': Timestamp.now(),
-                    'approvedAt': Timestamp.now(),
-                  });
-
-                  // Create user document with role
+                  // Create user document with role (minimal setup)
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(userCredential.user!.uid)
@@ -870,27 +1355,40 @@ class RestaurantManagementPage extends GetView<AdminController> {
                     'email': emailController.text.trim(),
                     'role': 'restaurateur',
                     'createdAt': Timestamp.now(),
+                    'createdByAdmin': true, // Flag to indicate admin created this account
                   });
 
                   Get.back();
                   Get.snackbar(
                     'Success',
-                    'Restaurant added successfully',
+                    'Restaurant login credentials created successfully!\nThe restaurant can now login and complete their registration.',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.green,
                     colorText: Colors.white,
+                    duration: const Duration(seconds: 4),
                   );
+
+                  if (kDebugMode) {
+                    print('✅ Restaurant credentials created:');
+                    print('   - Email: ${emailController.text.trim()}');
+                    print('   - User ID: ${userCredential.user!.uid}');
+                    print('   - Restaurant can now login and complete registration');
+                  }
                 } catch (e) {
                   Get.snackbar(
                     'Error',
-                    'Failed to add restaurant: $e',
+                    'Failed to create restaurant credentials: $e',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.red,
                     colorText: Colors.white,
                   );
                 }
               },
-              child: const Text('Add'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Create Credentials'),
             ),
           ],
         );
@@ -1077,5 +1575,102 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
     // Fallback for unknown plans
     return planId;
+  }
+
+  // Debug method to show restaurant counts by approval status
+  void _showRestaurantCounts(BuildContext context) async {
+    try {
+      // Get all restaurants from restaurants collection
+      final restaurantsSnapshot = await FirebaseFirestore.instance
+          .collection('restaurants')
+          .get();
+
+      // Get pending registrations from restaurant_registrations collection
+      final pendingSnapshot = await FirebaseFirestore.instance
+          .collection('restaurant_registrations')
+          .where('approvalStatus', isEqualTo: 'pending')
+          .get();
+
+      // Count by approval status
+      final approvalCounts = <String, int>{};
+      for (var doc in restaurantsSnapshot.docs) {
+        final data = doc.data();
+        final status = data['approvalStatus'] ?? 'unknown';
+        approvalCounts[status] = (approvalCounts[status] ?? 0) + 1;
+      }
+
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Restaurant Status Overview'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Restaurants Collection (Restaurant Management):',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('• Total: ${restaurantsSnapshot.docs.length}'),
+              ...approvalCounts.entries.map((entry) =>
+                  Text('• ${entry.key}: ${entry.value}')),
+              const SizedBox(height: 16),
+              Text(
+                'Restaurant Registrations Collection (Pending Approvals):',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('• Pending: ${pendingSnapshot.docs.length}'),
+              const SizedBox(height: 16),
+              const Text(
+                '💡 When you approve a restaurant:\n'
+                '• It disappears from Pending Approvals\n'
+                '• It appears in Restaurant Management\n'
+                '• Filter is set to "All" by default',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to fetch restaurant counts: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  String _formatExpiryDate(Timestamp? subscriptionEndDate) {
+    if (subscriptionEndDate == null) {
+      return 'No expiry';
+    }
+    
+    final DateTime expiryDate = subscriptionEndDate.toDate();
+    final DateTime now = DateTime.now();
+    final Duration difference = expiryDate.difference(now);
+    
+    // Format the date
+    final String formattedDate = DateFormat('MMM dd, yyyy').format(expiryDate);
+    
+    if (difference.isNegative) {
+      final int daysExpired = difference.inDays.abs();
+      return '$formattedDate (Expired $daysExpired days ago)';
+    } else if (difference.inDays == 0) {
+      return '$formattedDate (Expires today)';
+    } else if (difference.inDays <= 7) {
+      return '$formattedDate (${difference.inDays} days left)';
+    } else {
+      return formattedDate;
+    }
   }
 }

@@ -77,8 +77,8 @@ class DataMigrationService {
           'ibanNumber': data['ibanNumber'],
           'subscriptionPlanId': 'free_trial', // Default to free trial
           'subscriptionStatus': 'trial',
-          'subscriptionStartDate': data['approvedAt'],
-          'subscriptionEndDate': data['approvedAt'] != null
+          'subscriptionStart': data['approvedAt'],
+          'subscriptionEnd': data['approvedAt'] != null
               ? Timestamp.fromDate((data['approvedAt'] as Timestamp)
                   .toDate()
                   .add(const Duration(days: 60)))

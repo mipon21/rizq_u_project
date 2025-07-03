@@ -23,6 +23,7 @@ class RestaurantProfileModel {
   final DateTime createdAt;
   final String bankDetails; // New field for bank details
   final DateTime? subscriptionEnd; // New field for subscription end date
+  final bool isSuspended; // New field for suspension status
   // Registration fields
   final String? ownerName;
   final String? supportEmail;
@@ -42,6 +43,7 @@ class RestaurantProfileModel {
     required this.createdAt,
     this.bankDetails = '', // Default to empty string
     this.subscriptionEnd, // New parameter
+    this.isSuspended = false, // Default to not suspended
     this.ownerName,
     this.supportEmail,
     this.ibanNumber,
@@ -68,6 +70,7 @@ class RestaurantProfileModel {
           data['bankDetails'] ?? '', // Get bank details or default to empty
       subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)
           ?.toDate(), // Get subscription end date
+      isSuspended: data['isSuspended'] ?? false, // Get suspension status
       // Registration fields
       ownerName: data['ownerName'],
       supportEmail: data['supportEmail'],
@@ -175,6 +178,7 @@ class RestaurantController extends GetxController {
   String get bankDetails => restaurantProfile.value?.bankDetails ?? '';
   bool get isSubscribed =>
       restaurantProfile.value?.isSubscriptionActive ?? false;
+  bool get isSuspended => restaurantProfile.value?.isSuspended ?? false;
   int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
   int get rewardsIssuedCount => restaurantProfile.value?.rewardsIssued ?? 0;
 

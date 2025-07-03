@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import path if needed
 import 'package:flutter/foundation.dart'; // For kDebugMode
+import '../utils/snackbar_utils.dart'; // Import snackbar utilities
 
 class AuthController extends GetxController {
   static AuthController get instance => Get.find();
@@ -46,12 +47,49 @@ class AuthController extends GetxController {
       }
       Get.offAllNamed(Routes.LOGIN);
     } else {
-      // If user is logged in, fetch role and navigate accordingly
+      // If user is logged in, check email verification first
       if (kDebugMode) {
-        print('User is logged in (${user.uid}). Fetching role...');
+        print('User is logged in (${user.uid}). Checking email verification...');
       }
-      await _fetchUserRole(user.uid);
-      _navigateBasedOnRole();
+      
+      // Refresh user data to get latest email verification status
+      await user.reload();
+      user = _auth.currentUser;
+      
+      if (user != null && !user.emailVerified) {
+        // If email is not verified, redirect to email verification page
+        if (kDebugMode) {
+          print('Email not verified. Navigating to Email Verification.');
+        }
+        Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+      } else {
+        // If email is verified, check if user document exists in Firestore
+        if (kDebugMode) {
+          print('Email verified. Checking user document...');
+        }
+        
+        try {
+          final docSnapshot = await _firestore.collection('users').doc(user!.uid).get();
+          
+          if (!docSnapshot.exists) {
+            // User doesn't exist in Firestore yet, create the document
+            if (kDebugMode) {
+              print('User document not found. Creating user document...');
+            }
+            await _createUserDocument(user);
+          }
+          
+          // Fetch user role and navigate accordingly
+          await _fetchUserRole(user.uid);
+          _navigateBasedOnRole();
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error checking/creating user document: $e');
+          }
+          // If there's an error, redirect to email verification to try again
+          Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+        }
+      }
     }
   }
 
@@ -146,7 +184,7 @@ class AuthController extends GetxController {
           if (kDebugMode) {
             print('Restaurant rejected, navigating to pending approval page.');
           }
-          Get.offAllNamed('/restaurant-pending-approval');
+          Get.offAllNamed(Routes.RESTAURANT_PENDING_APPROVAL);
           return;
         }
 
@@ -175,7 +213,6 @@ class AuthController extends GetxController {
       // Or potentially log out the user.
       // For simplicity now, we assume fetchUserRole handles errors.
       // If fetch failed and role is empty, _setInitialScreen might redirect here.
-      // Consider adding logic to prevent loops if role fetch consistently fails.
       // Get.offAllNamed(Routes.LOGIN);
     }
   }
@@ -201,46 +238,25 @@ class AuthController extends GetxController {
       final user = userCredential.user;
 
       if (user != null) {
-        // Create user document in Firestore with clean data
-        String cleanString(String input) {
-          return input.replaceAll(RegExp(r'\\+'), '');
-        }
-
-        await _firestore.collection('users').doc(user.uid).set({
-          'uid': cleanString(user.uid),
-          'email': cleanString(email),
-          'role': cleanString(normalizedRole),
-          'createdAt': FieldValue.serverTimestamp(),
-          // Initialize points map for customers
-          if (normalizedRole == 'customer') 'pointsByRestaurant': {},
-          // Add approval status for restaurants
-          if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
-        });
-
-        // For customers, create their data immediately
-        if (normalizedRole == 'customer') {
-          // Customer registration is complete, navigate to customer home
-          userRole.value = normalizedRole;
-          if (kDebugMode) {
-            print('Customer registration successful for ${user.email}');
-          }
-        } else if (normalizedRole == 'restaurateur') {
-          // For restaurants, redirect to registration form
-          userRole.value = normalizedRole;
-          if (kDebugMode) {
-            print(
-                'Restaurant user created, redirecting to registration form for ${user.email}');
-          }
-          // Navigate to restaurant registration page
-          Get.offAllNamed('/restaurant-registration');
-          return;
-        }
-
-        // No need to navigate manually for customers, _setInitialScreen handles it via the stream
+        // Send email verification immediately
+        await user.sendEmailVerification();
+        
+        // Store role temporarily for later use
+        userRole.value = normalizedRole;
+        
         if (kDebugMode) {
-          print(
-              'Registration successful for ${user.email}, role: $normalizedRole');
+          print('Firebase Auth user created for ${user.email}, role: $normalizedRole');
+          print('Email verification sent to ${user.email}');
         }
+        
+        // Show success message
+        SnackbarUtils.showSuccess(
+          'Verification Email Sent',
+          'Please check your email and click the verification link to complete registration.',
+        );
+        
+        // Navigate to email verification page
+        Get.offAllNamed(Routes.EMAIL_VERIFICATION);
       }
     } on FirebaseAuthException catch (e) {
       Get.snackbar(
@@ -265,11 +281,29 @@ class AuthController extends GetxController {
   Future<void> login(String email, String password) async {
     try {
       isLoading.value = true;
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      // Navigation is handled by the _setInitialScreen listener
-      if (kDebugMode) {
-        print('Login successful for $email.');
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password,
+      );
+      
+      // Check if email is verified
+      if (userCredential.user != null && !userCredential.user!.emailVerified) {
+        if (kDebugMode) {
+          print('Login successful but email not verified for $email.');
+        }
+        
+        SnackbarUtils.showError(
+          'Please complete your registration by verifying your email.',
+        );
+        
+        // Navigation to email verification will be handled by _setInitialScreen
+      } else {
+        if (kDebugMode) {
+          print('Login successful for $email.');
+        }
       }
+      
+      // Navigation is handled by the _setInitialScreen listener
     } on FirebaseAuthException catch (e) {
       Get.snackbar('Login Failed', e.message ?? 'An unknown error occurred.');
       if (kDebugMode) {
@@ -288,16 +322,38 @@ class AuthController extends GetxController {
   Future<void> forgotPassword(String email) async {
     try {
       isLoading.value = true;
+      if (kDebugMode) {
+        print('Sending password reset email to: $email');
+      }
+      
       await _auth.sendPasswordResetEmail(email: email);
-      Get.snackbar('Password Reset', 'Password reset email sent to $email.');
+      
+      if (kDebugMode) {
+        print('Password reset email sent successfully to: $email');
+      }
+      
+      // Show success message with better styling
+      SnackbarUtils.showSuccess(
+        'Password Reset Email Sent', 
+        'Please check your email at $email for reset instructions.'
+      );
+      
+      // Wait a moment before navigating back to ensure snackbar is visible
+      await Future.delayed(const Duration(milliseconds: 1500));
       Get.back(); // Close the forgot password dialog/page
+      
     } on FirebaseAuthException catch (e) {
-      Get.snackbar(
-        'Password Reset Failed',
-        e.message ?? 'An unknown error occurred.',
+      if (kDebugMode) {
+        print('FirebaseAuthException in forgotPassword: ${e.code} - ${e.message}');
+      }
+      SnackbarUtils.showError(
+        e.message ?? 'An unknown error occurred while sending reset email.',
       );
     } catch (e) {
-      Get.snackbar('Password Reset Failed', 'An unexpected error occurred.');
+      if (kDebugMode) {
+        print('Unexpected error in forgotPassword: $e');
+      }
+      SnackbarUtils.showError('An unexpected error occurred while sending reset email.');
     } finally {
       isLoading.value = false;
     }
@@ -319,6 +375,135 @@ class AuthController extends GetxController {
       }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Check if email is verified and proceed accordingly
+  Future<void> checkEmailVerification() async {
+    try {
+      isLoading.value = true;
+      User? user = _auth.currentUser;
+      
+      if (user != null) {
+        // Reload user to get latest email verification status
+        await user.reload();
+        user = _auth.currentUser;
+        
+        if (user != null && user.emailVerified) {
+          if (kDebugMode) {
+            print('Email verified! Creating user account...');
+          }
+          
+          // Now create the user document in Firestore
+          await _createUserDocument(user);
+          
+          SnackbarUtils.showSuccess(
+            'Email Verified!',
+            'Your account has been created successfully.',
+          );
+          
+          // Fetch user role and navigate
+          await _fetchUserRole(user.uid);
+          _navigateBasedOnRole();
+        } else {
+          if (kDebugMode) {
+            print('Email not yet verified.');
+          }
+          
+          SnackbarUtils.showError(
+            'Email not verified yet. Please check your email and click the verification link.',
+          );
+        }
+      } else {
+        throw Exception('No user is currently signed in.');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking email verification: $e');
+      }
+      SnackbarUtils.showError(
+        'An error occurred while checking email verification.',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Resend email verification
+  Future<void> resendEmailVerification() async {
+    try {
+      isLoading.value = true;
+      User? user = _auth.currentUser;
+      
+      if (user != null) {
+        await user.sendEmailVerification();
+        
+        if (kDebugMode) {
+          print('Email verification resent to ${user.email}');
+        }
+        
+        SnackbarUtils.showSuccess(
+          'Verification Email Sent',
+          'A new verification email has been sent to ${user.email}',
+        );
+      } else {
+        throw Exception('No user is currently signed in.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'too-many-requests') {
+        SnackbarUtils.showError(
+          'Too many requests. Please wait a moment before requesting another verification email.',
+        );
+      } else {
+        SnackbarUtils.showError(
+          e.message ?? 'An error occurred while sending verification email.',
+        );
+      }
+      
+      if (kDebugMode) {
+        print('FirebaseAuthException in resendEmailVerification: ${e.code} - ${e.message}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error resending email verification: $e');
+      }
+      SnackbarUtils.showError(
+        'An error occurred while sending verification email.',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Create user document in Firestore after email verification
+  Future<void> _createUserDocument(User user) async {
+    try {
+      String normalizedRole = userRole.value;
+      
+      // Clean string function to remove extra backslashes
+      String cleanString(String input) {
+        return input.replaceAll(RegExp(r'\\+'), '');
+      }
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'uid': cleanString(user.uid),
+        'email': cleanString(user.email ?? ''),
+        'role': cleanString(normalizedRole),
+        'createdAt': FieldValue.serverTimestamp(),
+        // Initialize points map for customers
+        if (normalizedRole == 'customer') 'pointsByRestaurant': {},
+        // Add approval status for restaurants
+        if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
+      });
+
+      if (kDebugMode) {
+        print('User document created in Firestore for ${user.email}, role: $normalizedRole');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating user document: $e');
+      }
+      throw Exception('Failed to create user account. Please try again.');
     }
   }
 

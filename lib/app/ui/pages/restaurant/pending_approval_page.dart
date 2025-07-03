@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../controllers/restaurant_registration_controller.dart';
 import '../../../models/restaurant_registration_model.dart';
 import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/support_constants.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
 import '../../../routes/app_pages.dart';
 
@@ -97,13 +98,13 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
         statusText = 'Rejected';
-        statusMessage = registration.rejectionReason ?? 'Your restaurant registration has been rejected. Please contact support for more information.';
+        statusMessage = registration.rejectionReason ?? SupportConstants.registrationRejectedMessage;
         break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
         statusText = 'Unknown';
-        statusMessage = 'Unknown status. Please contact support.';
+        statusMessage = 'Unknown status. ${SupportConstants.genericSupportMessage}.';
     }
 
     return Card(
@@ -366,8 +367,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
         title: const Text('Contact Support'),
         content: const Text(
           'If you have any questions about your registration status, please contact our support team:\n\n'
-          'Email: support@rizq.com\n'
-          'Phone: +212-XXX-XXXXXX\n\n'
+                      'Email: ${SupportConstants.supportEmail}\n\n'
           'We\'re here to help!',
         ),
         actions: [

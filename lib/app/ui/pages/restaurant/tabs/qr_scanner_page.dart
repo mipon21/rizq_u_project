@@ -85,7 +85,13 @@ class _QrScannerPageState extends State<QrScannerPage>
     final scanAreaHeight = scanAreaWidth; // Keep it square
 
     return Scaffold(
-      // No app bar as requested
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+        automaticallyImplyLeading: false,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       extendBody: true,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),

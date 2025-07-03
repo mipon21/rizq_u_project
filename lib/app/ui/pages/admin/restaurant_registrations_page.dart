@@ -35,7 +35,28 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
             );
           }
 
-          final registrations = snapshot.data?.docs ?? [];
+          final allRegistrations = snapshot.data?.docs ?? [];
+          
+          // Filter to only show pending registrations
+          final registrations = allRegistrations.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final approvalStatus = data['approvalStatus'] ?? 'pending';
+            return approvalStatus == 'pending';
+          }).toList();
+
+          // Debug logging
+          print('📋 Restaurant Registrations Page:');
+          print('   - Total registrations: ${allRegistrations.length}');
+          print('   - Pending registrations: ${registrations.length}');
+          final statusCounts = <String, int>{};
+          for (var doc in allRegistrations) {
+            final data = doc.data() as Map<String, dynamic>;
+            final status = data['approvalStatus'] ?? 'pending';
+            statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+          }
+          statusCounts.forEach((status, count) {
+            print('   - $status: $count');
+          });
 
           if (registrations.isEmpty) {
             return const Center(
@@ -49,9 +70,17 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'No restaurant registrations found',
+                    'No pending restaurant registrations',
                     style: TextStyle(
                       fontSize: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'All registrations have been processed',
+                    style: TextStyle(
+                      fontSize: 14,
                       color: Colors.grey,
                     ),
                   ),

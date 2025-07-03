@@ -39,284 +39,273 @@ class ProgramSettingsTab extends StatelessWidget {
       }
     });
 
-    return Obx(() {
-      if (programController.isLoading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Configure Your Reward',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.4),
-                      spreadRadius: 1,
-                      blurRadius: 2,
-                    ),
-                  ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Obx(() {
+        if (programController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Configure Your Reward',
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                child: Column(
-                  children: [
-                    Text('1 Scan = 1 Point',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold)),
-                    Text('10 Points = 1 Reward',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Select Reward Type:',
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Obx(() {
-                // Calculate card width - 2 cards in a row with 10dp spacing between
-                final availableWidth = MediaQuery.of(context).size.width -
-                    50; // Accounting for padding and spacing
-                final cardWidth = (availableWidth - 10) /
-                    2; // Two cards per row with 10dp spacing
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // First row with 2 items
-                    Row(
-                      children: [
-                        _buildRewardCard(
-                            context,
-                            rewardOptions[0],
-                            selectedRewardType.value,
-                            rewardIcons[rewardOptions[0]] ??
-                                rewardIcons["default"]!, () {
-                          selectedRewardType.value = rewardOptions[0];
-                          rewardTypeController.text = rewardOptions[0];
-                        }),
-                        const SizedBox(width: 10),
-                        _buildRewardCard(
-                            context,
-                            rewardOptions[1],
-                            selectedRewardType.value,
-                            rewardIcons[rewardOptions[1]] ??
-                                rewardIcons["default"]!, () {
-                          selectedRewardType.value = rewardOptions[1];
-                          rewardTypeController.text = rewardOptions[1];
-                        }),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Second row with 2 items
-                    Row(
-                      children: [
-                        _buildRewardCard(
-                            context,
-                            rewardOptions[2],
-                            selectedRewardType.value,
-                            rewardIcons[rewardOptions[2]] ??
-                                rewardIcons["default"]!, () {
-                          selectedRewardType.value = rewardOptions[2];
-                          rewardTypeController.text = rewardOptions[2];
-                        }),
-                        const SizedBox(width: 10),
-                        _buildRewardCard(
-                            context,
-                            rewardOptions[3],
-                            selectedRewardType.value,
-                            rewardIcons[rewardOptions[3]] ??
-                                rewardIcons["default"]!, () {
-                          selectedRewardType.value = rewardOptions[3];
-                          rewardTypeController.text = rewardOptions[3];
-                        }),
-                      ],
-                    ),
-                  ],
-                );
-              }),
-              // const SizedBox(height: 15),
-
-              // TextFormField(
-              //   controller: rewardTypeController,
-              //   decoration: InputDecoration(
-              //     labelText: 'Reward Description (e.g., Free Coffee)',
-              //     hintText: 'Enter custom reward...',
-              //     prefixIcon: Icon(Icons.card_giftcard),
-              //     border: OutlineInputBorder(
-              //       borderRadius: BorderRadius.circular(8),
-              //     ),
-              //   ),
-              //   onChanged: (value) => selectedRewardType.value = value,
-              //   validator: (value) {
-              //     if (value == null || value.isEmpty) {
-              //       return 'Please enter a reward description';
-              //     }
-              //     return null;
-              //   },
-              // ),
-              const SizedBox(height: 15),
-              // Highlighted custom reward text
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.4),
+                        spreadRadius: 1,
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text('1 Scan = 1 Point',
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold)),
+                      Text('10 Points = 1 Reward',
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.lightbulb,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Custom reward option has been taken to consideration',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 30),
+                const Text(
+                  'Select Reward Type:',
+                  style: TextStyle(fontSize: 16),
                 ),
-              ),
-              const SizedBox(height: 15),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.stars,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 8),
+                Obx(() {
+                  // Calculate card width - 2 cards in a row with 10dp spacing between
+                  final availableWidth = MediaQuery.of(context).size.width -
+                      50; // Accounting for padding and spacing
+                  final cardWidth = (availableWidth - 10) /
+                      2; // Two cards per row with 10dp spacing
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // First row with 2 items
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Points Required for Reward:',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text(
-                                '10',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'points',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '(fixed)',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
+                          _buildRewardCard(
+                              context,
+                              rewardOptions[0],
+                              selectedRewardType.value,
+                              rewardIcons[rewardOptions[0]] ??
+                                  rewardIcons["default"]!, () {
+                            selectedRewardType.value = rewardOptions[0];
+                            rewardTypeController.text = rewardOptions[0];
+                          }),
+                          const SizedBox(width: 10),
+                          _buildRewardCard(
+                              context,
+                              rewardOptions[1],
+                              selectedRewardType.value,
+                              rewardIcons[rewardOptions[1]] ??
+                                  rewardIcons["default"]!, () {
+                            selectedRewardType.value = rewardOptions[1];
+                            rewardTypeController.text = rewardOptions[1];
+                          }),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      // Second row with 2 items
+                      Row(
+                        children: [
+                          _buildRewardCard(
+                              context,
+                              rewardOptions[2],
+                              selectedRewardType.value,
+                              rewardIcons[rewardOptions[2]] ??
+                                  rewardIcons["default"]!, () {
+                            selectedRewardType.value = rewardOptions[2];
+                            rewardTypeController.text = rewardOptions[2];
+                          }),
+                          const SizedBox(width: 10),
+                          _buildRewardCard(
+                              context,
+                              rewardOptions[3],
+                              selectedRewardType.value,
+                              rewardIcons[rewardOptions[3]] ??
+                                  rewardIcons["default"]!, () {
+                            selectedRewardType.value = rewardOptions[3];
+                            rewardTypeController.text = rewardOptions[3];
+                          }),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
+                const SizedBox(height: 15),
+                // Highlighted custom reward text
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color:
+                          Theme.of(context).colorScheme.primary.withOpacity(0.3),
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Custom reward option has been taken to consideration',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  label: const Text('Save program settings'),
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      programController.updateLoyaltyProgram(
-                        rewardTypeController.text.trim(),
-                        10, // Fixed at 10 points
-                      );
-                      Get.snackbar('Success', 'Program settings updated!');
-                    }
-                  },
+                const SizedBox(height: 15),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.stars,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Points Required for Reward:',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Text(
+                                  '10',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'points',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '(fixed)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    label: const Text('Save program settings'),
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        programController.updateLoyaltyProgram(
+                          rewardTypeController.text.trim(),
+                          10, // Fixed at 10 points
+                        );
+                        Get.snackbar('Success', 'Program settings updated!');
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
-        ),
-      );
-    });
+        );
+      }),
+    );
   }
 }
 

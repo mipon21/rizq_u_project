@@ -17,6 +17,7 @@ import '../ui/pages/auth/login_page.dart';
 import '../ui/pages/auth/register_page.dart';
 import '../ui/pages/auth/restaurant_registration_page.dart';
 import '../ui/pages/auth/forgot_password_page.dart';
+import '../ui/pages/auth/email_verification_page.dart';
 import '../ui/pages/customer/customer_home_page.dart';
 import '../ui/pages/customer/scan_history_page.dart';
 import '../ui/pages/customer/qr_code_page.dart';
@@ -53,6 +54,11 @@ class AppPages {
     GetPage(
       name: Routes.FORGOT_PASSWORD,
       page: () => const ForgotPasswordPage(),
+      binding: AuthBinding(),
+    ),
+    GetPage(
+      name: Routes.EMAIL_VERIFICATION,
+      page: () => const EmailVerificationPage(),
       binding: AuthBinding(),
     ),
     // Customer Routes
@@ -135,7 +141,7 @@ class AppPages {
       name: Routes.ADMIN_RESTAURANT_REGISTRATIONS,
       page: () => const RestaurantRegistrationsPage(),
       binding: AdminBinding(),
-      middlewares: adminMiddleware,
+      middlewares: adminMiddleware, // Re-enabled after admin setup
     ),
     GetPage(
       name: Routes.ADMIN_CUSTOMERS,

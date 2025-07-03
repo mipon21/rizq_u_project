@@ -58,7 +58,7 @@ class SampleDataCreator {
           features: [
             'Unlimited customer scans',
             'Advanced analytics & reporting',
-            'Priority phone & email support',
+            'Priority email support',
             'Custom branding & white-labeling',
             'API access for integrations',
             'Dedicated account manager',

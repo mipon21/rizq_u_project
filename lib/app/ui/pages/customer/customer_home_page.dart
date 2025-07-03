@@ -18,6 +18,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import 'package:rizq/app/utils/constants/support_constants.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({Key? key}) : super(key: key);
@@ -210,10 +211,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                         value: 'contact_us',
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.headset_mic_sharp,
-                              color: Colors.black,
-                            ),
+                            Icon(Icons.headset_mic_sharp,
+                          color: MColors.primary, size: 20),
                             SizedBox(width: 8),
                             Text('Contact Us'),
                           ],
@@ -418,7 +417,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
 
                   // Launch email with complete information
                   _launchEmailWithBody(
-                      email: 'support@rizq.com',
+                      email: SupportConstants.supportEmail,
                       subject: 'Question about Rizq Application',
                       body: messageWithFooter);
                 },
@@ -657,7 +656,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   // Helper method to get restaurant email from multiple sources
   Future<String> _getRestaurantEmail(String restaurantId) async {
     // Default fallback email
-    String contactEmail = 'support@rizq.com';
+            String contactEmail = SupportConstants.supportEmail;
 
     try {
       // First try to get from restaurants collection
@@ -743,7 +742,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
   void _showRizqAppQuestion() {
     // We'll use the improved contact form for the Rizq application questions as well
     _showContactForm(
-      restaurantEmail: 'support@rizq.com',
+                        restaurantEmail: SupportConstants.supportEmail,
       restaurantName: 'Rizq Support Team',
       programDetails: 'Question about Rizq Application',
     );

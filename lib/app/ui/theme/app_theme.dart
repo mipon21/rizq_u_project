@@ -112,7 +112,7 @@ class AppTheme {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: primaryColor),
     ),
-    cardTheme: const CardTheme(color: Color(0xFF1E1E1E)),
+    cardTheme: const CardThemeData(color: Color(0xFF1E1E1E)),
     fontFamily: 'Poppins',
   );
 }

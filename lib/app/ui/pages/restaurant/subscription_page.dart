@@ -7,6 +7,7 @@ import 'package:rizq/app/controllers/admin_controller.dart';
 import 'package:rizq/app/models/subscription_plan_model.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:rizq/app/utils/constants/sizes.dart';
+import 'package:rizq/app/utils/constants/support_constants.dart';
 
 class SubscriptionPage extends GetView<RestaurantController> {
   const SubscriptionPage({Key? key}) : super(key: key);
@@ -396,7 +397,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please contact support for available plans',
+                      SupportConstants.genericSupportMessage,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],

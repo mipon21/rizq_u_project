@@ -9,17 +9,35 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 class ReportsPage extends GetView<AdminController> {
   const ReportsPage({Key? key}) : super(key: key);
 
-  // Override the controller getter to ensure it's properly initialized
-  @override
-  AdminController get controller {
-    if (!Get.isRegistered<AdminController>()) {
-      Get.put(AdminController(), permanent: true);
-    }
-    return Get.find<AdminController>();
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Ensure controller is available, but don't create it during build
+    if (!Get.isRegistered<AdminController>()) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Reports & Analytics'),
+          backgroundColor: MColors.primary,
+        ),
+        body: const Center(
+          child: Text('Controller not initialized. Please return to dashboard.'),
+        ),
+      );
+    }
+
+    // Fetch loyalty program data and revenue data after build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!controller.isLoadingLoyaltyData.value &&
+          controller.loyaltyPrograms.isEmpty) {
+        controller.fetchLoyaltyProgramData();
+      }
+      if (!controller.isLoadingRevenueData.value) {
+        controller.fetchRevenueData();
+      }
+      if (!controller.isLoadingActivityData.value) {
+        controller.fetchRestaurantActivityData();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reports & Analytics'),
@@ -82,38 +100,37 @@ class ReportsPage extends GetView<AdminController> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextFormField(
+                            child: Obx(() => TextFormField(
                               decoration: const InputDecoration(
                                 labelText: 'Start Date',
                                 border: OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.calendar_today),
                               ),
                               readOnly: true,
-                              initialValue: DateFormat('yyyy-MM-dd').format(
-                                DateTime.now()
-                                    .subtract(const Duration(days: 30)),
+                              controller: TextEditingController(
+                                text: DateFormat('yyyy-MM-dd').format(
+                                  controller.reportStartDate.value,
+                                ),
                               ),
-                              onTap: () {
-                                // Show date picker
-                              },
-                            ),
+                              onTap: () => _selectStartDate(),
+                            )),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: TextFormField(
-                              decoration: InputDecoration(
+                            child: Obx(() => TextFormField(
+                              decoration: const InputDecoration(
                                 labelText: 'End Date',
                                 border: OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.calendar_today),
                               ),
                               readOnly: true,
-                              initialValue: DateFormat('yyyy-MM-dd').format(
-                                DateTime.now(),
+                              controller: TextEditingController(
+                                text: DateFormat('yyyy-MM-dd').format(
+                                  controller.reportEndDate.value,
+                                ),
                               ),
-                              onTap: () {
-                                // Show date picker
-                              },
-                            ),
+                              onTap: () => _selectEndDate(),
+                            )),
                           ),
                         ],
                       ),
@@ -166,8 +183,46 @@ class ReportsPage extends GetView<AdminController> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(16),
-                child: _buildRevenueChart(),
+                child: Column(
+                  children: [
+                    // Header with refresh button
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Subscription Revenue',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Obx(() => IconButton(
+                            onPressed: controller.isLoadingRevenueData.value
+                                ? null
+                                : () => controller.fetchRevenueData(),
+                            icon: controller.isLoadingRevenueData.value
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.refresh),
+                            tooltip: 'Refresh Revenue Data',
+                          )),
+                        ],
+                      ),
+                    ),
+                    // Chart
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                        child: _buildRevenueChart(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -187,8 +242,46 @@ class ReportsPage extends GetView<AdminController> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(16),
-                child: _buildRestaurantActivityChart(),
+                child: Column(
+                  children: [
+                    // Header with refresh button
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'QR Code Scans',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Obx(() => IconButton(
+                            onPressed: controller.isLoadingActivityData.value
+                                ? null
+                                : () => controller.fetchRestaurantActivityData(),
+                            icon: controller.isLoadingActivityData.value
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.refresh),
+                            tooltip: 'Refresh Activity Data',
+                          )),
+                        ],
+                      ),
+                    ),
+                    // Chart
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                        child: _buildRestaurantActivityChart(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -230,70 +323,156 @@ class ReportsPage extends GetView<AdminController> {
   }
 
   Widget _buildRevenueChart() {
-    // Example data - in a real app, fetch from Firebase
-    final List<RevenueData> revenueData = [
-      RevenueData('Jan', 780),
-      RevenueData('Feb', 1200),
-      RevenueData('Mar', 1400),
-      RevenueData('Apr', 1100),
-      RevenueData('May', 1600),
-      RevenueData('Jun', 1800),
-    ];
+    return Obx(() {
+      if (controller.isLoadingRevenueData.value) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
 
-    return SfCartesianChart(
-      primaryXAxis: CategoryAxis(),
-      legend: Legend(isVisible: true, position: LegendPosition.bottom),
-      tooltipBehavior: TooltipBehavior(enable: true),
-      series: <CartesianSeries<RevenueData, String>>[
-        ColumnSeries<RevenueData, String>(
-          name: 'Monthly Revenue',
-          dataSource: revenueData,
-          xValueMapper: (RevenueData data, _) => data.month,
-          yValueMapper: (RevenueData data, _) => data.amount,
-          dataLabelSettings: const DataLabelSettings(isVisible: false),
-          color: Colors.blue,
+      if (controller.monthlyRevenueData.isEmpty) {
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.bar_chart,
+                size: 64,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No revenue data available',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Try adjusting the date range',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Convert real data to chart format
+      final List<RevenueData> revenueData = controller.monthlyRevenueData
+          .map((data) => RevenueData(
+                data['month'] as String,
+                data['amount'] as double,
+              ))
+          .toList();
+
+      return SfCartesianChart(
+        primaryXAxis: CategoryAxis(),
+        legend: Legend(isVisible: true, position: LegendPosition.bottom),
+        tooltipBehavior: TooltipBehavior(
+          enable: true,
+          format: 'point.x : \$point.y',
         ),
-      ],
-    );
+        series: <CartesianSeries<RevenueData, String>>[
+          ColumnSeries<RevenueData, String>(
+            name: 'Monthly Revenue',
+            dataSource: revenueData,
+            xValueMapper: (RevenueData data, _) => data.month,
+            yValueMapper: (RevenueData data, _) => data.amount,
+            dataLabelSettings: const DataLabelSettings(
+              isVisible: true,
+              labelAlignment: ChartDataLabelAlignment.outer,
+              textStyle: TextStyle(fontSize: 10),
+            ),
+            color: Colors.blue,
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildRestaurantActivityChart() {
-    // Example data - in a real app, fetch from Firebase
-    final List<ActivityData> scanData = [
-      ActivityData('Mon', 90),
-      ActivityData('Tue', 120),
-      ActivityData('Wed', 150),
-      ActivityData('Thu', 110),
-      ActivityData('Fri', 220),
-      ActivityData('Sat', 280),
-      ActivityData('Sun', 160),
-    ];
+    return Obx(() {
+      if (controller.isLoadingActivityData.value) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
 
-    return SfCartesianChart(
-      primaryXAxis: CategoryAxis(),
-      legend: Legend(isVisible: true, position: LegendPosition.bottom),
-      tooltipBehavior: TooltipBehavior(enable: true),
-      series: <CartesianSeries<ActivityData, String>>[
-        SplineSeries<ActivityData, String>(
-          name: 'Daily Scans',
-          dataSource: scanData,
-          xValueMapper: (ActivityData data, _) => data.day,
-          yValueMapper: (ActivityData data, _) => data.count,
-          dataLabelSettings: const DataLabelSettings(isVisible: false),
-          color: Colors.green,
-          markerSettings: const MarkerSettings(isVisible: true),
+      if (controller.dailyScanData.isEmpty) {
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.trending_up,
+                size: 64,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No scan activity data',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Try adjusting the date range',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Convert real data to chart format
+      final List<ActivityData> scanData = controller.dailyScanData
+          .map((data) => ActivityData(
+                data['day'] as String,
+                data['count'] as int,
+              ))
+          .toList();
+
+      return SfCartesianChart(
+        primaryXAxis: CategoryAxis(),
+        legend: Legend(isVisible: true, position: LegendPosition.bottom),
+        tooltipBehavior: TooltipBehavior(
+          enable: true,
+          format: 'point.x : point.y scans',
         ),
-      ],
-    );
+        series: <CartesianSeries<ActivityData, String>>[
+          SplineSeries<ActivityData, String>(
+            name: 'Daily Scans',
+            dataSource: scanData,
+            xValueMapper: (ActivityData data, _) => data.day,
+            yValueMapper: (ActivityData data, _) => data.count,
+            dataLabelSettings: const DataLabelSettings(
+              isVisible: true,
+              labelAlignment: ChartDataLabelAlignment.outer,
+              textStyle: TextStyle(fontSize: 10),
+            ),
+            color: Colors.green,
+            markerSettings: const MarkerSettings(
+              isVisible: true,
+              shape: DataMarkerType.circle,
+              width: 6,
+              height: 6,
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildLoyaltyProgramSection() {
-    // Fetch loyalty program data when widget is built
-    if (!controller.isLoadingLoyaltyData.value &&
-        controller.loyaltyPrograms.isEmpty) {
-      controller.fetchLoyaltyProgramData();
-    }
-
     return Obx(() {
       if (controller.isLoadingLoyaltyData.value) {
         return const Center(
@@ -398,12 +577,15 @@ class ReportsPage extends GetView<AdminController> {
             children: [
               Icon(icon, color: color, size: (24).isFinite && 24 > 0 ? 24 : 24),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -624,6 +806,36 @@ class ReportsPage extends GetView<AdminController> {
         },
       ),
     );
+  }
+
+  Future<void> _selectStartDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: Get.context!,
+      initialDate: controller.reportStartDate.value,
+      firstDate: DateTime(2020),
+      lastDate: controller.reportEndDate.value,
+    );
+    if (picked != null && picked != controller.reportStartDate.value) {
+      controller.reportStartDate.value = picked;
+      // Re-fetch data with new date range
+      controller.fetchRevenueData();
+      controller.fetchRestaurantActivityData();
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: Get.context!,
+      initialDate: controller.reportEndDate.value,
+      firstDate: controller.reportStartDate.value,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != controller.reportEndDate.value) {
+      controller.reportEndDate.value = picked;
+      // Re-fetch data with new date range
+      controller.fetchRevenueData();
+      controller.fetchRestaurantActivityData();
+    }
   }
 
   void _generateReport(String format) async {

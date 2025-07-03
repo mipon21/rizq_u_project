@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:rizq/app/utils/constants/support_constants.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -201,11 +202,11 @@ class CustomerProfilePage extends GetView<CustomerController> {
 
                       if (restaurantDoc.exists) {
                         String email =
-                            restaurantDoc.get('email') ?? 'support@rizq.com';
+                            restaurantDoc.get('email') ?? SupportConstants.supportEmail;
                         _launchEmail(email,
                             'Question about loyalty program at ${program.restaurantName}');
                       } else {
-                        _launchEmail('support@rizq.com',
+                        _launchEmail(SupportConstants.supportEmail,
                             'Question about loyalty program at ${program.restaurantName}');
                       }
                     } catch (e) {
@@ -214,7 +215,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                         'Could not fetch restaurant contact information',
                         snackPosition: SnackPosition.BOTTOM,
                       );
-                      _launchEmail('support@rizq.com',
+                      _launchEmail(SupportConstants.supportEmail,
                           'Question about loyalty program at ${program.restaurantName}');
                     }
                   },
@@ -245,7 +246,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
             backgroundColor: MColors.primary.withOpacity(0.5),
             surfaceTintColor: Colors.transparent,
             title: const Text(
-              'Contact Rizq Support',
+                              'Contact Rizq Support',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -262,9 +263,9 @@ class CustomerProfilePage extends GetView<CustomerController> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Text(
-                      'support@rizq.com',
-                      style: TextStyle(
+                    Text(
+                      SupportConstants.supportEmail,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -275,7 +276,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                           const Icon(Icons.copy, size: 18, color: Colors.white),
                       onPressed: () {
                         Clipboard.setData(
-                            const ClipboardData(text: 'support@rizq.com'));
+                            ClipboardData(text: SupportConstants.supportEmail));
                         Get.snackbar(
                           'Copied',
                           'Email address copied to clipboard',
@@ -299,7 +300,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                 onPressed: () {
                   Navigator.of(context).pop();
                   _launchEmail(
-                      'support@rizq.com', 'Question about Rizq Application');
+                      SupportConstants.supportEmail, 'Question about Rizq Application');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -361,7 +362,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                     Navigator.of(context).pop();
                     // _showRizqAppQuestion();
                     _launchEmail(
-                        'support@rizq.com', 'Question about Rizq Application');
+                        SupportConstants.supportEmail, 'Question about Rizq Application');
                   },
                 ),
               ],

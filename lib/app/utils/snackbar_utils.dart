@@ -28,6 +28,22 @@ class SnackbarUtils {
     );
   }
 
+  static void showSuccess(String title, String message) {
+    Get.closeAllSnackbars();
+    Get.snackbar(
+      title,
+      message,
+      duration: const Duration(seconds: 4),
+      backgroundColor: Colors.green.shade50,
+      colorText: Colors.green.shade900,
+      snackPosition: SnackPosition.TOP,
+      dismissDirection: DismissDirection.vertical,
+      isDismissible: true,
+      icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
   static void showError(String message) {
     Get.closeAllSnackbars();
     Get.snackbar(

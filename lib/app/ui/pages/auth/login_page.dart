@@ -11,6 +11,7 @@ class LoginPage extends GetView<AuthController> {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final RxBool isPasswordVisible = false.obs;
 
     return Scaffold(
       appBar: AppBar(
@@ -46,16 +47,30 @@ class LoginPage extends GetView<AuthController> {
                       },
                     ),
                     const SizedBox(height: 15),
-                    TextFormField(
-                      controller: passwordController,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
+                    Obx(
+                      () => TextFormField(
+                        controller: passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              isPasswordVisible.value
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              isPasswordVisible.value = !isPasswordVisible.value;
+                            },
+                          ),
+                        ),
+                        obscureText: !isPasswordVisible.value,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Align(

@@ -8,6 +8,7 @@ abstract class Routes {
   static const LOGIN = '/login';
   static const REGISTER = '/register';
   static const FORGOT_PASSWORD = '/forgot-password';
+  static const EMAIL_VERIFICATION = '/email-verification';
 
   // Customer Routes
   static const CUSTOMER_HOME = '/customer/home';

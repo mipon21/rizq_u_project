@@ -10,8 +10,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rizq/app/ui/theme/widget_themes/cached_image_widget.dart';
 import 'package:rizq/app/ui/theme/widget_themes/shimmer_widget.dart';
 import 'package:rizq/app/ui/widgets/language_selector.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/rendering.dart';
+import 'package:rizq/app/utils/contact_us_helper.dart';
+import 'package:rizq/app/utils/account_deletion_helper.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({Key? key}) : super(key: key);
@@ -40,6 +40,67 @@ class _ProfileTabState extends State<ProfileTab> {
     final authController = Get.find<AuthController>();
 
     return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: PopupMenuButton<String>(
+              color: Colors.white,
+              onSelected: (value) {
+                if (value == 'contact_us') {
+                  ContactUsHelper.showContactUsDialog(context);
+                } else if (value == 'delete_account') {
+                  AccountDeletionHelper.confirmAccountDeletion(context, authController);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'contact_us',
+                  child: Row(
+                    children: [
+                      Icon(Icons.headset_mic_sharp,
+                          color: MColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Contact Us'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'delete_account',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever,
+                          color: Colors.red[700], size: 20),
+                      const SizedBox(width: 8),
+                      Text('Account Deletion'),
+                    ],
+                  ),
+                ),
+              ],
+              child: Row(
+                children: [
+                  Icon(Icons.help,
+                      color: Theme.of(context).primaryColor, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Help',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              tooltip: 'Help',
+            ),
+          ),
+        ],
+      ),
       body: Obx(() {
         if (controller.isLoadingProfile.value) {
           return Padding(
@@ -130,17 +191,6 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
 
                   const SizedBox(height: 30),
-
-                  // Restaurant name field (editable)
-                  // _buildEditableField(
-                  //   context,
-                  //   'Restaurant Name',
-                  //   nameController,
-                  //   isRequired: true,
-                  //   validator: (value) => value?.isEmpty ?? true
-                  //       ? 'Restaurant name is required'
-                  //       : null,
-                  // ),
 
                   // Email field (Non Edidable)
                   _buildEditableField(
@@ -359,59 +409,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
                   const SizedBox(height: 25),
 
-                  // // Banking details (editable)
-                  // _buildLabelWithDivider('Banking Details'),
-                  // _buildEditableField(
-                  //   context,
-                  //   null,
-                  //   bankDetailsController,
-                  //   hint: 'Enter your bank IBAN number',
-                  // ),
-
-                  // const SizedBox(height: 10),
-
-                  // // Update button
-                  // SizedBox(
-                  //   width: double.infinity,
-                  //   child: ElevatedButton(
-                  //     onPressed: () {
-                  //       if (formKey.currentState?.validate() ?? false) {
-                  //         // Save all changes
-                  //         controller.updateRestaurantDetails(
-                  //           nameController.text,
-                  //           emailController.text,
-                  //         );
-
-                  //         // Update bank details
-                  //         _updateBankDetails(
-                  //             controller, bankDetailsController.text);
-                  //       }
-                  //     },
-                  //     child: Obx(() => controller.isLoadingProfile.value
-                  //         ? SizedBox(
-                  //             width: 20,
-                  //             height: 20,
-                  //             child: CircularProgressIndicator(
-                  //               strokeWidth: 2,
-                  //               color: Colors.white,
-                  //             ),
-                  //           )
-                  //         : const Text(
-                  //             'Update',
-                  //             style: TextStyle(
-                  //               fontSize: 13,
-                  //               fontWeight: FontWeight.w400,
-                  //             ),
-                  //           )),
-                  //   ),
-                  // ),
-
                   const SizedBox(height: 20),
 
-                  // Logout and delete account row
+                  // Logout button
                   Column(
                     children: [
-                      // Logout button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -441,339 +443,7 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  // Show Contact Us dialog
-  void _showContactUsDialog(BuildContext context) {
-    final supportEmail = 'support@rizq.app';
-    final subjectController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Contact Us'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('You have a question regarding the Rizq application?'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.email, color: MColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        supportEmail,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.copy, color: MColors.primary),
-                      onPressed: () {
-                        _copyToClipboard(supportEmail);
-                      },
-                      tooltip: 'Copy to clipboard',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Subject field
-              Text(
-                'Subject',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: subjectController,
-                decoration: InputDecoration(
-                  hintText: 'Enter subject',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  fillColor: Colors.white,
-                  filled: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Description field
-              Text(
-                'Description',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: descriptionController,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  hintText: 'Describe your issue or question',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  contentPadding: const EdgeInsets.all(12),
-                  fillColor: Colors.white,
-                  filled: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _launchEmailApp(
-                supportEmail,
-                subjectController.text,
-                descriptionController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Launch email app with pre-filled information
-  void _launchEmailApp(String email, String subject, String body) async {
-    final controller = Get.find<RestaurantController>();
-    final profile = controller.restaurantProfile.value;
-    final userEmail = FirebaseAuth.instance.currentUser?.email ?? '';
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-    // Create email body with footer
-    final completeBody = '''
-$body
-
-Regards,
-${profile?.name ?? 'Restaurant'}
-$userEmail
-Restaurant UID: $uid
-''';
-
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      query: _encodeQueryParameters({
-        'subject': subject,
-        'body': completeBody,
-      }),
-    );
-
-    try {
-      // Try to launch with explicit app selection
-      final bool launched = await launchUrl(
-        emailLaunchUri,
-        mode: LaunchMode.externalApplication,
-        webViewConfiguration: const WebViewConfiguration(
-          enableJavaScript: true,
-        ),
-      );
-
-      if (launched) {
-        Navigator.of(Get.context!).pop(); // Close the dialog after launching
-      } else {
-        // Fallback: Show a dialog with the email information that can be copied
-        _showEmailCopyDialog(email, subject, completeBody);
-      }
-    } catch (e) {
-      // Show error and manual email instructions
-      _showEmailCopyDialog(email, subject, completeBody);
-    }
-  }
-
-  // Show dialog with email information that can be copied
-  void _showEmailCopyDialog(String email, String subject, String body) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Email Information'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Could not launch email app automatically. Please copy the information below and send an email manually:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              _buildCopyableField('Email', email),
-              const SizedBox(height: 8),
-              _buildCopyableField('Subject', subject),
-              const SizedBox(height: 8),
-              _buildCopyableField('Message', body, maxLines: 5),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Build a copyable text field with a copy button
-  Widget _buildCopyableField(String label, String content, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(4),
-            color: Colors.white,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SelectableText(
-                    content,
-                    maxLines: maxLines,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.copy, color: MColors.primary),
-                onPressed: () {
-                  _copyToClipboard(content);
-                },
-                tooltip: 'Copy to clipboard',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Copy text to clipboard and show a snackbar
-  void _copyToClipboard(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    Get.snackbar(
-      'Copied',
-      'Text copied to clipboard',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  // Helper method to encode query parameters
-  String? _encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-  }
-
-  // Show Delete Account Confirmation dialog
-  void _showDeleteAccountConfirmation(
-      BuildContext context, AuthController authController) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text('Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _confirmAccountDeletion(context, authController);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red[700],
-            ),
-            child: const Text('Yes, I want to delete my account'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Final confirmation for account deletion
-  void _confirmAccountDeletion(
-      BuildContext context, AuthController authController) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Account Deletion'),
-        content: const Text(
-            'This action is permanent and cannot be undone. All your data will be deleted. Do you want to proceed?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Execute the account deletion
-              // TODO: Implement account deletion in AuthController
-              // authController.deleteAccount();
-              Get.snackbar(
-                'Account Deletion',
-                'Your account deletion request has been submitted.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red[700],
-                colorText: Colors.white,
-              );
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.red[700],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete Account'),
-          ),
-        ],
-      ),
-    );
-  }
+  // All contact us and account deletion functionality moved to helper classes
 
   // Method to update bank details
   Widget _buildEditableField(

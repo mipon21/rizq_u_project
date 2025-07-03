@@ -14,10 +14,9 @@ import 'package:rizq/app/ui/pages/restaurant/tabs/rewards_tab.dart';
 import 'package:rizq/app/ui/pages/restaurant/tabs/dashboard_tab.dart';
 import 'package:rizq/app/ui/pages/restaurant/tabs/program_settings_tab.dart';
 import 'package:rizq/app/ui/pages/restaurant/tabs/profile_tab.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rizq/app/utils/contact_us_helper.dart';
+import 'package:rizq/app/utils/account_deletion_helper.dart';
+import 'package:rizq/app/utils/constants/support_constants.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -83,504 +82,234 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final supportEmail = 'support@rizq.app';
-    final subjectController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final List<Widget> _pages = [
-      DashboardTab(),
-      ProgramSettingsTab(),
-      QrScannerPage(),
-      RewardsTab(initialTabIndex: _rewardsInitialTab),
-      ProfileTab(),
-    ];
+    // Check if restaurant is suspended
+    return Obx(() {
+      if (controller.isSuspended) {
+        return _buildSuspendedScreen(SupportConstants.supportEmail);
+      }
+      
+      final List<Widget> _pages = [
+        DashboardTab(),
+        ProgramSettingsTab(),
+        QrScannerPage(),
+        RewardsTab(initialTabIndex: _rewardsInitialTab),
+        ProfileTab(),
+      ];
+      
+      return Scaffold(
+        // No AppBar - each tab has its own
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            setState(() {
+              _currentIndex = 2;
+            });
+          },
+          child: const Icon(Icons.qr_code_scanner),
+          tooltip: 'Scan Customer QR',
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        body: _pages[_currentIndex],
+        bottomNavigationBar: BottomAppBar(
+          color: Colors.transparent,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8.0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.home,
+                    color: _currentIndex == 0
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: 'Home',
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 0;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.local_activity_outlined,
+                    color: _currentIndex == 1
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: 'Program Settings',
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                ),
+                SizedBox(width: 50),
+                IconButton(
+                  icon: Icon(
+                    Icons.card_giftcard_outlined,
+                    color: _currentIndex == 3
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: 'Rewards History',
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 3;
+                    });
+                    controller.fetchClaimedRewards();
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.person_outline,
+                    color: _currentIndex == 4
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: 'Edit Profile',
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 4;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  // All contact us and account deletion functionality moved to helper classes
+
+  // Build suspension screen for suspended restaurants
+  Widget _buildSuspendedScreen(String supportEmail) {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/icons/general-u.png', height: 70),
         toolbarHeight: 80,
-        actions: _currentIndex == 4
-            ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: PopupMenuButton<String>(
-                    color: Colors.white,
-                    onSelected: (value) {
-                      if (value == 'contact_us') {
-                        // _showContactUsDialog(context);
-                        _launchEmailApp(
-                          supportEmail,
-                          subjectController.text,
-                          descriptionController.text,
-                        );
-                      } else if (value == 'delete_account') {
-                        _showDeleteAccountConfirmation(context);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<String>(
-                        value: 'contact_us',
-                        child: Row(
-                          children: [
-                            Icon(Icons.contact_support,
-                                color: MColors.primary, size: 20),
-                            const SizedBox(width: 8),
-                            Text('Contact Us'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'delete_account',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_forever,
-                                color: Colors.red[700], size: 20),
-                            const SizedBox(width: 8),
-                            Text('Account Deletion'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: Row(
-                      children: [
-                        Icon(Icons.help,
-                            color: Theme.of(context).primaryColor, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Help',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    tooltip: 'Help',
-                  ),
-                ),
-              ]
-            : null,
+        // backgroundColor: Colors.red[700],
+        foregroundColor: Colors.white,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _currentIndex = 2;
-          });
-        },
-        child: const Icon(Icons.qr_code_scanner),
-        tooltip: 'Scan Customer QR',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.transparent,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
+      body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.home,
-                  color: _currentIndex == 0
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                tooltip: 'Home',
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.local_activity_outlined,
-                  color: _currentIndex == 1
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                tooltip: 'Program Settings',
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                },
-              ),
-              SizedBox(width: 50),
-              IconButton(
-                icon: Icon(
-                  Icons.card_giftcard_outlined,
-                  color: _currentIndex == 3
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                tooltip: 'Rewards History',
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 3;
-                  });
-                  controller.fetchClaimedRewards();
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.person_outline,
-                  color: _currentIndex == 4
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                tooltip: 'Edit Profile',
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 4;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Show Contact Us dialog
-  void _showContactUsDialog(BuildContext context) {
-    final supportEmail = 'support@rizq.app';
-    final subjectController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text('Contact Us'),
-        content: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('You have a question regarding the Rizq application?'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.grey[300]!),
+              Icon(
+                Icons.block,
+                size: 120,
+                color: Colors.red[700],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Account Suspended',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[700],
                 ),
-                child: Row(
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Your restaurant account has been temporarily suspended by the administrator.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange[300]!),
+                ),
+                child: Column(
                   children: [
-                    Icon(Icons.email, color: MColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        supportEmail,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                        ),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange[700],
+                      size: 32,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'What does this mean?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[700],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.copy, color: MColors.primary),
-                      onPressed: () {
-                        _copyToClipboard(supportEmail);
-                      },
-                      tooltip: 'Copy to clipboard',
+                    const SizedBox(height: 8),
+                    Text(
+                      '• You cannot access your restaurant dashboard\n'
+                      '• Customers cannot earn or redeem points\n'
+                      '• All restaurant features are temporarily disabled',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange[600],
+                      ),
+                      textAlign: TextAlign.left,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Subject field
-              // Column(
-              //   crossAxisAlignment: CrossAxisAlignment.start,
-
-              //   children: [
-              //     Text(
-              //       'Subject',
-              //       style: TextStyle(
-              //         fontWeight: FontWeight.w500,
-              //         fontSize: 14,
-              //       ),
-              //     ),
-              //     const SizedBox(height: 8),
-              //     TextField(
-              //       controller: subjectController,
-              //       decoration: InputDecoration(
-              //         hintText: 'Enter subject',
-              //         border: OutlineInputBorder(
-              //           borderRadius: BorderRadius.circular(4),
-              //           borderSide: BorderSide(color: Colors.grey[300]!),
-              //         ),
-              //         contentPadding:
-              //             const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              //         fillColor: Colors.white,
-              //         filled: true,
-              //       ),
-              //     ),
-              //     const SizedBox(height: 16),
-
-              //     // Description field
-              //     Text(
-              //       'Description',
-              //       style: TextStyle(
-              //         fontWeight: FontWeight.w500,
-              //         fontSize: 14,
-              //       ),
-              //     ),
-              //     const SizedBox(height: 8),
-              //     TextField(
-              //       controller: descriptionController,
-              //       maxLines: 5,
-              //       decoration: InputDecoration(
-              //         hintText: 'Describe your issue or question',
-              //         border: OutlineInputBorder(
-              //           borderRadius: BorderRadius.circular(4),
-              //           borderSide: BorderSide(color: Colors.grey[300]!),
-              //         ),
-              //         contentPadding: const EdgeInsets.all(12),
-              //         fillColor: Colors.white,
-              //         filled: true,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _launchEmailApp(
-                supportEmail,
-                subjectController.text,
-                descriptionController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Launch email app with pre-filled information
-  void _launchEmailApp(String email, String subject, String body) async {
-    final profile = controller.restaurantProfile.value;
-    final userEmail = FirebaseAuth.instance.currentUser?.email ?? '';
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-    // Create email body with footer
-    final completeBody = '''
-$body
-
-Regards,
-${profile?.name ?? 'Restaurant'}
-$userEmail
-Restaurant UID: $uid
-''';
-
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      query: _encodeQueryParameters({
-        'subject': subject,
-        'body': completeBody,
-      }),
-    );
-
-    try {
-      // Try to launch with explicit app selection
-      final bool launched = await launchUrl(
-        emailLaunchUri,
-        mode: LaunchMode.externalApplication,
-        webViewConfiguration: const WebViewConfiguration(
-          enableJavaScript: true,
-        ),
-      );
-
-      if (launched) {
-        // Safely pop the dialog if it's still mounted
-        if (Get.isDialogOpen ?? false) {
-          Get.back();
-        }
-      } else {
-        // Fallback: Show a dialog with the email information that can be copied
-        _showEmailCopyDialog(email, subject, completeBody);
-      }
-    } catch (e) {
-      // Show error and manual email instructions
-      _showEmailCopyDialog(email, subject, completeBody);
-    }
-  }
-
-  // Show dialog with email information that can be copied
-  void _showEmailCopyDialog(String email, String subject, String body) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Email Information'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Could not launch email app automatically. Please copy the information below and send an email manually:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              _buildCopyableField('Email', email),
-              const SizedBox(height: 8),
-              _buildCopyableField('Subject', subject),
-              const SizedBox(height: 8),
-              _buildCopyableField('Message', body, maxLines: 5),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Build a copyable text field with a copy button
-  Widget _buildCopyableField(String label, String content, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(4),
-            color: Colors.white,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SelectableText(
-                    content,
-                    maxLines: maxLines,
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ContactUsHelper.launchEmailApp(
+                    SupportConstants.supportEmail,
+                    'Account Suspension Appeal - ${controller.name}',
+                    'Dear Support Team,\n\n'
+                    'I would like to appeal the suspension of my restaurant account.\n\n'
+                    'Restaurant Name: ${controller.name}\n'
+                    'Account Email: ${authController.currentUser?.email ?? 'N/A'}\n\n'
+                    'Please review my account status and let me know how to proceed.\n\n'
+                    'Thank you for your assistance.\n\n'
+                    'Best regards,\n'
+                    '${controller.name}',
+                  );
+                },
+                icon: const Icon(Icons.email, color: Colors.white),
+                label: Text(
+                  SupportConstants.contactSupportTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.copy, color: MColors.primary),
+              const SizedBox(height: 16),
+              TextButton.icon(
                 onPressed: () {
-                  _copyToClipboard(content);
+                  authController.logout();
                 },
-                tooltip: 'Copy to clipboard',
+                icon: const Icon(Icons.logout),
+                label: const Text('Sign Out'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey[600],
+                ),
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  // Copy text to clipboard and show a snackbar
-  void _copyToClipboard(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    Get.snackbar(
-      'Copied',
-      'Text copied to clipboard',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  // Helper method to encode query parameters
-  String? _encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-  }
-
-  // Show Delete Account Confirmation dialog
-  void _showDeleteAccountConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text('Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _confirmAccountDeletion(context);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red[700],
-            ),
-            child: const Text('Yes, I want to delete my account'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Final confirmation for account deletion
-  void _confirmAccountDeletion(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Account Deletion'),
-        content: const Text(
-            'This action is permanent and cannot be undone. All your data will be deleted. Do you want to proceed?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Execute the account deletion
-              // authController.deleteAccount();
-              Get.snackbar(
-                'Account Deletion',
-                'Your account deletion request has been submitted.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red[700],
-                colorText: Colors.white,
-              );
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.red[700],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete Account'),
-          ),
-        ],
       ),
     );
   }

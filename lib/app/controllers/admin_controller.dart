@@ -35,6 +35,9 @@ class AdminController extends GetxController {
   final RxInt totalRestaurants = 0.obs;
   final RxInt totalCustomers = 0.obs;
   final RxDouble totalRevenue = 0.0.obs;
+  final RxDouble customerPayments = 0.0.obs;
+  final RxDouble adminAssignmentValue = 0.0.obs;
+  final RxString revenueMode = 'customer_only'.obs; // 'customer_only', 'combined', 'admin_value'
   final RxInt newRestaurantsThisMonth = 0.obs;
   final RxInt activeSubscriptions = 0.obs;
   final RxInt pendingApprovals = 0.obs;
@@ -75,6 +78,18 @@ class AdminController extends GetxController {
   final RxString selectedRestaurantFilter = 'all'.obs;
   final RxString selectedCustomerFilter = 'all'.obs;
   final RxString selectedReportType = 'subscriptions'.obs;
+  
+  // Date range for reports
+  final Rx<DateTime> reportStartDate = DateTime.now().subtract(const Duration(days: 30)).obs;
+  final Rx<DateTime> reportEndDate = DateTime.now().obs;
+  
+  // Revenue analytics data
+  final RxList<Map<String, dynamic>> monthlyRevenueData = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingRevenueData = false.obs;
+  
+  // Restaurant activity data
+  final RxList<Map<String, dynamic>> dailyScanData = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingActivityData = false.obs;
 
   @override
   void onInit() {
@@ -106,6 +121,167 @@ class AdminController extends GetxController {
       return adminDoc.exists;
     }
     return false;
+  }
+
+  // Fetch revenue data for analytics
+  Future<void> fetchRevenueData() async {
+    isLoadingRevenueData.value = true;
+    try {
+      final startDate = Timestamp.fromDate(reportStartDate.value);
+      final endDate = Timestamp.fromDate(reportEndDate.value.add(const Duration(hours: 23, minutes: 59, seconds: 59)));
+
+      final subscriptionsSnapshot = await _firestore
+          .collection('subscriptions')
+          .where('startDate', isGreaterThanOrEqualTo: startDate)
+          .where('startDate', isLessThanOrEqualTo: endDate)
+          .where('status', whereIn: ['active', 'expired'])
+          .get();
+
+      // Group revenue by month
+      Map<String, double> monthlyRevenue = {};
+      
+      for (var doc in subscriptionsSnapshot.docs) {
+        final data = doc.data();
+        final subscriptionDate = (data['startDate'] as Timestamp).toDate();
+        final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+        
+        // Create month key (e.g., "2024-01" for January 2024)
+        final monthKey = DateFormat('yyyy-MM').format(subscriptionDate);
+        final monthLabel = DateFormat('MMM yyyy').format(subscriptionDate);
+        
+        monthlyRevenue[monthLabel] = (monthlyRevenue[monthLabel] ?? 0.0) + amount;
+      }
+
+      // Convert to list of maps for chart
+      monthlyRevenueData.value = monthlyRevenue.entries
+          .map((entry) => {
+                'month': entry.key,
+                'amount': entry.value,
+              })
+          .toList();
+
+      // Sort by date
+      monthlyRevenueData.sort((a, b) {
+        final dateA = DateFormat('MMM yyyy').parse(a['month']);
+        final dateB = DateFormat('MMM yyyy').parse(b['month']);
+        return dateA.compareTo(dateB);
+      });
+
+      if (kDebugMode) {
+        print('Fetched revenue data: ${monthlyRevenueData.length} months');
+        for (var data in monthlyRevenueData) {
+          print('${data['month']}: \$${data['amount']}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching revenue data: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to fetch revenue data: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingRevenueData.value = false;
+    }
+  }
+
+  // Fetch restaurant activity data (scan data)
+  Future<void> fetchRestaurantActivityData() async {
+    isLoadingActivityData.value = true;
+    try {
+      final startDate = Timestamp.fromDate(reportStartDate.value);
+      final endDate = Timestamp.fromDate(reportEndDate.value.add(const Duration(hours: 23, minutes: 59, seconds: 59)));
+
+      final scansSnapshot = await _firestore
+          .collection('scans')
+          .where('scanDate', isGreaterThanOrEqualTo: startDate)
+          .where('scanDate', isLessThanOrEqualTo: endDate)
+          .get();
+
+      // Group scans by day
+      Map<String, int> dailyScans = {};
+      
+      for (var doc in scansSnapshot.docs) {
+        final data = doc.data();
+        final scanDate = (data['scanDate'] as Timestamp?)?.toDate() ?? 
+                        (data['timestamp'] as Timestamp?)?.toDate(); // fallback for timestamp field
+        
+        if (scanDate != null) {
+          // Create day key (e.g., "Mon", "Tue", etc.)
+          final dayKey = DateFormat('EEE').format(scanDate);
+          dailyScans[dayKey] = (dailyScans[dayKey] ?? 0) + 1;
+        }
+      }
+
+      // If we have a short date range, show actual dates instead of day names
+      final dateRange = reportEndDate.value.difference(reportStartDate.value).inDays;
+      
+      if (dateRange <= 7) {
+        // Show actual dates for short ranges
+        dailyScans.clear();
+        for (var doc in scansSnapshot.docs) {
+          final data = doc.data();
+          final scanDate = (data['scanDate'] as Timestamp?)?.toDate() ?? 
+                          (data['timestamp'] as Timestamp?)?.toDate();
+          
+          if (scanDate != null) {
+            final dayKey = DateFormat('MMM dd').format(scanDate);
+            dailyScans[dayKey] = (dailyScans[dayKey] ?? 0) + 1;
+          }
+        }
+      }
+
+      // Convert to list of maps for chart
+      dailyScanData.value = dailyScans.entries
+          .map((entry) => {
+                'day': entry.key,
+                'count': entry.value,
+              })
+          .toList();
+
+      // Sort by day order for weekly view, or by date for daily view
+      if (dateRange > 7) {
+        // Sort by day of week
+        final dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        dailyScanData.sort((a, b) {
+          final indexA = dayOrder.indexOf(a['day']);
+          final indexB = dayOrder.indexOf(b['day']);
+          return indexA.compareTo(indexB);
+        });
+      } else {
+        // Sort by date
+        dailyScanData.sort((a, b) {
+          final dateA = DateFormat('MMM dd').parse(a['day']);
+          final dateB = DateFormat('MMM dd').parse(b['day']);
+          return dateA.compareTo(dateB);
+        });
+      }
+
+      if (kDebugMode) {
+        print('Fetched activity data: ${dailyScanData.length} days');
+        print('Total scans in range: ${scansSnapshot.docs.length}');
+        for (var data in dailyScanData) {
+          print('${data['day']}: ${data['count']} scans');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching activity data: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to fetch activity data: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingActivityData.value = false;
+    }
   }
 
   // Admin login function
@@ -182,7 +358,26 @@ class AdminController extends GetxController {
 
   // Fetch dashboard metrics
   Future<void> fetchDashboardMetrics() async {
+    isLoading.value = true;
     try {
+      // Debug: Check current user and admin status
+      final currentUser = _auth.currentUser;
+      if (kDebugMode) {
+        print('Current user: ${currentUser?.uid}');
+        print('Current user email: ${currentUser?.email}');
+      }
+      
+      // Check if current user is in admins collection
+      if (currentUser != null) {
+        final adminDoc = await _firestore.collection('admins').doc(currentUser.uid).get();
+        if (kDebugMode) {
+          print('Admin document exists: ${adminDoc.exists}');
+          if (adminDoc.exists) {
+            print('Admin data: ${adminDoc.data()}');
+          }
+        }
+      }
+
       // Get total restaurants
       final restaurantsSnapshot =
           await _firestore.collection('restaurants').get();
@@ -210,20 +405,106 @@ class AdminController extends GetxController {
 
       // Calculate total revenue
       double revenue = 0.0;
+      double customerPayments = 0.0;
+      double adminAssignments = 0.0;
+      
       final subscriptionsSnapshot =
           await _firestore.collection('subscriptions').get();
-      for (var doc in subscriptionsSnapshot.docs) {
-        revenue += (doc.data()['amountPaid'] as num? ?? 0).toDouble();
+      
+      if (kDebugMode) {
+        print('=== REVENUE DEBUG INFO ===');
+        print('Total subscription documents: ${subscriptionsSnapshot.docs.length}');
       }
-      totalRevenue.value = revenue;
+      
+      for (var doc in subscriptionsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final amountPaid = (data['amountPaid'] as num? ?? 0).toDouble();
+        final planPrice = (data['planPrice'] as num? ?? 0).toDouble();
+        final paymentStatus = data['paymentStatus'] as String? ?? 'unknown';
+        final status = data['status'] as String? ?? 'unknown';
+        final planName = data['planName'] as String? ?? 'Unknown';
+        
+        if (kDebugMode) {
+          print('Subscription ${doc.id}: amountPaid=$amountPaid, planPrice=$planPrice, paymentStatus=$paymentStatus, status=$status, plan=$planName');
+        }
+        
+        // Separate customer payments from admin assignments
+        if (paymentStatus == 'admin_assigned' || paymentStatus == 'admin_extended') {
+          // Admin assignments - use plan price as potential revenue value
+          adminAssignments += planPrice;
+          if (kDebugMode) {
+            print('  → Admin assignment: Plan value $planPrice MAD');
+          }
+        } else if (amountPaid > 0) {
+          // Real customer payments
+          customerPayments += amountPaid;
+          revenue += amountPaid;
+          if (kDebugMode) {
+            print('  → Customer payment: $amountPaid MAD');
+          }
+        } else {
+          // Zero payments or unknown
+          if (kDebugMode) {
+            print('  → Zero/Unknown payment');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('Revenue Summary:');
+        print('- Customer Payments: $customerPayments MAD');
+        print('- Admin Assignment Value: $adminAssignments MAD');
+        print('- Total Revenue (Customer Only): $revenue MAD');
+        print('- Combined Value: ${customerPayments + adminAssignments} MAD');
+        print('==========================');
+      }
+      
+      // Update observable values based on revenue mode
+      this.customerPayments.value = customerPayments;
+      adminAssignmentValue.value = adminAssignments;
+      
+      // Set total revenue based on selected mode
+      switch (revenueMode.value) {
+        case 'customer_only':
+          totalRevenue.value = customerPayments;
+          break;
+        case 'combined':
+          totalRevenue.value = customerPayments + adminAssignments;
+          break;
+        case 'admin_value':
+          totalRevenue.value = adminAssignments;
+          break;
+        default:
+          totalRevenue.value = customerPayments;
+      }
 
       // Count active subscriptions
       int active = 0;
+      if (kDebugMode) {
+        print('=== SUBSCRIPTION DEBUG INFO ===');
+        print('Total subscription documents: ${subscriptionsSnapshot.docs.length}');
+      }
+      
       for (var doc in subscriptionsSnapshot.docs) {
-        if (doc.data()['status'] == 'active') {
+        final data = doc.data() as Map<String, dynamic>;
+        final status = data['status'];
+        final restaurantId = data['restaurantId'];
+        final planName = data['planName'] ?? 'Unknown Plan';
+        
+        if (kDebugMode) {
+          print('Subscription ${doc.id}: restaurantId=$restaurantId, status=$status, plan=$planName');
+        }
+        
+        if (status == 'active') {
           active++;
         }
       }
+      
+      if (kDebugMode) {
+        print('Active subscriptions count: $active');
+        print('================================');
+      }
+      
       activeSubscriptions.value = active;
 
       // Count pending restaurant approvals
@@ -232,15 +513,38 @@ class AdminController extends GetxController {
           .where('approvalStatus', isEqualTo: 'pending')
           .get();
       pendingApprovals.value = pendingApprovalSnapshot.docs.length;
+
+      if (kDebugMode) {
+        print('Dashboard metrics loaded successfully:');
+        print('- Total Restaurants: ${totalRestaurants.value}');
+        print('- Total Customers: ${totalCustomers.value}');
+        print('- Active Subscriptions: ${activeSubscriptions.value}');
+        print('- Total Revenue: ${totalRevenue.value} MAD');
+        print('- Pending Approvals: ${pendingApprovals.value}');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error fetching dashboard metrics: $e');
       }
       Get.snackbar(
         'Error',
-        'Failed to load dashboard data',
+        'Failed to load dashboard data: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
       );
+      
+      // Reset metrics to 0 on error
+      totalRestaurants.value = 0;
+      totalCustomers.value = 0;
+      activeSubscriptions.value = 0;
+      totalRevenue.value = 0.0;
+      customerPayments.value = 0.0;
+      adminAssignmentValue.value = 0.0;
+      pendingApprovals.value = 0;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -470,8 +774,36 @@ class AdminController extends GetxController {
       final now = DateTime.now();
       final endDate = now.add(Duration(days: durationDays));
 
+      // FIRST: Deactivate all existing active subscriptions for this restaurant
+      final existingSubscriptions = await _firestore
+          .collection('subscriptions')
+          .where('restaurantId', isEqualTo: restaurantId)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      if (kDebugMode) {
+        print('Deactivating ${existingSubscriptions.docs.length} existing active subscriptions for restaurant: $restaurantId');
+      }
+
+      // Use batch to ensure atomic operation
+      final batch = _firestore.batch();
+
+      // Deactivate existing active subscriptions
+      for (var doc in existingSubscriptions.docs) {
+        batch.update(doc.reference, {
+          'status': 'replaced',
+          'replacedAt': Timestamp.now(),
+          'replacedBy': _auth.currentUser?.uid,
+        });
+        
+        if (kDebugMode) {
+          print('Deactivating subscription: ${doc.id}');
+        }
+      }
+
       // Update restaurant subscription
-      await _firestore.collection('restaurants').doc(restaurantId).update({
+      final restaurantRef = _firestore.collection('restaurants').doc(restaurantId);
+      batch.update(restaurantRef, {
         'subscriptionPlan': planId,
         'subscriptionStatus': 'active',
         'subscriptionStart': Timestamp.fromDate(now),
@@ -480,8 +812,9 @@ class AdminController extends GetxController {
         'updatedAt': Timestamp.now(),
       });
 
-      // Record subscription assignment
-      await _firestore.collection('subscriptions').add({
+      // Create new subscription record
+      final newSubscriptionRef = _firestore.collection('subscriptions').doc();
+      batch.set(newSubscriptionRef, {
         'restaurantId': restaurantId,
         'planId': planId,
         'planName': plan.name,
@@ -495,7 +828,11 @@ class AdminController extends GetxController {
         'assignedAt': Timestamp.now(),
         'amountPaid': 0.0, // Admin assignment, no payment
         'paymentStatus': 'admin_assigned',
+        'createdAt': Timestamp.now(),
       });
+
+      // Commit all changes atomically
+      await batch.commit();
 
       Get.snackbar(
         'Success',
@@ -504,6 +841,9 @@ class AdminController extends GetxController {
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
+
+      // Refresh dashboard metrics to show updated count
+      await fetchDashboardMetrics();
     } catch (e) {
       if (kDebugMode) {
         print('Error assigning subscription plan: $e');
@@ -604,6 +944,22 @@ class AdminController extends GetxController {
       final batch = _firestore.batch();
 
       for (final restaurantId in restaurantIds) {
+        // FIRST: Deactivate existing active subscriptions for this restaurant
+        final existingSubscriptions = await _firestore
+            .collection('subscriptions')
+            .where('restaurantId', isEqualTo: restaurantId)
+            .where('status', isEqualTo: 'active')
+            .get();
+
+        // Deactivate existing active subscriptions
+        for (var doc in existingSubscriptions.docs) {
+          batch.update(doc.reference, {
+            'status': 'replaced',
+            'replacedAt': Timestamp.now(),
+            'replacedBy': _auth.currentUser?.uid,
+          });
+        }
+
         // Update restaurant subscription
         final restaurantRef =
             _firestore.collection('restaurants').doc(restaurantId);
@@ -632,6 +988,7 @@ class AdminController extends GetxController {
           'assignedAt': Timestamp.now(),
           'amountPaid': 0.0, // Admin assignment, no payment
           'paymentStatus': 'admin_assigned',
+          'createdAt': Timestamp.now(),
         });
       }
 
@@ -645,6 +1002,9 @@ class AdminController extends GetxController {
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
+
+      // Refresh dashboard metrics to show updated count
+      await fetchDashboardMetrics();
     } catch (e) {
       if (kDebugMode) {
         print('Error bulk assigning subscription plan: $e');
@@ -848,6 +1208,15 @@ class AdminController extends GetxController {
 
       // 7. Refresh metrics
       await fetchDashboardMetrics();
+
+      // Debug: Confirm restaurant was moved to restaurants collection
+      if (kDebugMode) {
+        print('✅ Restaurant approved successfully:');
+        print('   - Restaurant Name: $restaurantName');
+        print('   - Restaurant UID: $restaurantUid');
+        print('   - Added to restaurants collection with approvalStatus: approved');
+        print('   - Should now appear in Restaurant Management page');
+      }
 
       Get.snackbar(
         'Success',
@@ -1302,6 +1671,12 @@ class AdminController extends GetxController {
       }
     }
 
+    // Debug: Log what filter is being applied
+    if (kDebugMode) {
+      print('Restaurant filter applied: ${selectedRestaurantFilter.value}');
+      print('Querying restaurants collection with filter: ${selectedRestaurantFilter.value}');
+    }
+
     // We can't perform text search directly in Firestore query
     // The search will be applied in the UI after data is fetched
 
@@ -1406,8 +1781,30 @@ class AdminController extends GetxController {
       // Sort by month
       revenueData.sort((a, b) => a['month'].compareTo(b['month']));
 
-      // Update observable
-      revenueBreakdownData.value = revenueData;
+      // Calculate percentages for plan breakdown
+      double totalRevenue = revenueData.fold(0.0, (sum, data) => sum + (data['revenue'] as double));
+      
+      // Group plan data by plan type and calculate totals
+      Map<String, double> planTotals = {};
+      for (var data in planData) {
+        String plan = data['plan'] as String;
+        double revenue = data['revenue'] as double;
+        planTotals[plan] = (planTotals[plan] ?? 0.0) + revenue;
+      }
+      
+      // Convert to percentage breakdown
+      List<Map<String, dynamic>> planBreakdownData = [];
+      planTotals.forEach((plan, revenue) {
+        double percentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0.0;
+        planBreakdownData.add({
+          'plan': plan,
+          'percentage': percentage,
+          'revenue': revenue,
+        });
+      });
+      
+      // Update observable with plan breakdown data
+      revenueBreakdownData.value = planBreakdownData;
 
       isLoadingAnalytics.value = false;
     } catch (e) {
@@ -2096,6 +2493,445 @@ class AdminController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
+    }
+  }
+
+  // Clean up duplicate active subscriptions
+  Future<void> cleanupDuplicateSubscriptions() async {
+    try {
+      Get.dialog(
+        const AlertDialog(
+          title: Text('Cleaning Up Subscriptions'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Please wait while we fix duplicate subscriptions...'),
+            ],
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      final subscriptionsSnapshot = await _firestore.collection('subscriptions').get();
+      
+      // Group subscriptions by restaurant
+      Map<String, List<QueryDocumentSnapshot>> subscriptionsByRestaurant = {};
+      
+      for (var doc in subscriptionsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>?;
+        final restaurantId = data?['restaurantId'] as String?;
+        if (restaurantId != null) {
+          if (!subscriptionsByRestaurant.containsKey(restaurantId)) {
+            subscriptionsByRestaurant[restaurantId] = [];
+          }
+          subscriptionsByRestaurant[restaurantId]!.add(doc);
+        }
+      }
+      
+      int totalCleaned = 0;
+      
+      // For each restaurant, keep only the most recent active subscription
+      for (var entry in subscriptionsByRestaurant.entries) {
+        final restaurantId = entry.key;
+        final subscriptions = entry.value;
+        
+        // Filter active subscriptions
+        final activeSubscriptions = subscriptions.where((doc) {
+          final data = doc.data() as Map<String, dynamic>?;
+          return data?['status'] == 'active';
+        }).toList();
+        
+        if (activeSubscriptions.length > 1) {
+          // Sort by creation date (most recent first)
+          activeSubscriptions.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>?;
+            final bData = b.data() as Map<String, dynamic>?;
+            final aDate = (aData?['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+            final bDate = (bData?['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+            return bDate.compareTo(aDate);
+          });
+          
+          // Keep the first (most recent), deactivate the rest
+          for (int i = 1; i < activeSubscriptions.length; i++) {
+            await _firestore.collection('subscriptions')
+                .doc(activeSubscriptions[i].id)
+                .update({'status': 'expired'});
+            totalCleaned++;
+            
+            if (kDebugMode) {
+              print('Deactivated duplicate subscription: ${activeSubscriptions[i].id} for restaurant: $restaurantId');
+            }
+          }
+        }
+      }
+      
+      Get.back(); // Close loading dialog
+      
+      Get.snackbar(
+        'Cleanup Complete',
+        'Deactivated $totalCleaned duplicate subscriptions. Each restaurant now has only 1 active subscription.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+      
+      // Refresh dashboard metrics
+      await fetchDashboardMetrics();
+      
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      
+      if (kDebugMode) {
+        print('Error cleaning up subscriptions: $e');
+      }
+      
+      Get.snackbar(
+        'Cleanup Failed',
+        'Failed to clean up subscriptions: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Switch revenue calculation mode
+  void switchRevenueMode(String mode) {
+    revenueMode.value = mode;
+    
+    // Recalculate total revenue based on new mode
+    switch (mode) {
+      case 'customer_only':
+        totalRevenue.value = customerPayments.value;
+        break;
+      case 'combined':
+        totalRevenue.value = customerPayments.value + adminAssignmentValue.value;
+        break;
+      case 'admin_value':
+        totalRevenue.value = adminAssignmentValue.value;
+        break;
+      default:
+        totalRevenue.value = customerPayments.value;
+    }
+    
+    if (kDebugMode) {
+      print('Revenue mode switched to: $mode');
+      print('Total Revenue now shows: ${totalRevenue.value} MAD');
+    }
+    
+    Get.snackbar(
+      'Revenue Mode Updated',
+      _getRevenueModeDescription(mode),
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.blue,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+    );
+  }
+  
+  String _getRevenueModeDescription(String mode) {
+    switch (mode) {
+      case 'customer_only':
+        return 'Showing only actual customer payments';
+      case 'combined':
+        return 'Showing customer payments + admin assignment value';
+      case 'admin_value':
+        return 'Showing admin assignment value only';
+      default:
+        return 'Showing customer payments only';
+    }
+  }
+
+  // Clean up all Firebase data except admin credentials
+  Future<void> cleanupAllFirebaseData() async {
+    try {
+      // Collections to be deleted (everything except admin-related)
+      final collectionsToDelete = [
+        'restaurants',
+        'restaurant_registrations', 
+        'users', // Will preserve admin users separately
+        'subscriptions',
+        'custom_subscription_plans',
+        'subscription_plans', // Legacy subscription plans
+        'programs',
+        'scans',
+        'claims',
+        'customer_loyalty',
+        'qr_codes',
+        'offers', // Offers/promotions
+        'system_activities', // System activity logs
+        'admin_notifications', // Optional: you might want to keep these
+      ];
+
+      Get.dialog(
+        AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red, size: 30),
+              SizedBox(width: 12),
+              Text('⚠️ DANGER ZONE'),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(Get.context!).size.height * 0.6,
+              maxWidth: MediaQuery.of(Get.context!).size.width * 0.9,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This will DELETE ALL Firebase data except:',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                  ),
+                  SizedBox(height: 12),
+                  Text('✅ PRESERVED:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text('• Admin collection'),
+                  Text('• Your admin user account'),
+                  Text('• Admin authentication'),
+                  SizedBox(height: 12),
+                  Text('❌ DELETED:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                  ...collectionsToDelete.map((collection) => Text('• $collection')),
+                  SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      border: Border.all(color: Colors.red.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '⚠️ THIS CANNOT BE UNDONE!\nAll restaurants, customers, and subscription data will be permanently lost.',
+                      style: TextStyle(
+                        color: Colors.red.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Get.back();
+                _showFinalConfirmation(collectionsToDelete);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Continue to Final Confirmation'),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to initiate cleanup: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _showFinalConfirmation(List<String> collectionsToDelete) {
+    final RxString confirmText = ''.obs;
+    
+    Get.dialog(
+      AlertDialog(
+        title: Text('🔥 FINAL CONFIRMATION'),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(Get.context!).size.height * 0.3,
+            maxWidth: MediaQuery.of(Get.context!).size.width * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Type "DELETE ALL DATA" to confirm:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Confirmation Text',
+                    border: OutlineInputBorder(),
+                    hintText: 'DELETE ALL DATA',
+                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                  onChanged: (value) => confirmText.value = value,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('Cancel'),
+          ),
+          Obx(() => ElevatedButton(
+            onPressed: confirmText.value == 'DELETE ALL DATA' 
+                ? () {
+                    Get.back();
+                    _executeCleanup(collectionsToDelete);
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('DELETE ALL DATA'),
+          )),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Future<void> _executeCleanup(List<String> collectionsToDelete) async {
+    try {
+      // Show progress dialog
+      Get.dialog(
+        AlertDialog(
+          title: Text('🧹 Cleaning Database'),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(Get.context!).size.width * 0.8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Deleting all data except admin credentials...'),
+                SizedBox(height: 8),
+                Text('This may take a few moments.'),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      int totalDeleted = 0;
+      final currentAdminUid = _auth.currentUser?.uid;
+
+      if (kDebugMode) {
+        print('🧹 Starting Firebase cleanup...');
+        print('Preserving admin UID: $currentAdminUid');
+      }
+
+      // Delete each collection
+      for (String collectionName in collectionsToDelete) {
+        if (kDebugMode) {
+          print('Deleting collection: $collectionName');
+        }
+
+        final collection = _firestore.collection(collectionName);
+        
+        if (collectionName == 'users') {
+          // Special handling for users - preserve admin users
+          final usersSnapshot = await collection.get();
+          
+          for (var doc in usersSnapshot.docs) {
+            final data = doc.data();
+            final userRole = data['role'] as String?;
+            
+            // Delete non-admin users only
+            if (userRole != 'admin' && userRole != 'super_admin') {
+              await doc.reference.delete();
+              totalDeleted++;
+              if (kDebugMode) {
+                print('Deleted user: ${doc.id} (role: $userRole)');
+              }
+            } else {
+              if (kDebugMode) {
+                print('Preserved admin user: ${doc.id} (role: $userRole)');
+              }
+            }
+          }
+        } else {
+          // Delete entire collection
+          final snapshot = await collection.get();
+          
+          for (var doc in snapshot.docs) {
+            await doc.reference.delete();
+            totalDeleted++;
+          }
+          
+          if (kDebugMode) {
+            print('Deleted ${snapshot.docs.length} documents from $collectionName');
+          }
+        }
+      }
+
+      // Reset all dashboard metrics
+      totalRestaurants.value = 0;
+      totalCustomers.value = 0;
+      activeSubscriptions.value = 0;
+      totalRevenue.value = 0.0;
+      customerPayments.value = 0.0;
+      adminAssignmentValue.value = 0.0;
+      pendingApprovals.value = 0;
+      newRestaurantsThisMonth.value = 0;
+
+      // Clear observable lists
+      subscriptionPlans.clear();
+      loyaltyPrograms.clear();
+      recentClaims.clear();
+      notifications.clear();
+      totalRewardsClaimed.value = 0;
+      unreadNotifications.value = 0;
+
+      Get.back(); // Close progress dialog
+
+      Get.snackbar(
+        '✅ Cleanup Complete',
+        'Successfully deleted $totalDeleted records.\nOnly admin data has been preserved.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+
+      if (kDebugMode) {
+        print('🎉 Firebase cleanup completed successfully!');
+        print('Total records deleted: $totalDeleted');
+        print('Admin data preserved ✅');
+      }
+
+    } catch (e) {
+      Get.back(); // Close progress dialog
+      
+      if (kDebugMode) {
+        print('❌ Error during Firebase cleanup: $e');
+      }
+      
+      Get.snackbar(
+        '❌ Cleanup Failed',
+        'An error occurred during cleanup: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
     }
   }
 }

@@ -43,6 +43,7 @@ class RegisterPage extends GetView<AuthController> {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final RxString selectedRole = 'customer'.obs; // Default role
     final RxBool agreedToTerms = false.obs; // Terms and Conditions checkbox
+    final RxBool isPasswordVisible = false.obs;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,52 +80,76 @@ class RegisterPage extends GetView<AuthController> {
                   },
                 ),
                 const SizedBox(height: 15),
-                TextFormField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    // helperText:
-                    //     'Must contain capital letter, \nlowercase letter, \nnumber, and \nspecial character',
+                Obx(
+                  () => TextFormField(
+                    controller: passwordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible.value
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          isPasswordVisible.value = !isPasswordVisible.value;
+                        },
+                      ),
+                      // helperText:
+                      //     'Must contain capital letter, \nlowercase letter, \nnumber, and \nspecial character',
+                    ),
+                    obscureText: !isPasswordVisible.value,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                        return 'Password must contain at least 1 capital letter';
+                      }
+                      if (!RegExp(r'[a-z]').hasMatch(value)) {
+                        return 'Password must contain at least 1 lowercase letter';
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(value)) {
+                        return 'Password must contain at least 1 number';
+                      }
+                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                        return 'Password must contain at least 1 special character';
+                      }
+                      return null;
+                    },
                   ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Password must contain at least 1 capital letter';
-                    }
-                    if (!RegExp(r'[a-z]').hasMatch(value)) {
-                      return 'Password must contain at least 1 lowercase letter';
-                    }
-                    if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Password must contain at least 1 number';
-                    }
-                    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-                      return 'Password must contain at least 1 special character';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 15),
-                TextFormField(
-                  controller: confirmPasswordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
+                Obx(
+                  () => TextFormField(
+                    controller: confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible.value
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          isPasswordVisible.value = !isPasswordVisible.value;
+                        },
+                      ),
+                    ),
+                    obscureText: !isPasswordVisible.value,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (value != passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
                   ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 20),
                 const Text('Register as a:', style: TextStyle(fontSize: 16)),

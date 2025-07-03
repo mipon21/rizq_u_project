@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../routes/app_pages.dart';
@@ -9,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../ui/theme/widget_themes/admin_notification_panel.dart';
 import '../../../utils/subscription_migration_helper.dart';
-
 class AdminDashboardPage extends GetView<AdminController> {
   const AdminDashboardPage({Key? key}) : super(key: key);
 
@@ -39,6 +39,13 @@ class AdminDashboardPage extends GetView<AdminController> {
         ),
         backgroundColor: MColors.primary,
         actions: [
+          // Nuclear Reset Button (Danger Zone)
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.dangerous, color: Colors.red),
+              onPressed: () => controller.cleanupAllFirebaseData(),
+              tooltip: '⚠️ RESET ALL DATA (Danger Zone)',
+            ),
           // Replace badges with a simple Stack for notification indicator
           Obx(() => Stack(
                 children: [
@@ -125,19 +132,7 @@ class AdminDashboardPage extends GetView<AdminController> {
             ),
             const SizedBox(height: 16),
             _buildLoyaltyMetrics(),
-            const SizedBox(height: 24),
-
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildRecentActivity(),
-
-            // Add pending approvals section
+        // Add pending approvals section
             const SizedBox(height: 24),
             _buildPendingApprovalsSection(),
           ],
@@ -341,40 +336,58 @@ class AdminDashboardPage extends GetView<AdminController> {
   }
 
   Widget _buildMetricsGrid() {
-    return Obx(() => GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          children: [
-            _buildStatCard(
-              title: 'Total Restaurants',
-              value: controller.totalRestaurants.toString(),
-              icon: Icons.restaurant,
-              color: Colors.blue,
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const SizedBox(
+          height: 200,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading dashboard metrics...'),
+              ],
             ),
-            _buildStatCard(
-              title: 'Total Customers',
-              value: controller.totalCustomers.toString(),
-              icon: Icons.people,
-              color: Colors.green,
-            ),
-            _buildStatCard(
-              title: 'Active Subscriptions',
-              value: controller.activeSubscriptions.toString(),
-              icon: Icons.verified,
-              color: Colors.purple,
-            ),
-            _buildStatCard(
-              title: 'Total Revenue',
-              value: '\$${controller.totalRevenue.toStringAsFixed(2)}',
+          ),
+        );
+      }
+      
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        children: [
+          _buildStatCard(
+            title: 'Total Restaurants',
+            value: controller.totalRestaurants.toString(),
+            icon: Icons.restaurant,
+            color: Colors.blue,
+          ),
+          _buildStatCard(
+            title: 'Total Customers',
+            value: controller.totalCustomers.toString(),
+            icon: Icons.people,
+            color: Colors.green,
+          ),
+          _buildStatCard(
+            title: 'Active Subscriptions',
+            value: controller.activeSubscriptions.toString(),
+            icon: Icons.verified,
+            color: Colors.purple,
+          ),
+                      Obx(() => _buildStatCard(
+              title: 'Total Revenue${_getRevenueModeLabel()}',
+              value: '${controller.totalRevenue.toStringAsFixed(2)} MAD',
               icon: Icons.attach_money,
               color: Colors.orange,
-            ),
-          ],
-        ));
+            )),
+        ],
+      );
+    });
   }
 
   Widget _buildStatCard({
@@ -646,91 +659,6 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
-  Widget _buildRecentActivity() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Latest System Activity',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              // height: 300,
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  // This would typically be populated with real data
-                  IconData icon;
-                  String title;
-                  String subtitle;
-                  Color color;
-
-                  switch (index) {
-                    case 0:
-                      icon = Icons.restaurant_menu;
-                      title = 'New Restaurant Registration';
-                      subtitle = '2 minutes ago';
-                      color = Colors.blue;
-                      break;
-                    case 1:
-                      icon = Icons.person_add;
-                      title = 'New Customer Account';
-                      subtitle = '15 minutes ago';
-                      color = Colors.green;
-                      break;
-                    case 2:
-                      icon = Icons.card_giftcard;
-                      title = 'New Loyalty Program Created';
-                      subtitle = '1 hour ago';
-                      color = Colors.purple;
-                      break;
-                    case 3:
-                      icon = Icons.payment;
-                      title = 'Subscription Payment Received';
-                      subtitle = '3 hours ago';
-                      color = Colors.orange;
-                      break;
-                    case 4:
-                      icon = Icons.notifications;
-                      title = 'System Update Completed';
-                      subtitle = 'Today, 09:30 AM';
-                      color = Colors.red;
-                      break;
-                    default:
-                      icon = Icons.info;
-                      title = 'System Activity';
-                      subtitle = 'Unknown time';
-                      color = Colors.grey;
-                  }
-
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: color.withOpacity(0.2),
-                      child: Icon(icon, color: color),
-                    ),
-                    title: Text(title),
-                    subtitle: Text(subtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Notifications panel
   void _showNotificationsPanel(BuildContext context) {
     showModalBottomSheet(
@@ -822,7 +750,29 @@ class AdminDashboardPage extends GetView<AdminController> {
   }
 
   void _showPendingApprovals() {
-    Get.toNamed(Routes.ADMIN_RESTAURANT_REGISTRATIONS);
+    if (kDebugMode) {
+      print('Pending Approvals button clicked');
+      print('Navigating to: ${Routes.ADMIN_RESTAURANT_REGISTRATIONS}');
+      print('Current pending approvals count: ${controller.pendingApprovals.value}');
+    }
+    
+    try {
+      Get.toNamed(Routes.ADMIN_RESTAURANT_REGISTRATIONS);
+      if (kDebugMode) {
+        print('Navigation initiated successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Navigation failed: $e');
+      }
+      Get.snackbar(
+        'Navigation Error',
+        'Failed to open Restaurant Registrations: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   // Analytics panel
@@ -940,8 +890,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     // Convert controller data to GrowthData objects
     final List<GrowthData> growthData = controller.restaurantGrowthData
         .map((data) => GrowthData(
-              data['date'] as DateTime,
-              data['value'] as int,
+              data['date'] as DateTime? ?? DateTime.now(),
+              data['value'] as int? ?? 0,
             ))
         .toList();
 
@@ -1015,8 +965,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     // Convert controller data to LoyaltyUsageData objects
     final List<LoyaltyUsageData> usageData = controller.loyaltyUsageData
         .map((data) => LoyaltyUsageData(
-              data['category'] as String,
-              data['value'] as int,
+              data['category'] as String? ?? 'Unknown',
+              data['value'] as int? ?? 0,
             ))
         .toList();
 
@@ -1059,8 +1009,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     // Convert controller data to RevenueData objects
     final List<RevenueData> revenueData = controller.revenueBreakdownData
         .map((data) => RevenueData(
-              data['plan'] as String,
-              data['percentage'] as double,
+              data['plan'] as String? ?? 'Unknown Plan',
+              (data['percentage'] as num?)?.toDouble() ?? 0.0,
             ))
         .toList();
 
@@ -1119,8 +1069,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     // Convert controller data to ActivityData objects
     final List<ActivityData> activityData = controller.claimActivityByDayData
         .map((data) => ActivityData(
-              data['day'] as String,
-              data['count'] as int,
+              data['day'] as String? ?? 'Unknown',
+              data['count'] as int? ?? 0,
             ))
         .toList();
 
@@ -1161,9 +1111,28 @@ class AdminDashboardPage extends GetView<AdminController> {
       ],
     );
   }
-}
 
-// Models for chart data
+
+
+
+
+
+
+  String _getRevenueModeLabel() {
+    switch (controller.revenueMode.value) {
+      case 'customer_only':
+        return '\n(Customer Only)';
+      case 'combined':
+        return '\n(Combined)';
+      case 'admin_value':
+        return '\n(Admin Value)';
+      default:
+        return '';
+    }
+  }
+  }
+  
+  // Models for chart data
 class ChartData {
   final String month;
   final int restaurants;
