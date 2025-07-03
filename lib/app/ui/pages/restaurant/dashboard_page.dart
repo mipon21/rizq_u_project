@@ -98,6 +98,7 @@ class _DashboardPageState extends State<DashboardPage> {
       
       return Scaffold(
         // No AppBar - each tab has its own
+        resizeToAvoidBottomInset: false,
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {

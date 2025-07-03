@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../controllers/customer_controller.dart';
+import '../controllers/customer_registration_controller.dart';
 // Import AuthController if needed within CustomerController or its pages
 // import 'package:rizq/app/controllers/auth_controller.dart';
 
@@ -9,6 +10,8 @@ class CustomerBinding extends Bindings {
   void dependencies() {
     // Initializes CustomerController when a customer route is accessed
     Get.lazyPut<CustomerController>(() => CustomerController());
+    // Initializes CustomerRegistrationController for registration pages
+    Get.lazyPut<CustomerRegistrationController>(() => CustomerRegistrationController());
     // If AuthController is needed, ensure it's accessible (already put by InitialBinding)
     // Get.lazyPut<AuthController>(() => AuthController()); // Usually not needed here
   }

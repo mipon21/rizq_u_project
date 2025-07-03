@@ -16,6 +16,7 @@ import '../ui/pages/admin/custom_subscription_plans_page.dart';
 import '../ui/pages/auth/login_page.dart';
 import '../ui/pages/auth/register_page.dart';
 import '../ui/pages/auth/restaurant_registration_page.dart';
+import '../ui/pages/auth/customer_registration_page.dart';
 import '../ui/pages/auth/forgot_password_page.dart';
 import '../ui/pages/auth/email_verification_page.dart';
 import '../ui/pages/customer/customer_home_page.dart';
@@ -60,6 +61,11 @@ class AppPages {
       name: Routes.EMAIL_VERIFICATION,
       page: () => const EmailVerificationPage(),
       binding: AuthBinding(),
+    ),
+    GetPage(
+      name: Routes.CUSTOMER_REGISTRATION,
+      page: () => const CustomerRegistrationPage(),
+      binding: CustomerBinding(),
     ),
     // Customer Routes
     GetPage(

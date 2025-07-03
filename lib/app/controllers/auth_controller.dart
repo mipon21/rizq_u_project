@@ -47,9 +47,30 @@ class AuthController extends GetxController {
       }
       Get.offAllNamed(Routes.LOGIN);
     } else {
-      // If user is logged in, check email verification first
       if (kDebugMode) {
-        print('User is logged in (${user.uid}). Checking email verification...');
+        print('User is logged in (${user.uid}). Checking if user is admin...');
+      }
+      
+      // First check if user is an admin - admins don't need email verification
+      try {
+        final adminDoc = await _firestore.collection('admins').doc(user.uid).get();
+        if (adminDoc.exists) {
+          if (kDebugMode) {
+            print('User is admin. Navigating to Admin Dashboard.');
+          }
+          userRole.value = 'admin';
+          Get.offAllNamed(Routes.ADMIN_DASHBOARD);
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking admin status: $e');
+        }
+      }
+      
+      // For non-admin users, check email verification
+      if (kDebugMode) {
+        print('User is not admin. Checking email verification...');
       }
       
       // Refresh user data to get latest email verification status
@@ -123,9 +144,9 @@ class AuthController extends GetxController {
   void _navigateBasedOnRole() async {
     if (userRole.value == 'customer') {
       if (kDebugMode) {
-        print('Navigating to Customer Home.');
+        print('Checking customer registration status.');
       }
-      Get.offAllNamed(Routes.CUSTOMER_HOME);
+      _checkCustomerRegistrationStatus();
     } else if (userRole.value == 'restaurateur') {
       // Check if restaurant needs approval
       try {
@@ -286,7 +307,25 @@ class AuthController extends GetxController {
         password: password,
       );
       
-      // Check if email is verified
+      // Check if user is an admin first - admins don't need email verification
+      if (userCredential.user != null) {
+        try {
+          final adminDoc = await _firestore.collection('admins').doc(userCredential.user!.uid).get();
+          if (adminDoc.exists) {
+            if (kDebugMode) {
+              print('Admin login successful for $email.');
+            }
+            // Skip email verification for admins
+            return;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error checking admin status during login: $e');
+          }
+        }
+      }
+      
+      // For non-admin users, check if email is verified
       if (userCredential.user != null && !userCredential.user!.emailVerified) {
         if (kDebugMode) {
           print('Login successful but email not verified for $email.');
@@ -472,6 +511,38 @@ class AuthController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Check if customer has completed registration
+  Future<void> _checkCustomerRegistrationStatus() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final docSnapshot = await _firestore.collection('users').doc(user.uid).get();
+      
+      if (docSnapshot.exists) {
+        final userData = docSnapshot.data()!;
+        final registrationComplete = userData['registrationComplete'] ?? false;
+        
+        if (registrationComplete) {
+          // Registration complete, go to customer home
+          Get.offAllNamed(Routes.CUSTOMER_HOME);
+        } else {
+          // Registration not complete, go to customer registration
+          Get.offAllNamed(Routes.CUSTOMER_REGISTRATION);
+        }
+      } else {
+        // No user document exists, go to customer registration
+        Get.offAllNamed(Routes.CUSTOMER_REGISTRATION);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking customer registration status: $e');
+      }
+      // If there's an error, default to customer registration
+      Get.offAllNamed(Routes.CUSTOMER_REGISTRATION);
     }
   }
 

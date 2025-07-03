@@ -11,6 +11,20 @@ import 'package:rizq/app/controllers/admin_controller.dart';
 class DashboardTab extends StatelessWidget {
   const DashboardTab({Key? key}) : super(key: key);
 
+  // Calculate optimal Y-axis interval based on max scan count with proper spacing
+  double _calculateYInterval(double maxScanCount) {
+    if (maxScanCount <= 10) return 2.0;  // Show 0, 2, 4, 6, 8, 10
+    if (maxScanCount <= 20) return 5.0;  // Show 0, 5, 10, 15, 20
+    if (maxScanCount <= 50) return 10.0; // Show 0, 10, 20, 30, 40, 50
+    if (maxScanCount <= 100) return 20.0; // Show 0, 20, 40, 60, 80, 100
+    if (maxScanCount <= 200) return 50.0; // Show 0, 50, 100, 150, 200
+    if (maxScanCount <= 500) return 100.0; // Show 0, 100, 200, 300, 400, 500
+    if (maxScanCount <= 1000) return 200.0; // Show 0, 200, 400, 600, 800, 1000
+    return (maxScanCount / 5).ceil().toDouble();
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<RestaurantController>();
@@ -74,8 +88,27 @@ class DashboardTab extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        SizedBox(
+                        const SizedBox(height: 4),
+                        // Chart hint
+                        Row(
+                                children: [
+                                                                     Icon(
+                                     Icons.zoom_out_map,
+                                     size: 14,
+                                     color: Colors.grey[600],
+                                   ),
+                                  const SizedBox(width: 4),
+                                                                     Text(
+                                     'Pinch to zoom, drag to scroll',
+                                     style: TextStyle(
+                                       fontSize: 10,
+                                       color: Colors.grey[600],
+                                     ),
+                                   ),
+                                ],
+                              ),
+                        const SizedBox(height: 8),
+                                                SizedBox(
                           height: 180,
                           child: Obx(() {
                             final chartData = controller.scanChartData;
@@ -87,17 +120,51 @@ class DashboardTab extends StatelessWidget {
                               return const Center(
                                   child: Text('No scan data for this month'));
                             }
-                            final maxY = chartData.map((e) => e.y).fold<double>(
-                                    0, (prev, y) => y > prev ? y : prev) +
-                                5;
-                            return GestureDetector(
-                              onTap: () {
-                                DashboardPage.navigateToTab(3,
-                                    rewardsSubtabIndex: 1);
-                              },
-                              child: LineChart(
+                            final maxScanCount = chartData.map((e) => e.y).fold<double>(
+                                    0, (prev, y) => y > prev ? y : prev);
+                            // Dynamic Y-axis calculation
+                            final maxY = maxScanCount * 1.1; // Add 10% padding at top
+                            final yInterval = _calculateYInterval(maxScanCount);
+                            final now = DateTime.now();
+                            final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+                            
+                            return InteractiveViewer(
+                              constrained: false,
+                              minScale: 0.5,
+                              maxScale: 4.0,
+                              panEnabled: true,
+                              scaleEnabled: true,
+                              boundaryMargin: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
+                              child: Container(
+                                width: daysInMonth * 25.0, // Give more space per day
+                                height: maxScanCount > 100 ? 300 : maxScanCount > 50 ? 250 : 180, // Dynamic height based on scan count
+                                padding: const EdgeInsets.all(12.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    DashboardPage.navigateToTab(3,
+                                        rewardsSubtabIndex: 1);
+                                  },
+                                  child: LineChart(
                                 LineChartData(
-                                  gridData: FlGridData(show: false),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: true,
+                                    drawHorizontalLine: true,
+                                    horizontalInterval: yInterval,
+                                    verticalInterval: 1,
+                                    getDrawingHorizontalLine: (value) {
+                                      return FlLine(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        strokeWidth: 1,
+                                      );
+                                    },
+                                    getDrawingVerticalLine: (value) {
+                                      return FlLine(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        strokeWidth: 1,
+                                      );
+                                    },
+                                  ),
                                   titlesData: FlTitlesData(
                                     leftTitles: AxisTitles(
                                       axisNameWidget: const Text(
@@ -110,17 +177,20 @@ class DashboardTab extends StatelessWidget {
                                       axisNameSize: 22,
                                       sideTitles: SideTitles(
                                         showTitles: true,
-                                        reservedSize: 40,
-                                        interval: 50,
+                                        reservedSize: maxScanCount > 100 ? 60 : 50, // More space for larger numbers
+                                        interval: yInterval,
                                         getTitlesWidget: (value, meta) {
-                                          if (value % 50 == 0) {
-                                            return Text(
-                                              value.toInt().toString(),
-                                              style: const TextStyle(
-                                                color: Colors.black54,
-                                                fontSize: 12,
+                                          if (value % yInterval == 0 && value >= 0 && value <= maxY) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8.0),
+                                              child: Text(
+                                                value.toInt().toString(),
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                  fontSize: 11,
+                                                ),
+                                                textAlign: TextAlign.right,
                                               ),
-                                              textAlign: TextAlign.left,
                                             );
                                           }
                                           return const SizedBox.shrink();
@@ -139,23 +209,29 @@ class DashboardTab extends StatelessWidget {
                                       sideTitles: SideTitles(
                                         showTitles: true,
                                         reservedSize: 30,
-                                        interval: 5,
+                                        interval: 1, // Show every day
                                         getTitlesWidget: (value, meta) {
-                                          if (value % 5 == 0) {
-                                            final date = DateTime.now().subtract(
-                                                Duration(
-                                                    days: 30 - value.toInt()));
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.only(top: 8.0),
-                                              child: Text(
-                                                DateFormat('MM/dd').format(date),
-                                                style: const TextStyle(
-                                                  color: Colors.black54,
-                                                  fontSize: 10,
+                                          final now = DateTime.now();
+                                          final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+                                          
+                                          // Show every day but with smaller font for readability
+                                          if (value >= 1 && value <= daysInMonth && value % 1 == 0) {
+                                            try {
+                                              final date = DateTime(now.year, now.month, value.toInt());
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.only(top: 8.0),
+                                                child: Text(
+                                                  value.toInt().toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.black54,
+                                                    fontSize: 9,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
+                                              );
+                                            } catch (e) {
+                                              return const SizedBox.shrink();
+                                            }
                                           }
                                           return const SizedBox.shrink();
                                         },
@@ -169,24 +245,36 @@ class DashboardTab extends StatelessWidget {
                                     ),
                                   ),
                                   borderData: FlBorderData(show: false),
-                                  minX: 0,
-                                  maxX: 30,
+                                  minX: 1,
+                                  maxX: DateTime(DateTime.now().year, DateTime.now().month + 1, 0).day.toDouble(),
                                   minY: 0,
                                   maxY: maxY,
                                   lineBarsData: [
                                     LineChartBarData(
                                       spots: chartData,
                                       isCurved: true,
-                                      curveSmoothness: 0.4,
+                                      curveSmoothness: 0.3,
                                       color: MColors.primary,
                                       barWidth: 3,
-                                      dotData: FlDotData(show: true),
+                                      dotData: FlDotData(
+                                        show: true,
+                                        getDotPainter: (spot, percent, barData, index) {
+                                          return FlDotCirclePainter(
+                                            radius: 3,
+                                            color: MColors.primary,
+                                            strokeWidth: 2,
+                                            strokeColor: Colors.white,
+                                          );
+                                        },
+                                      ),
                                       belowBarData: BarAreaData(
                                         show: true,
-                                        color: MColors.primary.withOpacity(0.08),
+                                        color: MColors.primary.withOpacity(0.1),
                                       ),
                                     ),
                                   ],
+                                ),
+                              ),
                                 ),
                               ),
                             );

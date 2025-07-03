@@ -166,6 +166,7 @@ class RestaurantController extends GetxController {
   // --- Dashboard Data ---
   final RxList<Map<String, String>> recentScans = <Map<String, String>>[].obs;
   final RxList<FlSpot> scanChartData = <FlSpot>[].obs;
+  final RxInt currentMonthScanCount = 0.obs;
 
   String get restaurantUid => _authController.currentUserUid;
 
@@ -179,7 +180,7 @@ class RestaurantController extends GetxController {
   bool get isSubscribed =>
       restaurantProfile.value?.isSubscriptionActive ?? false;
   bool get isSuspended => restaurantProfile.value?.isSuspended ?? false;
-  int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
+  int get scanCount => currentMonthScanCount.value;
   int get rewardsIssuedCount => restaurantProfile.value?.rewardsIssued ?? 0;
 
   // Cache for customer data to avoid repeated queries
@@ -194,6 +195,7 @@ class RestaurantController extends GetxController {
     claimedRewards.assignAll([]);
     recentScans.clear();
     scanChartData.clear();
+    currentMonthScanCount.value = 0;
 
     if (restaurantUid.isNotEmpty) {
       // Use Future.delayed to ensure this runs after widget tree is built
@@ -845,35 +847,49 @@ class RestaurantController extends GetxController {
     try {
       final now = DateTime.now();
       final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 1).subtract(Duration(days: 1));
+      
       final querySnapshot = await _firestore
           .collection('scans')
           .where('restaurantId', isEqualTo: restaurantUid)
           .where('timestamp',
               isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('timestamp',
+              isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
           .orderBy('timestamp')
           .get();
+      
       // Count scans per day
       final Map<int, int> dayToCount = {};
+      int totalScansThisMonth = 0;
+      
       for (var doc in querySnapshot.docs) {
         final timestamp = (doc.data()['timestamp'] as Timestamp?)?.toDate();
         if (timestamp != null) {
           final day = timestamp.day;
           dayToCount[day] = (dayToCount[day] ?? 0) + 1;
+          totalScansThisMonth++;
         }
       }
 
-      // Build cumulative total
+      // Update current month scan count
+      currentMonthScanCount.value = totalScansThisMonth;
+
+      // Build daily scan chart data (individual daily counts)
       final List<FlSpot> spots = [];
-      int runningTotal = 0;
-      final days = dayToCount.keys.toList()..sort();
-      for (final day in days) {
-        runningTotal += dayToCount[day]!;
-        spots.add(FlSpot(day.toDouble(), runningTotal.toDouble()));
+      final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+      
+      // Build daily scan counts for each day of the month
+      for (int day = 1; day <= daysInMonth; day++) {
+        final dailyCount = dayToCount[day] ?? 0;
+        spots.add(FlSpot(day.toDouble(), dailyCount.toDouble()));
       }
+      
       scanChartData.assignAll(spots);
     } catch (e) {
       if (kDebugMode) print('Error fetching scan chart data: $e');
       scanChartData.clear();
+      currentMonthScanCount.value = 0;
     }
   }
 
@@ -881,10 +897,10 @@ class RestaurantController extends GetxController {
   Future<void> recordScanAndRefresh(String customerUid) async {
     await processQrScan(customerUid);
     await fetchRecentScans();
-    await fetchScanChartData();
+    await fetchScanChartData(); // This will also update currentMonthScanCount
   }
 
-  // Stream of recent scans for live updates with minimal data for faster loading
+  // Stream of recent scans for live updates with customer names
   Stream<List<Map<String, dynamic>>> recentScansStream() {
     if (restaurantUid.isEmpty) return const Stream.empty();
 
@@ -892,18 +908,38 @@ class RestaurantController extends GetxController {
         .collection('scans')
         .where('restaurantId', isEqualTo: restaurantUid)
         .orderBy('timestamp', descending: true)
-        .limit(20) // Limit to just 20 most recent scans for much faster loading
+        .limit(20) // Limit to just 20 most recent scans
         .snapshots()
-        .map((snapshot) {
-      // Using .map instead of .asyncMap for faster processing (no async customer data fetching)
-      return snapshot.docs.map((doc) {
+        .asyncMap((snapshot) async {
+      // Using asyncMap to fetch customer names from users collection
+      final List<Map<String, dynamic>> scans = [];
+      
+      for (var doc in snapshot.docs) {
         final data = doc.data();
-        return {
-          'name': 'Customer', // Skip customer name lookup for faster loading
+        final customerId = data['clientId'] as String?;
+        String customerName = 'Customer';
+        
+        // Fetch customer name from users collection
+        if (customerId != null) {
+          try {
+            final customerDoc = await _firestore.collection('users').doc(customerId).get();
+            if (customerDoc.exists) {
+              customerName = customerDoc.data()?['name'] ?? 'Customer';
+            }
+          } catch (e) {
+            // If customer lookup fails, keep default name
+            customerName = 'Customer';
+          }
+        }
+        
+        scans.add({
+          'name': customerName, // Show actual customer name
           'date': (data['timestamp'] as Timestamp?)?.toDate(),
           'points': data['pointsAwarded'] ?? 1,
-        };
-      }).toList();
+        });
+      }
+      
+      return scans;
     });
   }
 }

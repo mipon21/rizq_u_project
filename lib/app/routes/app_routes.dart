@@ -15,6 +15,7 @@ abstract class Routes {
   static const CUSTOMER_QR_CODE = '/customer/qr-code';
   static const CUSTOMER_SCAN_HISTORY = '/customer/scan-history';
   static const CUSTOMER_PROFILE = '/customer/profile';
+  static const CUSTOMER_REGISTRATION = '/customer-registration';
 
   // Restaurant Routes
   static const RESTAURANT_DASHBOARD = '/restaurant/dashboard';

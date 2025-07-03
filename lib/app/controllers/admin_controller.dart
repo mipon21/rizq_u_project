@@ -56,16 +56,7 @@ class AdminController extends GetxController {
   final RxBool isLoadingLoyaltyData = false.obs;
   final RxMap<String, int> topRestaurantsByRewards = <String, int>{}.obs;
 
-  // Analytics data
-  final RxList<Map<String, dynamic>> restaurantGrowthData =
-      <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> loyaltyUsageData =
-      <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> revenueBreakdownData =
-      <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> claimActivityByDayData =
-      <Map<String, dynamic>>[].obs;
-  final RxBool isLoadingAnalytics = false.obs;
+
 
   // Admin notifications
   final RxList<Map<String, dynamic>> notifications =
@@ -198,8 +189,8 @@ class AdminController extends GetxController {
 
       final scansSnapshot = await _firestore
           .collection('scans')
-          .where('scanDate', isGreaterThanOrEqualTo: startDate)
-          .where('scanDate', isLessThanOrEqualTo: endDate)
+          .where('timestamp', isGreaterThanOrEqualTo: startDate)
+          .where('timestamp', isLessThanOrEqualTo: endDate)
           .get();
 
       // Group scans by day
@@ -207,8 +198,7 @@ class AdminController extends GetxController {
       
       for (var doc in scansSnapshot.docs) {
         final data = doc.data();
-        final scanDate = (data['scanDate'] as Timestamp?)?.toDate() ?? 
-                        (data['timestamp'] as Timestamp?)?.toDate(); // fallback for timestamp field
+        final scanDate = (data['timestamp'] as Timestamp?)?.toDate();
         
         if (scanDate != null) {
           // Create day key (e.g., "Mon", "Tue", etc.)
@@ -225,8 +215,7 @@ class AdminController extends GetxController {
         dailyScans.clear();
         for (var doc in scansSnapshot.docs) {
           final data = doc.data();
-          final scanDate = (data['scanDate'] as Timestamp?)?.toDate() ?? 
-                          (data['timestamp'] as Timestamp?)?.toDate();
+          final scanDate = (data['timestamp'] as Timestamp?)?.toDate();
           
           if (scanDate != null) {
             final dayKey = DateFormat('MMM dd').format(scanDate);
@@ -1706,260 +1695,7 @@ class AdminController extends GetxController {
     return query.snapshots();
   }
 
-  // Enhanced analytics: fetch detailed revenue data
-  Future<void> fetchDetailedRevenueData() async {
-    try {
-      isLoadingAnalytics.value = true;
 
-      // Get subscription data for the last 12 months
-      final DateTime twelveMonthsAgo =
-          DateTime.now().subtract(const Duration(days: 365));
-      final subscriptionsSnapshot = await _firestore
-          .collection('subscriptions')
-          .where('createdAt',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(twelveMonthsAgo))
-          .get();
-
-      // Group by month
-      Map<String, double> monthlyRevenue = {};
-      Map<String, Map<String, double>> planRevenue = {};
-
-      for (var doc in subscriptionsSnapshot.docs) {
-        final data = doc.data();
-        final createdAt = data['createdAt'] as Timestamp?;
-        final amount = (data['amountPaid'] as num?)?.toDouble() ?? 0.0;
-        final plan = data['planType'] as String? ?? 'unknown';
-
-        if (createdAt != null) {
-          final date = createdAt.toDate();
-          final monthYear = DateFormat('yyyy-MM').format(date);
-
-          // Add to monthly revenue
-          if (monthlyRevenue.containsKey(monthYear)) {
-            monthlyRevenue[monthYear] =
-                (monthlyRevenue[monthYear] ?? 0) + amount;
-          } else {
-            monthlyRevenue[monthYear] = amount;
-          }
-
-          // Add to plan revenue
-          if (!planRevenue.containsKey(monthYear)) {
-            planRevenue[monthYear] = {};
-          }
-
-          if (planRevenue[monthYear]!.containsKey(plan)) {
-            planRevenue[monthYear]![plan] =
-                (planRevenue[monthYear]![plan] ?? 0) + amount;
-          } else {
-            planRevenue[monthYear]![plan] = amount;
-          }
-        }
-      }
-
-      // Convert to list for charts
-      List<Map<String, dynamic>> revenueData = [];
-      List<Map<String, dynamic>> planData = [];
-
-      monthlyRevenue.forEach((month, revenue) {
-        revenueData.add({
-          'month': month,
-          'revenue': revenue,
-        });
-
-        // Add plan breakdown
-        if (planRevenue.containsKey(month)) {
-          planRevenue[month]!.forEach((plan, amount) {
-            planData.add({
-              'month': month,
-              'plan': plan,
-              'revenue': amount,
-            });
-          });
-        }
-      });
-
-      // Sort by month
-      revenueData.sort((a, b) => a['month'].compareTo(b['month']));
-
-      // Calculate percentages for plan breakdown
-      double totalRevenue = revenueData.fold(0.0, (sum, data) => sum + (data['revenue'] as double));
-      
-      // Group plan data by plan type and calculate totals
-      Map<String, double> planTotals = {};
-      for (var data in planData) {
-        String plan = data['plan'] as String;
-        double revenue = data['revenue'] as double;
-        planTotals[plan] = (planTotals[plan] ?? 0.0) + revenue;
-      }
-      
-      // Convert to percentage breakdown
-      List<Map<String, dynamic>> planBreakdownData = [];
-      planTotals.forEach((plan, revenue) {
-        double percentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0.0;
-        planBreakdownData.add({
-          'plan': plan,
-          'percentage': percentage,
-          'revenue': revenue,
-        });
-      });
-      
-      // Update observable with plan breakdown data
-      revenueBreakdownData.value = planBreakdownData;
-
-      isLoadingAnalytics.value = false;
-    } catch (e) {
-      isLoadingAnalytics.value = false;
-      if (kDebugMode) {
-        print('Error fetching detailed revenue data: $e');
-      }
-    }
-  }
-
-  // Fetch analytics data
-  Future<void> fetchAnalyticsData() async {
-    try {
-      isLoadingAnalytics.value = true;
-
-      // Fetch restaurant growth data (registrations over time)
-      await _fetchRestaurantGrowthData();
-
-      // Fetch loyalty program usage data
-      await _fetchLoyaltyUsageData();
-
-      // Fetch revenue breakdown data
-      await fetchDetailedRevenueData();
-
-      // Fetch claim activity by day data
-      await _fetchClaimActivityByDayData();
-
-      isLoadingAnalytics.value = false;
-    } catch (e) {
-      isLoadingAnalytics.value = false;
-      if (kDebugMode) {
-        print('Error fetching analytics data: $e');
-      }
-    }
-  }
-
-  // Helper method to fetch restaurant growth data
-  Future<void> _fetchRestaurantGrowthData() async {
-    try {
-      final now = DateTime.now();
-      final List<Map<String, dynamic>> growthData = [];
-
-      // Get data for the last 6 months
-      for (int i = 5; i >= 0; i--) {
-        final month = DateTime(now.year, now.month - i, 1);
-        final nextMonth = DateTime(month.year, month.month + 1, 1);
-
-        final restaurantsSnapshot = await _firestore
-            .collection('restaurants')
-            .where('createdAt', isLessThan: Timestamp.fromDate(nextMonth))
-            .get();
-
-        growthData.add({
-          'date': month,
-          'value': restaurantsSnapshot.docs.length,
-        });
-      }
-
-      restaurantGrowthData.assignAll(growthData);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching restaurant growth data: $e');
-      }
-      rethrow;
-    }
-  }
-
-  // Helper method to fetch loyalty usage data
-  Future<void> _fetchLoyaltyUsageData() async {
-    try {
-      // Get all claims
-      final claimsSnapshot = await _firestore.collection('claims').get();
-
-      // Group claims by restaurant
-      Map<String, int> restaurantClaims = {};
-      for (var doc in claimsSnapshot.docs) {
-        final restaurantName =
-            doc.data()['restaurantName'] as String? ?? 'Unknown';
-        restaurantClaims[restaurantName] =
-            (restaurantClaims[restaurantName] ?? 0) + 1;
-      }
-
-      // Sort restaurants by number of claims
-      final sortedRestaurants = restaurantClaims.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      // Take top 5 restaurants, combine others
-      List<Map<String, dynamic>> usageData = [];
-      int othersCount = 0;
-
-      for (int i = 0; i < sortedRestaurants.length; i++) {
-        if (i < 4) {
-          // Top 4 restaurants
-          usageData.add({
-            'category': sortedRestaurants[i].key,
-            'value': sortedRestaurants[i].value,
-          });
-        } else {
-          // Combine the rest as "Others"
-          othersCount += sortedRestaurants[i].value;
-        }
-      }
-
-      if (othersCount > 0) {
-        usageData.add({
-          'category': 'Others',
-          'value': othersCount,
-        });
-      }
-
-      loyaltyUsageData.assignAll(usageData);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching loyalty usage data: $e');
-      }
-      rethrow;
-    }
-  }
-
-  // Helper method to fetch claim activity by day data
-  Future<void> _fetchClaimActivityByDayData() async {
-    try {
-      final claimsSnapshot = await _firestore.collection('claims').get();
-
-      // Initialize counts for each day of the week
-      Map<int, int> dayCount = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
-
-      // Count claims by day of week
-      for (var doc in claimsSnapshot.docs) {
-        final timestamp = doc.data()['claimDate'] as Timestamp?;
-        if (timestamp != null) {
-          final dayOfWeek = timestamp.toDate().weekday % 7; // 0-6, Sunday is 0
-          dayCount[dayOfWeek] = (dayCount[dayOfWeek] ?? 0) + 1;
-        }
-      }
-
-      // Convert to list for chart
-      List<Map<String, dynamic>> activityData = [
-        {'day': 'Mon', 'count': dayCount[1] ?? 0},
-        {'day': 'Tue', 'count': dayCount[2] ?? 0},
-        {'day': 'Wed', 'count': dayCount[3] ?? 0},
-        {'day': 'Thu', 'count': dayCount[4] ?? 0},
-        {'day': 'Fri', 'count': dayCount[5] ?? 0},
-        {'day': 'Sat', 'count': dayCount[6] ?? 0},
-        {'day': 'Sun', 'count': dayCount[0] ?? 0},
-      ];
-
-      claimActivityByDayData.assignAll(activityData);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching claim activity by day: $e');
-      }
-      rethrow;
-    }
-  }
 
   // Fetch loyalty program data
   Future<void> fetchLoyaltyProgramData() async {

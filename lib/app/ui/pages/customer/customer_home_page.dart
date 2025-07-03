@@ -412,7 +412,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                       '\nCustomer Information:' +
                       '\nName: ${profile?.name ?? "N/A"}' +
                       '\nEmail: ${profile?.email ?? "N/A"}' +
-                      '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
                       '\nUser ID: $userId';
 
                   // Launch email with complete information
@@ -543,7 +542,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                         '\nCustomer Information:' +
                         '\nName: ${profile?.name ?? "N/A"}' +
                         '\nEmail: ${profile?.email ?? "N/A"}' +
-                        '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
                         '\nUser ID: $userId';
 
                     // Get restaurant email
@@ -962,7 +960,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
                     '\nCustomer Information:' +
                     '\nName: ${profile?.name ?? "N/A"}' +
                     '\nEmail: ${profile?.email ?? "N/A"}' +
-                    '\nPhone: ${profile?.phoneNumber ?? "N/A"}' +
                     '\nUser ID: $userId';
 
                 // Launch email with complete information

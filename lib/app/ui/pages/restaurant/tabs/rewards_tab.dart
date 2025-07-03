@@ -14,6 +14,7 @@ class RewardsTab extends StatelessWidget {
     final RestaurantController controller = Get.find<RestaurantController>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Image.asset('assets/icons/general-u.png', height: 70),
         toolbarHeight: 80,
@@ -95,8 +96,8 @@ class RewardClaimsView extends StatelessWidget {
           children: [
             // Verification Section
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -115,19 +116,18 @@ class RewardClaimsView extends StatelessWidget {
                   const Text(
                     'Verify Customer Reward',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   const Text(
                     'Enter the 6-digit claim code shown on customer\'s reward',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -194,19 +194,19 @@ class RewardClaimsView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   // Verification Result Message
                   if (controller.showVerificationResult.value)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
+                          horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: controller.verificationResult.value
                                 .startsWith('Success')
                             ? MColors.primary.withOpacity(0.1)
                             : MColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: controller.verificationResult.value
                                   .startsWith('Success')
@@ -214,54 +214,46 @@ class RewardClaimsView extends StatelessWidget {
                               : MColors.primary.withOpacity(0.3),
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                controller.verificationResult.value
-                                        .startsWith('Success')
-                                    ? Icons.check_circle
-                                    : Icons.info,
+                          Icon(
+                            controller.verificationResult.value
+                                    .startsWith('Success')
+                                ? Icons.check_circle
+                                : Icons.info,
+                            color: controller.verificationResult.value
+                                    .startsWith('Success')
+                                ? MColors.primary
+                                : MColors.primary.withOpacity(0.7),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              controller.verificationResult.value,
+                              style: TextStyle(
                                 color: controller.verificationResult.value
                                         .startsWith('Success')
                                     ? MColors.primary
                                     : MColors.primary.withOpacity(0.7),
-                                size: (16).isFinite && 16 > 0 ? 16 : 16,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
                               ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  controller.verificationResult.value,
-                                  style: TextStyle(
-                                    color: controller.verificationResult.value
-                                            .startsWith('Success')
-                                        ? MColors.primary
-                                        : MColors.primary.withOpacity(0.7),
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                controller.clearVerificationResult();
-                                codeController.clear();
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 28),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'DISMISS',
-                                style: TextStyle(fontSize: 12),
-                              ),
+                          TextButton(
+                            onPressed: () {
+                              controller.clearVerificationResult();
+                              codeController.clear();
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              minimumSize: const Size(0, 20),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'DISMISS',
+                              style: TextStyle(fontSize: 10),
                             ),
                           ),
                         ],
@@ -272,14 +264,14 @@ class RewardClaimsView extends StatelessWidget {
             ),
             // Rewards History List with Search
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       'Rewards History',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
                       ),
@@ -287,7 +279,7 @@ class RewardClaimsView extends StatelessWidget {
                   ),
                   Container(
                     width: 150,
-                    height: 36,
+                    height: 32,
                     // padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
@@ -323,57 +315,79 @@ class RewardClaimsView extends StatelessWidget {
             ),
             Expanded(
               child: filteredRewards.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            searchController.text.isNotEmpty
-                                ? Icons.search_off
-                                : Icons.card_giftcard_outlined,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            searchController.text.isNotEmpty
-                                ? 'No matching rewards found'
-                                : 'No rewards claimed yet',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
+                  ? SingleChildScrollView(
+                      child: Container(
+                        height: 200,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              searchController.text.isNotEmpty
+                                  ? Icons.search_off
+                                  : Icons.card_giftcard_outlined,
+                              size: 32,
+                              color: Colors.grey[400],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            searchController.text.isNotEmpty
-                                ? 'Try a different search term'
-                                : 'Once customers claim rewards, they will appear here',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                            const SizedBox(height: 8),
+                            Text(
+                              searchController.text.isNotEmpty
+                                  ? 'No matching rewards found'
+                                  : 'No rewards claimed yet',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              if (searchController.text.isNotEmpty) {
-                                searchController.clear();
-                                controller.update();
-                              } else {
-                                controller.fetchClaimedRewards();
-                              }
-                            },
-                            icon: Icon(searchController.text.isNotEmpty
-                                ? Icons.clear
-                                : Icons.refresh),
-                            label: Text(searchController.text.isNotEmpty
-                                ? 'Clear search'
-                                : 'Refresh'),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Text(
+                                searchController.text.isNotEmpty
+                                    ? 'Try a different search term'
+                                    : 'Rewards will appear here',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () {
+                                if (searchController.text.isNotEmpty) {
+                                  searchController.clear();
+                                  controller.update();
+                                } else {
+                                  controller.fetchClaimedRewards();
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                minimumSize: const Size(0, 24),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    searchController.text.isNotEmpty
+                                        ? Icons.clear
+                                        : Icons.refresh,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    searchController.text.isNotEmpty
+                                        ? 'Clear'
+                                        : 'Refresh',
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : RefreshIndicator(
@@ -498,7 +512,7 @@ class RewardClaimsView extends StatelessWidget {
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Customer ID: ${reward.customerId.substring(0, 8)}...',
+                                            'Customer ID: ...${reward.customerId.length > 8 ? reward.customerId.substring(reward.customerId.length - 8) : reward.customerId}',
                                             style: TextStyle(
                                               fontSize: 13,
                                               color: Colors.grey[600],
@@ -685,7 +699,7 @@ class RecentScansView extends StatelessWidget {
                         backgroundColor: MColors.primary.withOpacity(0.1),
                         child: const Icon(Icons.person, color: MColors.primary),
                       ),
-                      title: const Text('Customer'),
+                      title: Text(scan['name'] ?? 'Customer'),
                       subtitle: Text(
                         scanDate != null
                             ? DateFormat('hh:mm a').format(scanDate)

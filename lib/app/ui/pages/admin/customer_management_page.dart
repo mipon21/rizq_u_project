@@ -96,32 +96,12 @@ class CustomerManagementPage extends GetView<AdminController> {
                                   ? (data['createdAt'] as Timestamp).toDate()
                                   : DateTime.now();
 
-                              // Calculate total points (example calculation)
-                              final Map<String, dynamic> pointsByRestaurant =
-                                  data['pointsByRestaurant']
-                                          as Map<String, dynamic>? ??
-                                      {};
-                              int totalPoints = 0;
-                              pointsByRestaurant.forEach((_, points) {
-                                if (points is int) {
-                                  totalPoints += points;
-                                } else if (points is Map) {
-                                  // Handle nested map structure if needed
-                                  // You might need to adjust this based on your actual data structure
-                                  points.forEach((_, nestedPoints) {
-                                    if (nestedPoints is int) {
-                                      totalPoints += nestedPoints;
-                                    }
-                                  });
-                                }
-                              });
-
                               return DataRow(
                                 cells: [
                                   DataCell(Text(name)),
                                   DataCell(Text(email)),
                                   DataCell(Text(_formatDate(joinDate))),
-                                  DataCell(Text('$totalPoints')),
+                                  DataCell(_buildTotalPointsWidget(doc.id)),
                                   DataCell(Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -159,26 +139,6 @@ class CustomerManagementPage extends GetView<AdminController> {
                           final name = data['name'] ?? 'Unknown';
                           final email = data['email'] ?? 'No email';
 
-                          // Calculate total points
-                          final Map<String, dynamic> pointsByRestaurant =
-                              data['pointsByRestaurant']
-                                      as Map<String, dynamic>? ??
-                                  {};
-                          int totalPoints = 0;
-                          pointsByRestaurant.forEach((_, points) {
-                            if (points is int) {
-                              totalPoints += points;
-                            } else if (points is Map) {
-                              // Handle nested map structure if needed
-                              // You might need to adjust this based on your actual data structure
-                              points.forEach((_, nestedPoints) {
-                                if (nestedPoints is int) {
-                                  totalPoints += nestedPoints;
-                                }
-                              });
-                            }
-                          });
-
                           return ListTile(
                             leading: CircleAvatar(
                               child: Text(name.isNotEmpty
@@ -187,11 +147,7 @@ class CustomerManagementPage extends GetView<AdminController> {
                             ),
                             title: Text(name),
                             subtitle: Text(email),
-                            trailing: Chip(
-                              label: Text('$totalPoints pts'),
-                              backgroundColor: Colors.blue,
-                              labelStyle: const TextStyle(color: Colors.white),
-                            ),
+                            trailing: _buildTotalPointsChip(doc.id),
                             onTap: () =>
                                 _showCustomerDetails(context, doc.id, data),
                           );
@@ -216,24 +172,6 @@ class CustomerManagementPage extends GetView<AdminController> {
       BuildContext context, String customerId, Map<String, dynamic> data) {
     final name = data['name'] ?? 'Unknown';
     final email = data['email'] ?? 'No email';
-    final phone = data['phone'] ?? 'No phone';
-    final pointsByRestaurant =
-        data['pointsByRestaurant'] as Map<String, dynamic>? ?? {};
-
-    int totalPoints = 0;
-    pointsByRestaurant.forEach((_, points) {
-      if (points is int) {
-        totalPoints += points;
-      } else if (points is Map) {
-        // Handle nested map structure if needed
-        // You might need to adjust this based on your actual data structure
-        points.forEach((_, nestedPoints) {
-          if (nestedPoints is int) {
-            totalPoints += nestedPoints;
-          }
-        });
-      }
-    });
 
     Get.dialog(
       AlertDialog(
@@ -243,9 +181,13 @@ class CustomerManagementPage extends GetView<AdminController> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildDetailRow('First Name', data['firstName'] ?? 'Not provided'),
+              _buildDetailRow('Last Name', data['lastName'] ?? 'Not provided'),
               _buildDetailRow('Email', email),
-              _buildDetailRow('Phone', phone),
-              _buildDetailRow('Total Points', '$totalPoints'),
+              _buildDetailRow('Date of Birth', 
+                  data['dateOfBirth'] != null
+                      ? _formatDate((data['dateOfBirth'] as Timestamp).toDate())
+                      : 'Not provided'),
               _buildDetailRow(
                   'Joined Date',
                   data['createdAt'] != null
@@ -260,38 +202,84 @@ class CustomerManagementPage extends GetView<AdminController> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...pointsByRestaurant.entries.map((entry) {
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('restaurants')
-                      .doc(entry.key)
-                      .get(),
-                  builder: (context, snapshot) {
-                    String restaurantName = 'Unknown Restaurant';
-                    if (snapshot.hasData && snapshot.data!.exists) {
-                      final restaurantData =
-                          snapshot.data!.data() as Map<String, dynamic>?;
-                      restaurantName =
-                          restaurantData?['name'] ?? 'Unknown Restaurant';
+              FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('scans')
+                    .where('clientId', isEqualTo: customerId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Text('Error loading loyalty data: ${snapshot.error}');
+                  }
+                  
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Text('No scan data found');
+                  }
+                  
+                  // Group scans by restaurant and calculate total points
+                  Map<String, int> pointsByRestaurant = {};
+                  int totalPoints = 0;
+                  
+                  for (var doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final restaurantId = data['restaurantId'] as String? ?? '';
+                    final pointsAwarded = data['pointsAwarded'] as int? ?? 0;
+                    
+                    if (restaurantId.isNotEmpty) {
+                      pointsByRestaurant[restaurantId] = 
+                          (pointsByRestaurant[restaurantId] ?? 0) + pointsAwarded;
+                      totalPoints += pointsAwarded;
                     }
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(child: Text(restaurantName)),
-                          Text(
-                            '${entry.value} pts',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              }).toList(),
+                  }
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow('Total Points', '$totalPoints'),
+                      const SizedBox(height: 8),
+                      ...pointsByRestaurant.entries.map((entry) {
+                        final restaurantId = entry.key;
+                        final points = entry.value;
+                        
+                        return FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('restaurants')
+                              .doc(restaurantId)
+                              .get(),
+                          builder: (context, restaurantSnapshot) {
+                            String restaurantName = 'Unknown Restaurant';
+                            if (restaurantSnapshot.hasData && restaurantSnapshot.data!.exists) {
+                              final restaurantData =
+                                  restaurantSnapshot.data!.data() as Map<String, dynamic>?;
+                              restaurantName =
+                                  restaurantData?['restaurantName'] ?? 'Unknown Restaurant';
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: Text(restaurantName)),
+                                  Text(
+                                    '$points pts',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      }).toList(),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -372,6 +360,82 @@ class CustomerManagementPage extends GetView<AdminController> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTotalPointsWidget(String customerId) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('scans')
+          .where('clientId', isEqualTo: customerId)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text('Loading...');
+        }
+        
+        if (snapshot.hasError) {
+          return const Text('Error');
+        }
+        
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Text('0');
+        }
+        
+        int totalPoints = 0;
+        for (var doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          totalPoints += (data['pointsAwarded'] as int?) ?? 0;
+        }
+        
+        return Text('$totalPoints');
+      },
+    );
+  }
+
+  Widget _buildTotalPointsChip(String customerId) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('scans')
+          .where('clientId', isEqualTo: customerId)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Chip(
+            label: Text('Loading...'),
+            backgroundColor: Colors.grey,
+            labelStyle: TextStyle(color: Colors.white),
+          );
+        }
+        
+        if (snapshot.hasError) {
+          return const Chip(
+            label: Text('Error'),
+            backgroundColor: Colors.red,
+            labelStyle: TextStyle(color: Colors.white),
+          );
+        }
+        
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Chip(
+            label: Text('0 pts'),
+            backgroundColor: Colors.blue,
+            labelStyle: TextStyle(color: Colors.white),
+          );
+        }
+        
+        int totalPoints = 0;
+        for (var doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          totalPoints += (data['pointsAwarded'] as int?) ?? 0;
+        }
+        
+        return Chip(
+          label: Text('$totalPoints pts'),
+          backgroundColor: Colors.blue,
+          labelStyle: const TextStyle(color: Colors.white),
+        );
+      },
     );
   }
 }

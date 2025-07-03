@@ -119,7 +119,6 @@ class CustomerProfileModel {
   final String name;
   final String? photoUrl;
   final String email;
-  final String? phoneNumber;
   final DateTime createdAt;
   final DateTime? dateOfBirth;
 
@@ -128,7 +127,6 @@ class CustomerProfileModel {
     required this.name,
     this.photoUrl,
     required this.email,
-    this.phoneNumber,
     required this.createdAt,
     this.dateOfBirth,
   });
@@ -139,7 +137,6 @@ class CustomerProfileModel {
       name: data['name'] ?? 'Customer',
       photoUrl: data['photoUrl'],
       email: data['email'] ?? '',
-      phoneNumber: data['phoneNumber'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       dateOfBirth: (data['dateOfBirth'] as Timestamp?)?.toDate(),
     );
@@ -150,7 +147,6 @@ class CustomerProfileModel {
       'name': name,
       'photoUrl': photoUrl,
       'email': email,
-      'phoneNumber': phoneNumber,
       'dateOfBirth': dateOfBirth,
       // We don't update createdAt or uid as they should remain constant
     };
@@ -160,7 +156,6 @@ class CustomerProfileModel {
   CustomerProfileModel copyWith({
     String? name,
     String? photoUrl,
-    String? phoneNumber,
     DateTime? dateOfBirth,
   }) {
     return CustomerProfileModel(
@@ -168,7 +163,6 @@ class CustomerProfileModel {
       name: name ?? this.name,
       photoUrl: photoUrl ?? this.photoUrl,
       email: this.email, // Email can't be changed
-      phoneNumber: phoneNumber ?? this.phoneNumber,
       createdAt: this.createdAt,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
@@ -1315,7 +1309,6 @@ class CustomerController extends GetxController {
   // Update profile information
   Future<bool> updateProfile({
     required String name,
-    String? phoneNumber,
     DateTime? dateOfBirth,
   }) async {
     if (userUid.isEmpty || customerProfile.value == null) return false;
@@ -1326,14 +1319,12 @@ class CustomerController extends GetxController {
       // Update local model first
       customerProfile.value = customerProfile.value!.copyWith(
         name: name,
-        phoneNumber: phoneNumber,
         dateOfBirth: dateOfBirth,
       );
 
       // Update in Firestore
       await _firestore.collection('users').doc(userUid).update({
         'name': name,
-        'phoneNumber': phoneNumber,
         'dateOfBirth': dateOfBirth,
       });
 

@@ -19,7 +19,6 @@ class CustomerProfilePage extends GetView<CustomerController> {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController firstNameController = TextEditingController();
     final TextEditingController lastNameController = TextEditingController();
-    final TextEditingController phoneController = TextEditingController();
     final Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
 
     // Date formatter
@@ -34,7 +33,6 @@ class CustomerProfilePage extends GetView<CustomerController> {
         firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
         lastNameController.text =
             nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
-        phoneController.text = profile.phoneNumber ?? '';
         selectedDate.value = profile.dateOfBirth;
       }
     }
@@ -409,44 +407,38 @@ class CustomerProfilePage extends GetView<CustomerController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Profile Fields
+                  // Profile Fields (Read-only as per requirement)
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: firstNameController,
+                          readOnly: true,
+                          enabled: false,
                           decoration: const InputDecoration(
                             labelText: 'First Name',
                             labelStyle: TextStyle(fontSize: 12),
                             prefixIcon: Icon(Icons.person),
                             border: OutlineInputBorder(),
-                            hintStyle: TextStyle(fontSize: 12),
+                            filled: true,
+                            fillColor: Color(0xFFF5F5F5),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your first name';
-                            }
-                            return null;
-                          },
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
                           controller: lastNameController,
+                          readOnly: true,
+                          enabled: false,
                           decoration: const InputDecoration(
                             labelText: 'Last Name',
                             labelStyle: TextStyle(fontSize: 12),
                             prefixIcon: Icon(Icons.person),
                             border: OutlineInputBorder(),
-                            hintStyle: TextStyle(fontSize: 12),
+                            filled: true,
+                            fillColor: Color(0xFFF5F5F5),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your last name';
-                            }
-                            return null;
-                          },
                         ),
                       ),
                     ],
@@ -468,87 +460,51 @@ class CustomerProfilePage extends GetView<CustomerController> {
                   ),
                   const SizedBox(height: 16),
 
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      labelStyle: TextStyle(fontSize: 12),
-                      prefixIcon: Icon(Icons.phone),
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 16),
+                  // Phone number removed as per requirement
 
-                  // Date of Birth field with date picker
-                  Obx(() => InkWell(
-                        onTap: () => _selectDate(context),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Date of Birth',
-                            labelStyle: TextStyle(fontSize: 12),
-                            prefixIcon: Icon(Icons.calendar_today),
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedDate.value != null
-                                    ? dateFormat.format(selectedDate.value!)
-                                    : 'Select your date of birth',
-                                style: TextStyle(
-                                  color: selectedDate.value != null
-                                      ? Colors.black
-                                      : Colors.grey[600],
-                                ),
-                              ),
-                              const Icon(Icons.arrow_drop_down),
-                            ],
-                          ),
-                        ),
-                      )),
+                  // Date of Birth field (Read-only)
+                  TextFormField(
+                    initialValue: selectedDate.value != null
+                        ? dateFormat.format(selectedDate.value!)
+                        : 'Not set',
+                    readOnly: true,
+                    enabled: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Date of Birth',
+                      labelStyle: TextStyle(fontSize: 12),
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Color(0xFFF5F5F5),
+                    ),
+                  ),
                   const SizedBox(height: 32),
 
-                  // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: controller.isUpdatingProfile.value
-                          ? null
-                          : () {
-                              if (formKey.currentState?.validate() ?? false) {
-                                // Combine first and last name
-                                final fullName =
-                                    '${firstNameController.text} ${lastNameController.text}'
-                                        .trim();
-                                controller.updateProfile(
-                                  name: fullName,
-                                  phoneNumber: phoneController.text,
-                                  dateOfBirth: selectedDate.value,
-                                );
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: controller.isUpdatingProfile.value
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                  // Info message instead of save button
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade600,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'This information was provided during registration and cannot be changed.',
+                            style: TextStyle(
+                              color: Colors.blue.shade800,
+                              fontSize: 14,
                             ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
