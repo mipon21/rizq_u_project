@@ -22,8 +22,13 @@ class RestaurantManagementPage extends GetView<AdminController> {
     return Get.find<AdminController>();
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1000;
+    final isTablet = screenWidth > 600 && screenWidth <= 1000;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Restaurant Management'),
@@ -245,6 +250,17 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                             tooltip: 'Assign Plan',
                                           ),
                                           IconButton(
+                                            icon: const Icon(Icons.visibility,
+                                                color: Colors.blue),
+                                            onPressed: () =>
+                                                _showRestaurantDetails(
+                                              context,
+                                              doc.id,
+                                              data,
+                                            ),
+                                            tooltip: 'View Details',
+                                          ),
+                                          IconButton(
                                             icon: const Icon(Icons.edit,
                                                 color: Colors.blue),
                                             onPressed: () => _showEditDialog(
@@ -266,6 +282,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                                 ? 'Unsuspend'
                                                 : 'Suspend',
                                           ),
+                                          
                                           if (approvalStatus == 'pending')
                                             IconButton(
                                               icon: const Icon(Icons.check,
@@ -392,6 +409,15 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                       onPressed: () => _toggleSuspension(
                                           doc.id, isSuspended),
                                     ),
+                                    if (isDesktop)
+                                      IconButton(
+                                        icon: const Icon(
+                                            Icons.panorama_fish_eye,
+                                            color: Colors.blue),
+                                        onPressed: () => _showRestaurantDetails(
+                                            context, doc.id, data),
+                                        tooltip: 'View Details',
+                                      ),
                                   ],
                                 ),
                                 onTap: () => _showRestaurantDetails(
@@ -857,7 +883,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
     // Extract all data fields
     final restaurantName = data['restaurantName'] ?? data['name'] ?? 'Unknown';
     final ownerName = data['ownerName'] ?? 'Not provided';
-    final email = data['email'] ?? 'No email';
+    final email = data['email'] ?? 'Not provided';
     final supportEmail = data['supportEmail'] ?? 'Not provided';
     final bankDetails = data['bankDetails'] ?? 'Not provided';
     final ibanNumber = data['ibanNumber'] ?? 'Not provided';
@@ -928,18 +954,34 @@ class RestaurantManagementPage extends GetView<AdminController> {
                   const SizedBox(height: 8),
                   _buildInfoCard([
                     _buildDetailRow('Primary Email', email),
-                    _buildDetailRow('Support Email', supportEmail),
+                    if (supportEmail != null &&
+                        supportEmail != 'Not provided' &&
+                        supportEmail.isNotEmpty)
+                      _buildDetailRow('Support Email', supportEmail),
                   ]),
                   const SizedBox(height: 16),
 
-                  // Bank Information Section
-                  _buildSectionTitle('Bank Information'),
-                  const SizedBox(height: 8),
-                  _buildInfoCard([
-                    _buildDetailRow('Bank Details', bankDetails),
-                    _buildDetailRow('IBAN Number', ibanNumber),
-                  ]),
-                  const SizedBox(height: 16),
+                  // Bank Information Section (only show if data exists)
+                  if ((bankDetails != null &&
+                          bankDetails != 'Not provided' &&
+                          bankDetails.isNotEmpty) ||
+                      (ibanNumber != null &&
+                          ibanNumber != 'Not provided' &&
+                          ibanNumber.isNotEmpty)) ...[
+                    _buildSectionTitle('Bank Information'),
+                    const SizedBox(height: 8),
+                    _buildInfoCard([
+                      if (bankDetails != null &&
+                          bankDetails != 'Not provided' &&
+                          bankDetails.isNotEmpty)
+                        _buildDetailRow('Bank Details', bankDetails),
+                      if (ibanNumber != null &&
+                          ibanNumber != 'Not provided' &&
+                          ibanNumber.isNotEmpty)
+                        _buildDetailRow('IBAN Number', ibanNumber),
+                    ]),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Account Information Section
                   _buildSectionTitle('Account Information'),
@@ -1398,104 +1440,99 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
   void _showAssignSubscriptionDialog(BuildContext context, String restaurantId,
       Map<String, dynamic> restaurantData) {
-    final activePlans = controller.activeSubscriptionPlans;
-    String? selectedPlanId =
-        activePlans.isNotEmpty ? activePlans.first.id : null;
-    int durationDays =
-        activePlans.isNotEmpty ? activePlans.first.durationDays : 30;
-    final durationController =
-        TextEditingController(text: durationDays.toString());
+    final selectedPlan = Rx<SubscriptionPlanModel?>(null);
+    final durationDays = RxInt(30);
+    final resetScans = RxBool(true);
 
     Get.dialog(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Assign Subscription Plan'),
-            content: Column(
+      AlertDialog(
+        title: Text(
+            'Assign Subscription to ${restaurantData['name'] ?? 'Unknown'}'),
+        content: Obx(() => Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Restaurant: ${restaurantData['name'] ?? 'Unknown'}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Select a subscription plan:'),
-                const SizedBox(height: 8),
-                if (activePlans.isEmpty)
-                  const Text(
-                    'No active subscription plans available',
-                    style: TextStyle(color: Colors.red),
+                if (controller.isAssigningSubscription.value)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
                   )
                 else
-                  ...activePlans
-                      .map((plan) => RadioListTile<String>(
-                            title: Text(plan.name),
-                            subtitle: Text(
-                              '${plan.formattedPrice} - ${plan.formattedScanLimit} for ${plan.formattedDuration}',
-                            ),
-                            value: plan.id,
-                            groupValue: selectedPlanId,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedPlanId = value;
-                                durationDays = plan.durationDays;
-                                durationController.text =
-                                    plan.durationDays.toString();
-                              });
-                            },
-                          ))
-                      .toList(),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Duration (days): '),
-                    Expanded(
-                      child: TextField(
-                        controller: durationController,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<SubscriptionPlanModel>(
                         decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '30',
+                          labelText: 'Select Subscription Plan',
+                        ),
+                        value: selectedPlan.value,
+                        items: controller.activeSubscriptionPlans
+                            .map((plan) => DropdownMenuItem(
+                                  value: plan,
+                                  child: Text(plan.name),
+                                ))
+                            .toList(),
+                        onChanged: (plan) => selectedPlan.value = plan,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Duration (days)',
                         ),
                         keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          setState(() {
-                            durationDays = int.tryParse(value) ?? 0;
-                          });
-                        },
+                        initialValue: durationDays.toString(),
+                        onChanged: (value) =>
+                            durationDays.value = int.tryParse(value) ?? 30,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 16),
+                      CheckboxListTile(
+                        title: const Text('Reset Scan Count'),
+                        subtitle: const Text(
+                            'Start fresh scan count for new subscription'),
+                        value: resetScans.value,
+                        onChanged: (value) => resetScans.value = value ?? true,
+                      ),
+                    ],
+                  ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: (selectedPlanId != null && durationDays > 0)
-                    ? () {
-                        controller.assignSubscriptionPlanToRestaurant(
-                          restaurantId: restaurantId,
-                          planId: selectedPlanId!,
-                          durationDays: durationDays,
-                        );
-                        Get.back();
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Assign Plan'),
-              ),
-            ],
-          );
-        },
+            )),
+        actions: [
+          TextButton(
+            onPressed: controller.isAssigningSubscription.value
+                ? null
+                : () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: controller.isAssigningSubscription.value
+                ? null
+                : () async {
+                    if (selectedPlan.value == null) {
+                      Get.snackbar(
+                        'Error',
+                        'Please select a subscription plan',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.red,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
+
+                    await controller.assignSubscriptionPlan(
+                      restaurantId: restaurantId,
+                      planId: selectedPlan.value!.id,
+                      durationDays: durationDays.value,
+                      resetScans: resetScans.value,
+                    );
+
+                    Get.back();
+                  },
+            child: const Text('Assign'),
+          ),
+        ],
       ),
     );
   }

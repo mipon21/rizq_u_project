@@ -196,120 +196,77 @@ class _DashboardPageState extends State<DashboardPage> {
         // backgroundColor: Colors.red[700],
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.block,
-                size: 120,
-                color: Colors.red[700],
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            
+            Text(
+              'Account Suspended!',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Account Suspended',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red[700],
-                ),
-                textAlign: TextAlign.center,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your restaurant account has been temporarily suspended by the administrator.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Your restaurant account has been temporarily suspended by the administrator.',
-                style: TextStyle(
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ContactUsHelper.launchEmailApp(
+                  SupportConstants.supportEmail,
+                  'Account Suspension Appeal - ${controller.name}',
+                  'Dear Support Team,\n\n'
+                      'I would like to appeal the suspension of my restaurant account.\n\n'
+                      'Restaurant Name: ${controller.name}\n'
+                      'Account Email: ${authController.currentUser?.email ?? 'N/A'}\n\n'
+                      'Please review my account status and let me know how to proceed.\n\n'
+                      'Thank you for your assistance.\n\n'
+                      'Best regards,\n'
+                      '${controller.name}',
+                );
+              },
+              icon: const Icon(Icons.email, color: Colors.white),
+              label: Text(
+                SupportConstants.contactSupportTitle,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColors.primary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange[300]!),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.orange[700],
-                      size: 32,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'What does this mean?',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '• You cannot access your restaurant dashboard\n'
-                      '• Customers cannot earn or redeem points\n'
-                      '• All restaurant features are temporarily disabled',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.orange[600],
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ContactUsHelper.launchEmailApp(
-                    SupportConstants.supportEmail,
-                    'Account Suspension Appeal - ${controller.name}',
-                    'Dear Support Team,\n\n'
-                    'I would like to appeal the suspension of my restaurant account.\n\n'
-                    'Restaurant Name: ${controller.name}\n'
-                    'Account Email: ${authController.currentUser?.email ?? 'N/A'}\n\n'
-                    'Please review my account status and let me know how to proceed.\n\n'
-                    'Thank you for your assistance.\n\n'
-                    'Best regards,\n'
-                    '${controller.name}',
-                  );
-                },
-                icon: const Icon(Icons.email, color: Colors.white),
-                label: Text(
-                  SupportConstants.contactSupportTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                authController.logout();
+              },
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign Out'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[600],
               ),
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: () {
-                  authController.logout();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign Out'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

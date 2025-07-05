@@ -4,7 +4,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, kDebugMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -46,12 +46,19 @@ void main() async {
   // Initialize language controller
   final languageController = Get.put(LanguageController());
 
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => RizqApp(routeObserver: routeObserver),
-    ),
-  );
+  // Only use DevicePreview in debug mode when specifically needed
+  // to reduce startup overhead
+  if (kDebugMode && false) {
+    // Set to true only when needed for device preview
+    runApp(
+      DevicePreview(
+        enabled: true,
+        builder: (context) => RizqApp(routeObserver: routeObserver),
+      ),
+    );
+  } else {
+    runApp(RizqApp(routeObserver: routeObserver));
+  }
 }
 
 class RizqApp extends StatelessWidget {
@@ -61,11 +68,11 @@ class RizqApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authController = Get.put(AuthController());
+    // AuthController is now lazy-loaded in InitialBinding
     final languageController = Get.find<LanguageController>();
 
     return GetMaterialApp(
-      title: 'Rizq Loyalty App',
+      title: 'RIZQ APP',
       theme: MAppTheme.lightTheme,
       // darkTheme: MAppTheme.darkTheme,
       themeMode: ThemeMode.light,

@@ -55,6 +55,25 @@ class RestaurantProfileModel {
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
     final data = snapshot.data()!;
+    
+    // Get scan count with proper type checking
+    int scanCount = 0;
+    try {
+      final rawScanCount = data['currentScanCount'];
+      if (rawScanCount is int) {
+        scanCount = rawScanCount;
+      } else if (rawScanCount is num) {
+        scanCount = rawScanCount.toInt();
+      } else if (rawScanCount is String) {
+        scanCount = int.tryParse(rawScanCount) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error parsing scan count: $e');
+        print('Raw scan count value: ${data['currentScanCount']}');
+      }
+    }
+
     return RestaurantProfileModel(
       uid: data['uid'] ?? snapshot.id,
       name: data['name'] ?? '',
@@ -62,21 +81,40 @@ class RestaurantProfileModel {
       logoUrl: data['logoUrl'] ?? '',
       subscriptionPlan: data['subscriptionPlan'] ?? 'free_trial',
       subscriptionStatus: data['subscriptionStatus'] ?? 'inactive',
-      currentScanCount: data['currentScanCount'] ?? 0,
+      currentScanCount: scanCount,
       trialStartDate: (data['trialStartDate'] as Timestamp?)?.toDate(),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ??
-          DateTime.now(), // Fallback for older docs
-      bankDetails:
-          data['bankDetails'] ?? '', // Get bank details or default to empty
-      subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)
-          ?.toDate(), // Get subscription end date
-      isSuspended: data['isSuspended'] ?? false, // Get suspension status
-      // Registration fields
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      bankDetails: data['bankDetails'] ?? '',
+      subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)?.toDate(),
+      isSuspended: data['isSuspended'] ?? false,
       ownerName: data['ownerName'],
       supportEmail: data['supportEmail'],
       ibanNumber: data['ibanNumber'],
       ownerNationalIdFront: data['ownerNationalIdFront'],
       ownerNationalIdBack: data['ownerNationalIdBack'],
+    );
+  }
+
+  // Create a copy of this model with updated scan count
+  RestaurantProfileModel copyWith({int? currentScanCount}) {
+    return RestaurantProfileModel(
+      uid: uid,
+      name: name,
+      address: address,
+      logoUrl: logoUrl,
+      subscriptionPlan: subscriptionPlan,
+      subscriptionStatus: subscriptionStatus,
+      currentScanCount: currentScanCount ?? this.currentScanCount,
+      trialStartDate: trialStartDate,
+      createdAt: createdAt,
+      bankDetails: bankDetails,
+      subscriptionEnd: subscriptionEnd,
+      isSuspended: isSuspended,
+      ownerName: ownerName,
+      supportEmail: supportEmail,
+      ibanNumber: ibanNumber,
+      ownerNationalIdFront: ownerNationalIdFront,
+      ownerNationalIdBack: ownerNationalIdBack,
     );
   }
 
@@ -89,14 +127,14 @@ class RestaurantProfileModel {
     if (subscriptionStatus != 'free_trial' || trialStartDate == null) {
       return false;
     }
-    // Check if trial period (e.g., 60 days) is still valid
-    return DateTime.now().difference(trialStartDate!).inDays <= 60;
+    // Check if trial period (30 days) is still valid
+    return DateTime.now().difference(trialStartDate!).inDays <= 30;
   }
 
   // Example: Get remaining trial days
   int get remainingTrialDays {
     if (!isTrialActive || trialStartDate == null) return 0;
-    final expiryDate = trialStartDate!.add(const Duration(days: 60));
+    final expiryDate = trialStartDate!.add(const Duration(days: 30));
     final remaining = expiryDate.difference(DateTime.now()).inDays;
     return remaining > 0 ? remaining : 0;
   }
@@ -180,7 +218,7 @@ class RestaurantController extends GetxController {
   bool get isSubscribed =>
       restaurantProfile.value?.isSubscriptionActive ?? false;
   bool get isSuspended => restaurantProfile.value?.isSuspended ?? false;
-  int get scanCount => currentMonthScanCount.value;
+  int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
   int get rewardsIssuedCount => restaurantProfile.value?.rewardsIssued ?? 0;
 
   // Cache for customer data to avoid repeated queries
@@ -246,168 +284,35 @@ class RestaurantController extends GetxController {
 
   Future<bool> fetchRestaurantProfile() async {
     if (restaurantUid.isEmpty) return false;
-
-    // Set loading state
+    
     isLoadingProfile.value = true;
-
     try {
-      // Direct Firestore instance reference - important for release mode
-      final firestore = FirebaseFirestore.instance;
-
-      print("Fetching profile for restaurant: $restaurantUid");
-
-      // Enable offline persistence with unlimited cache size
-      try {
-        firestore.settings = const Settings(
-            persistenceEnabled: true,
-            cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED);
-      } catch (e) {
-        // Settings might already be initialized, which can throw an error
-        print("Firestore settings error (can be ignored): $e");
-      }
-
-      // Get restaurant document with server and cache option
-      final restaurantDoc =
-          firestore.collection('restaurants').doc(restaurantUid);
-
-      try {
-        // First try to get the document with server as source
-        final docFromServer =
-            await restaurantDoc.get(GetOptions(source: Source.server));
-
-        if (docFromServer.exists) {
-          _parseAndSetProfile(docFromServer);
-          return true;
-        }
-      } catch (serverError) {
-        // If server fetch fails, try cache
-        print("Server fetch failed, trying cache: $serverError");
-      }
-
-      // Try cache if server failed or document didn't exist
-      try {
-        final docFromCache =
-            await restaurantDoc.get(GetOptions(source: Source.cache));
-
-        if (docFromCache.exists) {
-          _parseAndSetProfile(docFromCache);
-          return true;
-        }
-      } catch (cacheError) {
-        print("Cache fetch failed: $cacheError");
-      }
-
-      // If both failed or document doesn't exist, try default fetch
-      final doc = await restaurantDoc.get();
-
+      final doc = await _firestore
+          .collection('restaurants')
+          .doc(restaurantUid)
+          .get(const GetOptions(source: Source.server)); // Force server fetch
+      
       if (doc.exists) {
-        _parseAndSetProfile(doc);
-        return true;
+        restaurantProfile.value = RestaurantProfileModel.fromSnapshot(
+          doc as DocumentSnapshot<Map<String, dynamic>>,
+        );
+        if (kDebugMode) {
+          print(
+              "Successfully loaded profile for ${restaurantProfile.value?.name}");
+          print(
+              "Current scan count: ${restaurantProfile.value?.currentScanCount}");
+        }
       } else {
-        restaurantProfile.value = null; // Clear if not found
-        print("Restaurant profile not found for UID: $restaurantUid");
-        return false;
+        restaurantProfile.value = null;
+        if (kDebugMode) print("No restaurant profile found for $restaurantUid");
       }
     } catch (e) {
-      print("Error fetching restaurant profile $restaurantUid: $e");
-      Get.snackbar('Error', 'Failed to fetch restaurant profile');
-      return false;
+      if (kDebugMode) print("Error fetching restaurant profile: $e");
     } finally {
       isLoadingProfile.value = false;
-      // Force update to ensure UI refreshes
-      update();
     }
+    return restaurantProfile.value != null;
   }
-
-  // Helper method to parse and set profile data
-  void _parseAndSetProfile(DocumentSnapshot doc) {
-    try {
-      restaurantProfile.value = RestaurantProfileModel.fromSnapshot(
-        doc as DocumentSnapshot<Map<String, dynamic>>,
-      );
-
-      print("Successfully loaded profile for ${restaurantProfile.value?.name}");
-
-      // Check and update trial status if expired
-      _checkAndUpdateTrialStatus();
-
-      // Force update to ensure UI refreshes
-      update();
-    } catch (parseError) {
-      print("Error parsing restaurant data: $parseError");
-      restaurantProfile.value = null;
-      Get.snackbar('Data Error', 'Could not read restaurant data correctly');
-    }
-  }
-
-  // Helper to automatically transition from 'free_trial' to 'inactive' if needed
-  Future<void> _checkAndUpdateTrialStatus() async {
-    final profile = restaurantProfile.value;
-    if (profile != null &&
-        profile.subscriptionStatus == 'free_trial' &&
-        !profile.isTrialActive) {
-      if (kDebugMode) {
-        print(
-          "Free trial expired for restaurant ${profile.uid}. Updating status to inactive.",
-        );
-      }
-      try {
-        await _firestore.collection('restaurants').doc(profile.uid).update({
-          'subscriptionStatus': 'inactive',
-        });
-        // Re-fetch profile to update UI state
-        await fetchRestaurantProfile();
-      } catch (e) {
-        if (kDebugMode) {
-          print("Error updating expired trial status for ${profile.uid}: $e");
-        }
-        // Maybe show a non-blocking warning?
-      }
-    }
-  }
-
-  // Future<void> updateRestaurantDetails(
-  //   String newName,
-  //   String newAddress,
-  // ) async {
-  //   if (restaurantUid.isEmpty) return;
-  //   isLoadingProfile.value = true; // Use profile loading state
-  //   try {
-  //     await _firestore.collection('restaurants').doc(restaurantUid).update({
-  //       'name': newName,
-  //       'address': newAddress,
-  //       'updatedAt': FieldValue.serverTimestamp(),
-  //     });
-  //     // Update local state immediately for better UX
-  //     if (restaurantProfile.value != null) {
-  //       restaurantProfile.value = RestaurantProfileModel(
-  //         uid: restaurantProfile.value!.uid,
-  //         name: newName, // Update name
-  //         address: newAddress, // Update address
-  //         logoUrl: restaurantProfile.value!.logoUrl,
-  //         subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
-  //         subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
-  //         currentScanCount: restaurantProfile.value!.currentScanCount,
-  //         trialStartDate: restaurantProfile.value!.trialStartDate,
-  //         createdAt: restaurantProfile.value!.createdAt,
-  //         bankDetails:
-  //             restaurantProfile.value!.bankDetails, // Preserve bank details
-  //         subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
-  //         ownerName: restaurantProfile.value!.ownerName,
-  //         supportEmail: restaurantProfile.value!.supportEmail,
-  //         ibanNumber: restaurantProfile.value!.ibanNumber,
-  //         ownerNationalIdFront: restaurantProfile.value!.ownerNationalIdFront,
-  //         ownerNationalIdBack: restaurantProfile.value!.ownerNationalIdBack,
-  //       );
-  //       restaurantProfile.refresh(); // Notify listeners
-  //     }
-  //     Get.snackbar('Success', 'Restaurant details updated.');
-  //   } catch (e) {
-  //     Get.snackbar('Error', 'Failed to update details: $e');
-  //   } finally {
-  //     isLoadingProfile.value = false;
-  //   }
-  // }
 
   Future<void> pickAndUploadLogo() async {
     if (restaurantUid.isEmpty) return;
@@ -471,63 +376,14 @@ class RestaurantController extends GetxController {
     }
   }
 
-  // Method to update bank details in Firestore
-  // Future<void> updateBankDetails(String bankDetails) async {
-  //   if (restaurantUid.isEmpty) return;
-
-  //   final RxBool isUpdatingBank = true.obs;
-  //   try {
-  //     // Update Firestore
-  //     await _firestore.collection('restaurants').doc(restaurantUid).update({
-  //       'bankDetails': bankDetails,
-  //       'updatedAt': FieldValue.serverTimestamp(),
-  //     });
-
-  //     // Update local state
-  //     if (restaurantProfile.value != null) {
-  //       restaurantProfile.value = RestaurantProfileModel(
-  //         uid: restaurantProfile.value!.uid,
-  //         name: restaurantProfile.value!.name,
-  //         address: restaurantProfile.value!.address,
-  //         logoUrl: restaurantProfile.value!.logoUrl,
-  //         subscriptionPlan: restaurantProfile.value!.subscriptionPlan,
-  //         subscriptionStatus: restaurantProfile.value!.subscriptionStatus,
-  //         currentScanCount: restaurantProfile.value!.currentScanCount,
-  //         trialStartDate: restaurantProfile.value!.trialStartDate,
-  //         createdAt: restaurantProfile.value!.createdAt,
-  //         bankDetails: bankDetails, // Update bank details
-  //         subscriptionEnd: restaurantProfile.value!.subscriptionEnd,
-  //         ownerName: restaurantProfile.value!.ownerName,
-  //         supportEmail: restaurantProfile.value!.supportEmail,
-  //         ibanNumber: restaurantProfile.value!.ibanNumber,
-  //         ownerNationalIdFront: restaurantProfile.value!.ownerNationalIdFront,
-  //         ownerNationalIdBack: restaurantProfile.value!.ownerNationalIdBack,
-  //       );
-  //       restaurantProfile.refresh(); // Notify listeners
-  //     }
-
-  //     Get.snackbar('Success', 'Bank details updated successfully');
-  //     if (kDebugMode) {
-  //       print("Bank details updated for $restaurantUid");
-  //     }
-  //   } catch (e) {
-  //     Get.snackbar('Error', 'Failed to update bank details: $e');
-  //     if (kDebugMode) {
-  //       print("Error updating bank details for $restaurantUid: $e");
-  //     }
-  //   } finally {
-  //     isUpdatingBank.value = false;
-  //   }
-  // }
-
   Future<void> processQrScan(String customerUid) async {
     if (restaurantUid.isEmpty) {
-      Get.closeAllSnackbars(); // Close any existing snackbars
+      Get.closeAllSnackbars();
       Get.snackbar('Error', 'Restaurant user not identified.');
       return;
     }
     if (customerUid.isEmpty) {
-      Get.closeAllSnackbars(); // Close any existing snackbars
+      Get.closeAllSnackbars();
       Get.snackbar('Scan Error', 'Invalid QR code data.');
       return;
     }
@@ -541,7 +397,7 @@ class RestaurantController extends GetxController {
         final message = profile?.subscriptionStatus == 'inactive'
             ? 'Subscription expired. Please renew.'
             : 'Subscription required to scan.';
-        Get.closeAllSnackbars(); // Close any existing snackbars
+        Get.closeAllSnackbars();
         Get.snackbar('Subscription Issue', message);
         return;
       }
@@ -600,77 +456,118 @@ class RestaurantController extends GetxController {
           .limit(1) // We only need to know if at least one exists
           .get();
 
+      // Check if customer has scanned within the last 10 minutes
+      if (recentScans.docs.isNotEmpty) {
+        final lastScanTime =
+            (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
+        final timeDifference = now.difference(lastScanTime).inMinutes;
+        final remainingMinutes = 10 - timeDifference;
+
+        Get.closeAllSnackbars();
+        Get.snackbar(
+          colorText: MColors.error,
+          'Cooldown Active',
+          'This customer can scan again in $remainingMinutes minute${remainingMinutes != 1 ? 's' : ''}.',
+          duration: const Duration(seconds: 5),
+          backgroundColor: MColors.white.withOpacity(0.8),
+          margin: EdgeInsets.fromLTRB(0, 70, 0, 0),
+        );
+        return;
+      }
+
       // --- If all checks pass, proceed with scan ---
 
       // Use a transaction to ensure atomicity of updates
-      WriteBatch batch = _firestore.batch();
+      await _firestore.runTransaction((transaction) async {
+        // Get the current restaurant data
+        final restaurantDoc = await transaction
+            .get(_firestore.collection('restaurants').doc(restaurantUid));
 
-      // a. Create Scan Record
-      final scanRef = _firestore.collection('scans').doc(); // Auto-generate ID
-      batch.set(scanRef, {
-        'clientId': customerUid,
-        'restaurantId': restaurantUid,
-        'timestamp': FieldValue.serverTimestamp(), // Use server time
-        'pointsAwarded': 1, // Award 1 point per scan
+        if (!restaurantDoc.exists) {
+          throw Exception('Restaurant document not found');
+        }
+
+        // Get current scan count
+        final currentScanCount = restaurantDoc.data()?['currentScanCount'] ?? 0;
+
+        // Create scan record
+        final scanRef = _firestore.collection('scans').doc();
+        transaction.set(scanRef, {
+          'clientId': customerUid,
+          'restaurantId': restaurantUid,
+          'timestamp': FieldValue.serverTimestamp(),
+          'pointsAwarded': 1,
+        });
+
+        // Update customer points
+        final customerRef = _firestore.collection('users').doc(customerUid);
+        // Construct the field path for the specific restaurant within the map
+        final pointsFieldPath = 'pointsByRestaurant.$restaurantUid.points';
+        final rewardReceivedFieldPath =
+            'pointsByRestaurant.$restaurantUid.rewardReceived';
+        // Increment the points for this restaurant. If the field doesn't exist, Firestore creates it.
+        // Note: Firestore doesn't directly support incrementing nested map fields if the map or sub-map doesn't exist.
+        // A transaction or reading first might be more robust here if the structure isn't guaranteed.
+        // Let's assume 'pointsByRestaurant' map exists, but the restaurant entry might not.
+        // Using update with FieldValue.increment is safer. We'll handle initialization if needed.
+
+        // Read current points to handle initialization and reward logic.
+        final currentCustomerData = await customerRef.get();
+        final customerPointsMap = currentCustomerData
+                .data()?['pointsByRestaurant'] as Map<String, dynamic>? ??
+            {};
+        final restaurantPointsData =
+            customerPointsMap[restaurantUid] as Map<String, dynamic>? ??
+                {'points': 0, 'rewardReceived': false}; // Default if new
+        final currentPoints = restaurantPointsData['points'] as int;
+        // final rewardReceived = restaurantPointsData['rewardReceived'] as bool; // Not needed for increment
+
+        // We'll just increment the points count. Reward logic might be handled client-side or server-side later.
+        // If pointsByRestaurant.restaurantUid doesn't exist, update won't create nested structure correctly.
+        // We'll update the whole map field for safety.
+        customerPointsMap[restaurantUid] = {
+          'points': currentPoints + 1,
+          // Keep existing reward status or default to false
+          'rewardReceived': restaurantPointsData['rewardReceived'],
+          // Add lastUpdated timestamp to track when points were last updated
+          'lastUpdated': FieldValue.serverTimestamp(),
+        };
+        transaction
+            .update(customerRef, {'pointsByRestaurant': customerPointsMap});
+
+        // Update restaurant scan count
+        transaction
+            .update(_firestore.collection('restaurants').doc(restaurantUid), {
+          'currentScanCount': currentScanCount + 1,
+          'lastScanTime': FieldValue.serverTimestamp(),
+        });
+
+        // Update local state immediately
+        if (restaurantProfile.value != null) {
+          // Use copyWith to create a new profile with updated scan count
+          restaurantProfile.value = restaurantProfile.value!
+              .copyWith(currentScanCount: currentScanCount + 1);
+          if (kDebugMode) {
+            print(
+                "Updated local scan count: ${restaurantProfile.value?.currentScanCount}");
+          }
+        }
       });
 
-      // b. Update Customer Points
-      final customerRef = _firestore.collection('users').doc(customerUid);
-      // Construct the field path for the specific restaurant within the map
-      final pointsFieldPath = 'pointsByRestaurant.$restaurantUid.points';
-      final rewardReceivedFieldPath =
-          'pointsByRestaurant.$restaurantUid.rewardReceived';
-      // Increment the points for this restaurant. If the field doesn't exist, Firestore creates it.
-      // Note: Firestore doesn't directly support incrementing nested map fields if the map or sub-map doesn't exist.
-      // A transaction or reading first might be more robust here if the structure isn't guaranteed.
-      // Let's assume 'pointsByRestaurant' map exists, but the restaurant entry might not.
-      // Using update with FieldValue.increment is safer. We'll handle initialization if needed.
+      // Refresh dashboard data
+      await refreshDashboardData();
 
-      // Read current points to handle initialization and reward logic.
-      final currentCustomerData = await customerRef.get();
-      final customerPointsMap = currentCustomerData
-              .data()?['pointsByRestaurant'] as Map<String, dynamic>? ??
-          {};
-      final restaurantPointsData =
-          customerPointsMap[restaurantUid] as Map<String, dynamic>? ??
-              {'points': 0, 'rewardReceived': false}; // Default if new
-      final currentPoints = restaurantPointsData['points'] as int;
-      // final rewardReceived = restaurantPointsData['rewardReceived'] as bool; // Not needed for increment
-
-      // We'll just increment the points count. Reward logic might be handled client-side or server-side later.
-      // If pointsByRestaurant.restaurantUid doesn't exist, update won't create nested structure correctly.
-      // We'll update the whole map field for safety.
-      customerPointsMap[restaurantUid] = {
-        'points': currentPoints + 1,
-        // Keep existing reward status or default to false
-        'rewardReceived': restaurantPointsData['rewardReceived'],
-        // Add lastUpdated timestamp to track when points were last updated
-        'lastUpdated': FieldValue.serverTimestamp(),
-      };
-      batch.update(customerRef, {'pointsByRestaurant': customerPointsMap});
-
-      // c. Update Restaurant's Scan Count
-      final restaurantRef =
-          _firestore.collection('restaurants').doc(restaurantUid);
-      batch.update(restaurantRef, {
-        'currentScanCount': FieldValue.increment(1),
-      });
-
-      // Commit the transaction
-      await batch.commit();
-
-      // Update local state after successful transaction
-      await fetchRestaurantProfile(); // Re-fetch to get updated scan count
-
-      Get.closeAllSnackbars(); // Close any existing snackbars
+      Get.closeAllSnackbars();
       Get.snackbar('Success', 'Customer scan recorded. +1 point awarded.');
+      
       if (kDebugMode) {
         print(
-          "Scan successful: Customer $customerUid at Restaurant $restaurantUid",
-        );
+            "Scan successful: Customer $customerUid at Restaurant $restaurantUid");
+        print("Final scan count: ${restaurantProfile.value?.currentScanCount}");
       }
+      
     } catch (e) {
-      Get.closeAllSnackbars(); // Close any existing snackbars
+      Get.closeAllSnackbars();
       Get.snackbar('Scan Error', 'An unexpected error occurred: $e');
       if (kDebugMode) {
         print("Error processing scan for $customerUid at $restaurantUid: $e");
@@ -841,63 +738,271 @@ class RestaurantController extends GetxController {
     }
   }
 
-  // Fetch scan counts per day for the current month for the chart
+  // Fetch scan counts per day for the subscription period for the chart
   Future<void> fetchScanChartData() async {
     if (restaurantUid.isEmpty) return;
     try {
-      final now = DateTime.now();
-      final startOfMonth = DateTime(now.year, now.month, 1);
-      final endOfMonth = DateTime(now.year, now.month + 1, 1).subtract(Duration(days: 1));
-      
+      final profile = restaurantProfile.value;
+      if (profile == null) {
+        if (kDebugMode) print('fetchScanChartData: Profile is null');
+        return;
+      }
+
+      // Get subscription period dates
+      final periodStart = profile.trialStartDate ?? profile.createdAt;
+      final periodEnd = profile.subscriptionEnd ??
+          DateTime.now().add(const Duration(days: 30));
+
+      // Get subscription start date - this is when the current plan was assigned
+      // Use this to only show scans that occurred after the subscription was changed
+      final subscriptionStartDate = await _getSubscriptionStartDate();
+      final effectiveStartDate = subscriptionStartDate ?? periodStart;
+
+      if (kDebugMode) {
+        print('fetchScanChartData: Period Start: $periodStart');
+        print('fetchScanChartData: Subscription Start: $subscriptionStartDate');
+        print('fetchScanChartData: Effective Start: $effectiveStartDate');
+        print('fetchScanChartData: Period End: $periodEnd');
+      }
+
+      if (effectiveStartDate == null) {
+        if (kDebugMode) print('fetchScanChartData: Missing period start date');
+        scanChartData.clear();
+        currentMonthScanCount.value = 0;
+        return;
+      }
+
+      if (kDebugMode) print('fetchScanChartData: Querying scans...');
+
+      // Query all scans for this restaurant within the period
       final querySnapshot = await _firestore
           .collection('scans')
           .where('restaurantId', isEqualTo: restaurantUid)
           .where('timestamp',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+              isGreaterThanOrEqualTo: Timestamp.fromDate(effectiveStartDate))
           .where('timestamp',
-              isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+              isLessThanOrEqualTo: Timestamp.fromDate(periodEnd))
           .orderBy('timestamp')
           .get();
       
-      // Count scans per day
-      final Map<int, int> dayToCount = {};
-      int totalScansThisMonth = 0;
+      if (kDebugMode) {
+        print('fetchScanChartData: Found ${querySnapshot.docs.length} scans');
+      }
+
+      // Count scans per day using date string as key
+      final Map<String, int> dayToCount = {};
+      int totalScans = 0;
+
+      // Initialize all days in the period with 0 scans
+      DateTime currentDate = effectiveStartDate;
+      while (!currentDate.isAfter(periodEnd)) {
+        final dateKey =
+            '${currentDate.year}-${currentDate.month}-${currentDate.day}';
+        dayToCount[dateKey] = 0;
+        currentDate = currentDate.add(const Duration(days: 1));
+      }
       
+      // Count actual scans
       for (var doc in querySnapshot.docs) {
-        final timestamp = (doc.data()['timestamp'] as Timestamp?)?.toDate();
+        final data = doc.data();
+        // Skip archived scans
+        if (data['archivedAt'] != null) {
+          continue;
+        }
+
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
         if (timestamp != null) {
-          final day = timestamp.day;
-          dayToCount[day] = (dayToCount[day] ?? 0) + 1;
-          totalScansThisMonth++;
+          final dateKey =
+              '${timestamp.year}-${timestamp.month}-${timestamp.day}';
+          dayToCount[dateKey] = (dayToCount[dateKey] ?? 0) + 1;
+          totalScans++;
         }
       }
 
-      // Update current month scan count
-      currentMonthScanCount.value = totalScansThisMonth;
+      if (kDebugMode) {
+        print('fetchScanChartData: Total scans counted: $totalScans');
+        print('fetchScanChartData: Daily counts: $dayToCount');
+      }
 
-      // Build daily scan chart data (individual daily counts)
+      // Build daily scan chart data for the entire subscription period
       final List<FlSpot> spots = [];
-      final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
       
-      // Build daily scan counts for each day of the month
-      for (int day = 1; day <= daysInMonth; day++) {
-        final dailyCount = dayToCount[day] ?? 0;
-        spots.add(FlSpot(day.toDouble(), dailyCount.toDouble()));
+      // Reset currentDate to start of period
+      currentDate = effectiveStartDate;
+      int dayIndex = 0;
+
+      // Create spots for each day, including days with 0 scans
+      while (!currentDate.isAfter(periodEnd)) {
+        final dateKey =
+            '${currentDate.year}-${currentDate.month}-${currentDate.day}';
+        final dailyCount = dayToCount[dateKey] ?? 0;
+
+        if (kDebugMode) {
+          print(
+              'Chart point: Day ${dayIndex + 1} (${DateFormat('MMM d').format(currentDate)}): $dailyCount scans');
+        }
+        
+        spots.add(FlSpot((dayIndex + 1).toDouble(), dailyCount.toDouble()));
+        currentDate = currentDate.add(const Duration(days: 1));
+        dayIndex++;
       }
       
+      // Update the chart data
       scanChartData.assignAll(spots);
+      
+      if (kDebugMode) {
+        print('Chart data updated with ${spots.length} points');
+        print('First point: ${spots.firstOrNull}');
+        print('Last point: ${spots.lastOrNull}');
+      }
+      
     } catch (e) {
       if (kDebugMode) print('Error fetching scan chart data: $e');
       scanChartData.clear();
-      currentMonthScanCount.value = 0;
     }
   }
 
-  // After a scan is recorded, also refresh dashboard data
+  // Helper method to get the most recent subscription start date
+  Future<DateTime?> _getSubscriptionStartDate() async {
+    try {
+      // Get the most recent subscription record for this restaurant
+      final subscriptionsSnapshot = await _firestore
+          .collection('subscriptions')
+          .where('restaurantId', isEqualTo: restaurantUid)
+          .where('status', isEqualTo: 'active')
+          .orderBy('startDate', descending: true)
+          .limit(1)
+          .get();
+
+      if (subscriptionsSnapshot.docs.isNotEmpty) {
+        final subscriptionData = subscriptionsSnapshot.docs.first.data();
+        final startDate = subscriptionData['startDate'] as Timestamp?;
+        return startDate?.toDate();
+      }
+
+      // If no subscription record found, check the restaurant document
+      final restaurantDoc =
+          await _firestore.collection('restaurants').doc(restaurantUid).get();
+
+      if (restaurantDoc.exists) {
+        final data = restaurantDoc.data();
+        if (data != null) {
+          final subscriptionStart = data['subscriptionStart'] as Timestamp?;
+          if (subscriptionStart != null) {
+            return subscriptionStart.toDate();
+          }
+        }
+      }
+
+      return null;
+    } catch (e) {
+      if (kDebugMode) print('Error getting subscription start date: $e');
+      return null;
+    }
+  }
+
+  Future<void> refreshDashboardData() async {
+    if (kDebugMode) print('Refreshing dashboard data...');
+    try {
+      // Fetch profile first to get latest scan count
+      await fetchRestaurantProfile();
+
+      // Update scan count based on non-archived scans
+      await updateCurrentScanCount();
+
+      // Then fetch other data in parallel
+      await Future.wait([
+        fetchRecentScans(),
+        fetchScanChartData(),
+      ]);
+
+      if (kDebugMode) {
+        print('Dashboard data refreshed');
+        print(
+            'Current scan count: ${restaurantProfile.value?.currentScanCount}');
+        print('Chart data points: ${scanChartData.length}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error refreshing dashboard data: $e');
+    }
+  }
+
+  // Update the current scan count based on non-archived scans
+  Future<void> updateCurrentScanCount() async {
+    if (restaurantUid.isEmpty) return;
+    try {
+      final profile = restaurantProfile.value;
+      if (profile == null) return;
+
+      // Get subscription period dates
+      final periodStart = profile.trialStartDate ?? profile.createdAt;
+      final periodEnd = profile.subscriptionEnd ??
+          DateTime.now().add(const Duration(days: 30));
+
+      // Get subscription start date - this is when the current plan was assigned
+      final subscriptionStartDate = await _getSubscriptionStartDate();
+      final effectiveStartDate = subscriptionStartDate ?? periodStart;
+
+      if (effectiveStartDate == null) return;
+
+      // Count non-archived scans
+      final querySnapshot = await _firestore
+          .collection('scans')
+          .where('restaurantId', isEqualTo: restaurantUid)
+          .where('timestamp',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(effectiveStartDate))
+          .where('timestamp',
+              isLessThanOrEqualTo: Timestamp.fromDate(periodEnd))
+          .get();
+
+      int validScanCount = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        // Only count non-archived scans
+        if (data['archivedAt'] == null) {
+          validScanCount++;
+        }
+      }
+
+      // Update the restaurant document with the correct scan count
+      await _firestore.collection('restaurants').doc(restaurantUid).update({
+        'currentScanCount': validScanCount,
+        'updatedAt': Timestamp.now(),
+      });
+
+      // Update local profile
+      if (restaurantProfile.value != null) {
+        restaurantProfile.value = restaurantProfile.value!.copyWith(
+          currentScanCount: validScanCount,
+        );
+      }
+
+      if (kDebugMode) {
+        print('Updated current scan count to $validScanCount');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error updating current scan count: $e');
+    }
+  }
+
   Future<void> recordScanAndRefresh(String customerUid) async {
+    if (kDebugMode) {
+      print("Starting scan process for customer: $customerUid");
+      print(
+          "Current scan count before: ${restaurantProfile.value?.currentScanCount}");
+    }
+    
     await processQrScan(customerUid);
-    await fetchRecentScans();
-    await fetchScanChartData(); // This will also update currentMonthScanCount
+    await updateCurrentScanCount(); // Update scan count based on non-archived scans
+    await refreshDashboardData();
+
+    if (kDebugMode) {
+      print("Dashboard data refreshed after scan");
+      print("New scan count: ${restaurantProfile.value?.currentScanCount}");
+      print("Chart data points: ${scanChartData.length}");
+      print("Last chart point: ${scanChartData.lastOrNull}");
+    }
   }
 
   // Stream of recent scans for live updates with customer names

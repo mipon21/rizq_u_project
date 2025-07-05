@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/customer_controller.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/customer/loading_shimmer.dart';
 
 class RewardsTab extends StatefulWidget {
   final CustomerController controller;
@@ -89,7 +88,7 @@ class _RewardsTabState extends State<RewardsTab>
       // Show skeleton loading if first load and no cached data
       if (widget.controller.isLoadingHistory.value &&
           widget.controller.claimHistory.isEmpty) {
-        return _buildLoadingShimmer();
+        return LoadingShimmer.buildRewardHistoryShimmer();
       }
 
       if (widget.controller.claimHistory.isEmpty) {
@@ -128,7 +127,7 @@ class _RewardsTabState extends State<RewardsTab>
           itemBuilder: (context, index) {
             // Show loading indicator at the bottom while pagination loads more items
             if (index >= widget.controller.claimHistory.length) {
-              return _buildPaginationLoader();
+              return LoadingShimmer.buildPaginationLoader();
             }
 
             final rewardItem = widget.controller.claimHistory[index];
@@ -296,114 +295,5 @@ class _RewardsTabState extends State<RewardsTab>
     });
   }
 
-  Widget _buildPaginationLoader() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 80,
-              height: 12,
-              color: Colors.white,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildLoadingShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
-      child: ListView.builder(
-        itemCount: 8, // Show 8 skeleton items
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (_, __) => Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    // Avatar placeholder
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Restaurant name and date placeholder
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 16,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            width: 80,
-                            height: 12,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Status tag placeholder
-                    Container(
-                      width: 60,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: double.infinity,
-                  height: 1,
-                  color: Colors.white,
-                ),
-                Container(
-                  width: double.infinity,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

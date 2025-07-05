@@ -30,10 +30,17 @@ class AdminDashboardPage extends GetView<AdminController> {
       controller.fetchLoyaltyProgramData();
     });
 
+    // Get screen width for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1000;
+    final isTablet = screenWidth > 600 && screenWidth <= 1000;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Admin Dashboard',
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              title: const Text(
+                'Dashboard',
         ),
         backgroundColor: MColors.primary,
         actions: [
@@ -45,7 +52,8 @@ class AdminDashboardPage extends GetView<AdminController> {
               tooltip: '⚠️ RESET ALL DATA (Danger Zone)',
             ),
           // Replace badges with a simple Stack for notification indicator
-          Obx(() => Stack(
+                if (!isDesktop)
+                  Obx(() => Stack(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications),
@@ -78,6 +86,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                     ),
                 ],
               )),
+                if (!isDesktop)
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -94,42 +103,231 @@ class AdminDashboardPage extends GetView<AdminController> {
           ),
         ],
       ),
-      drawer: _buildAdminDrawer(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      drawer: !isDesktop ? _buildAdminDrawer() : null,
+      body: LayoutBuilder(builder: (context, constraints) {
+        // Determine if we're on desktop/web based on width
+        final isDesktop = constraints.maxWidth > 1000;
+        final isTablet =
+            constraints.maxWidth > 600 && constraints.maxWidth <= 1000;
+
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildQuickActions(),
-            const SizedBox(height: 24),
+            // Permanent drawer for desktop
 
-            const Text(
-              'Overview',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            if (isDesktop)
+              SizedBox(
+                width: 250,
+                child: Drawer(
+                  elevation: 2,
+                  child: _buildAdminDrawerContent(),
+                ),
+              ),
+
+            // Main content area
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(isDesktop ? 24.0 : 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Welcome header for desktop view
+                    if (isDesktop)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 24.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Welcome to Admin Dashboard',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: MColors.primary,
+                              ),
+                            ),
+                            if (isDesktop)
+                              Row(
+                                children: [
+                                  if (kDebugMode)
+                                    IconButton(
+                                      icon: const Icon(Icons.dangerous,
+                                          color: Colors.red),
+                                      onPressed: () =>
+                                          controller.cleanupAllFirebaseData(),
+                                      tooltip:
+                                          '⚠️ RESET ALL DATA (Danger Zone)',
+                                    ),
+                                  Obx(() => Stack(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.notifications,
+                                              color: MColors.primary,
+                                            ),
+                                            onPressed: () =>
+                                                _showNotificationsPanel(
+                                                    context),
+                                            tooltip: 'Notifications',
+                                          ),
+                                          if (controller
+                                                  .unreadNotifications.value >
+                                              0)
+                                            Positioned(
+                                              right: 8,
+                                              top: 8,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                  minWidth: 12,
+                                                  minHeight: 12,
+                                                ),
+                                                child: Text(
+                                                  controller
+                                                      .unreadNotifications.value
+                                                      .toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 8,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      )),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Refresh Data'),
+                                    onPressed: () {
+                                      controller.fetchDashboardMetrics();
+                                      controller.fetchLoyaltyProgramData();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: MColors.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+
+                    // Quick Actions and Overview in different layouts based on screen size
+                    if (isDesktop || isTablet)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Quick Actions
+                          Expanded(
+                            flex: isDesktop ? 1 : 2,
+                            child: _buildQuickActions(),
+                          ),
+                          const SizedBox(width: 24),
+                          // Overview Metrics
+                          Expanded(
+                            flex: isDesktop ? 3 : 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Overview',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildMetricsGrid(
+                                    isDesktop: isDesktop, isTablet: isTablet),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildQuickActions(),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Overview',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildMetricsGrid(isDesktop: false, isTablet: false),
+                        ],
+                      ),
+
+                    const SizedBox(height: 32),
+
+                    // Loyalty and Pending Approvals sections
+                    if (isDesktop || isTablet)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Loyalty Program Analytics
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Loyalty Program Analytics',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildLoyaltyMetrics(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          // Pending Approvals
+                          Expanded(
+                            flex: 2,
+                            child: _buildPendingApprovalsSection(),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Loyalty Program Analytics',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildLoyaltyMetrics(),
+                          if (isDesktop) const SizedBox(height: 24),
+                          if (isDesktop) _buildPendingApprovalsSection(),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            _buildMetricsGrid(),
-            const SizedBox(height: 24),
-
-            // Add loyalty program section
-            const Text(
-              'Loyalty Program Analytics',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildLoyaltyMetrics(),
-        // Add pending approvals section
-            const SizedBox(height: 24),
-            _buildPendingApprovalsSection(),
           ],
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -170,7 +368,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                   width: double.infinity,
                   child: _buildActionButton(
                     icon: Icons.restaurant_menu,
-                    label: 'Add Restaurant',
+                    label: 'Manage Restaurant',
                     onPressed: () => Get.toNamed(Routes.ADMIN_RESTAURANTS),
                   ),
                 ),
@@ -246,92 +444,96 @@ class AdminDashboardPage extends GetView<AdminController> {
 
   Widget _buildAdminDrawer() {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              color: MColors.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.admin_panel_settings,
-                    size: 40,
-                    color: Colors.blue,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Admin Panel',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            selected: true,
-            onTap: () {
-              Get.back(); // Close drawer
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.restaurant),
-            title: const Text('Restaurants'),
-            onTap: () {
-              Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_RESTAURANTS);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Customers'),
-            onTap: () {
-              Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_CUSTOMERS);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.bar_chart),
-            title: const Text('Reports'),
-            onTap: () {
-              Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_REPORTS);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.subscriptions),
-            title: const Text('Custom Plans'),
-            onTap: () {
-              Get.back(); // Close drawer
-              Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS);
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () => controller.logout(),
-          ),
-        ],
-      ),
+      child: _buildAdminDrawerContent(),
     );
   }
 
-  Widget _buildMetricsGrid() {
+  Widget _buildAdminDrawerContent() {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        DrawerHeader(
+          decoration: const BoxDecoration(
+            color: MColors.primary,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: Image.asset(
+                  'assets/icons/general-u.png',
+                  width: 100,
+                  height: 100,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Admin Panel',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.dashboard),
+          title: const Text('Dashboard'),
+          selected: true,
+          onTap: () {
+            Get.back(); // Close drawer
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.restaurant),
+          title: const Text('Restaurants'),
+          onTap: () {
+            Get.back(); // Close drawer
+            Get.toNamed(Routes.ADMIN_RESTAURANTS);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.people),
+          title: const Text('Customers'),
+          onTap: () {
+            Get.back(); // Close drawer
+            Get.toNamed(Routes.ADMIN_CUSTOMERS);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.bar_chart),
+          title: const Text('Reports'),
+          onTap: () {
+            Get.back(); // Close drawer
+            Get.toNamed(Routes.ADMIN_REPORTS);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.subscriptions),
+          title: const Text('Custom Plans'),
+          onTap: () {
+            Get.back(); // Close drawer
+            Get.toNamed(Routes.ADMIN_CUSTOM_SUBSCRIPTION_PLANS);
+          },
+        ),
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.logout),
+          title: const Text('Logout'),
+          onTap: () => controller.logout(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricsGrid({required bool isDesktop, required bool isTablet}) {
     return Obx(() {
       if (controller.isLoading.value) {
         return const SizedBox(
-          height: 200,
+          height: 250,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -345,11 +547,14 @@ class AdminDashboardPage extends GetView<AdminController> {
         );
       }
       
+      // Adjust grid based on screen size
+      final crossAxisCount = isDesktop ? 2 : (isTablet ? 2 : 2);
+      
       return GridView.count(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        childAspectRatio: 1.0,
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: isDesktop ? 2.5 : 1.1,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
         children: [
@@ -371,12 +576,7 @@ class AdminDashboardPage extends GetView<AdminController> {
             icon: Icons.verified,
             color: Colors.purple,
           ),
-                      Obx(() => _buildStatCard(
-              title: 'Total Revenue${_getRevenueModeLabel()}',
-              value: '${controller.totalRevenue.toStringAsFixed(2)} MAD',
-              icon: Icons.attach_money,
-              color: Colors.orange,
-            )),
+          Obx(() => _buildRevenueCard()),
         ],
       );
     });
@@ -393,15 +593,18 @@ class AdminDashboardPage extends GetView<AdminController> {
         child: Card(
           elevation: 3,
           color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
-                  size: 28,
+                  size: 24,
                   color: color,
                 ),
                 const SizedBox(height: 8),
@@ -413,11 +616,11 @@ class AdminDashboardPage extends GetView<AdminController> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -426,6 +629,273 @@ class AdminDashboardPage extends GetView<AdminController> {
             ),
           ),
         ));
+  }
+
+  Widget _buildRevenueCard() {
+    return InkWell(
+      onTap: () => _showRevenueDetails(),
+      child: SizedBox(
+        width: double.infinity,
+        child: Card(
+          elevation: 3,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.attach_money,
+                  size: 24,
+                  color: Colors.orange,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Total Revenue',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${controller.totalRevenue.toStringAsFixed(2)} MAD',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRevenueDetails() {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.attach_money,
+              color: Colors.orange,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text('Revenue Details'),
+          ],
+        ),
+        content: Container(
+          width: 400,
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return Container(
+                height: 200,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.orange),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Updating revenue data...',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Revenue Mode Selector
+                Row(
+                  children: [
+                    Text(
+                      'View Mode:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: controller.revenueMode.value,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'customer_only',
+                            child: Text('Customer Only'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'combined',
+                            child: Text('Combined'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'admin_value',
+                            child: Text('Admin Value'),
+                          ),
+                        ],
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            controller.revenueMode.value = newValue;
+                            controller.fetchDashboardMetrics();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Revenue Table
+                Table(
+                  border: TableBorder.all(
+                    color: Colors.grey[300]!,
+                    width: 1,
+                  ),
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                      ),
+                      children: [
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Revenue Source',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Amount (MAD)',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TableRow(
+                      children: [
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text('Customer Payments'),
+                          ),
+                        ),
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              controller.customerPayments.toStringAsFixed(2),
+                              style: TextStyle(
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TableRow(
+                      children: [
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text('Admin Value'),
+                          ),
+                        ),
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              controller.adminAssignmentValue
+                                  .toStringAsFixed(2),
+                              style: TextStyle(
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                      ),
+                      children: [
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Total Revenue',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        TableCell(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              controller.totalRevenue.toStringAsFixed(2),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[700],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }),
+        ),
+        actions: [
+          TextButton.icon(
+            icon: Icon(Icons.refresh),
+            label: Text('Refresh'),
+            onPressed: () {
+              controller.fetchDashboardMetrics();
+            },
+          ),
+          TextButton(
+            child: Text('Close'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildLoyaltyMetrics() {
@@ -653,31 +1123,84 @@ class AdminDashboardPage extends GetView<AdminController> {
 
   // Notifications panel
   void _showNotificationsPanel(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) {
-            return AdminNotificationPanel(isBottomSheet: true);
-          },
-        );
-      },
-    );
+    // Determine if we're on desktop/web based on width
+    final isDesktop = MediaQuery.of(context).size.width > 1000;
+
+    if (isDesktop) {
+      // For desktop, show a dialog instead of bottom sheet
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: 500,
+            height: 600,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Notifications',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AdminNotificationPanel(isBottomSheet: false),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // For mobile, use bottom sheet
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            maxChildSize: 0.9,
+            minChildSize: 0.5,
+            expand: false,
+            builder: (context, scrollController) {
+              return AdminNotificationPanel(isBottomSheet: true);
+            },
+          );
+        },
+      );
+    }
   }
 
   // Pending approvals section
   Widget _buildPendingApprovalsSection() {
     return Obx(() {
       if (controller.pendingApprovals.value == 0) {
-        return const SizedBox.shrink(); // Don't show if no pending approvals
+        return const SizedBox(
+          height: 200,
+          child: Card(
+            child: Center(
+              child: Text('No pending approvals'),
+            ),
+          ),
+        );
       }
 
       return Column(

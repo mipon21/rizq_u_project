@@ -24,6 +24,11 @@ class RestaurantRegistrationController extends GetxController {
   final RxString bankDetails = ''.obs;
   final RxString ibanNumber = ''.obs;
 
+  // Observable variables for local images
+  final Rx<File?> logoFile = Rx<File?>(null);
+  final Rx<File?> nationalIdFrontFile = Rx<File?>(null);
+  final Rx<File?> nationalIdBackFile = Rx<File?>(null);
+
   // Observable variables
   final RxBool isLoading = false.obs;
   final RxBool isUploadingLogo = false.obs;
@@ -42,15 +47,14 @@ class RestaurantRegistrationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Reset form when controller is initialized
+    resetForm();
     // Listen to form changes to validate
     ever(restaurantName, (_) => _validateForm());
     ever(ownerName, (_) => _validateForm());
-    ever(supportEmail, (_) => _validateForm());
-    ever(bankDetails, (_) => _validateForm());
-    ever(ibanNumber, (_) => _validateForm());
-    ever(logoUrl, (_) => _validateForm());
-    ever(nationalIdFrontUrl, (_) => _validateForm());
-    ever(nationalIdBackUrl, (_) => _validateForm());
+    ever(logoFile, (_) => _validateForm());
+    ever(nationalIdFrontFile, (_) => _validateForm());
+    ever(nationalIdBackFile, (_) => _validateForm());
   }
 
   @override
@@ -61,98 +65,101 @@ class RestaurantRegistrationController extends GetxController {
   void _validateForm() {
     isFormValid.value = restaurantName.value.trim().isNotEmpty &&
         ownerName.value.trim().isNotEmpty &&
-        supportEmail.value.trim().isNotEmpty &&
-        bankDetails.value.trim().isNotEmpty &&
-        ibanNumber.value.trim().isNotEmpty &&
-        logoUrl.value.isNotEmpty &&
-        nationalIdFrontUrl.value.isNotEmpty &&
-        nationalIdBackUrl.value.isNotEmpty;
+        logoFile.value != null &&
+        nationalIdFrontFile.value != null &&
+        nationalIdBackFile.value != null;
   }
 
-  Future<void> pickAndUploadLogo() async {
+  Future<void> pickLogo() async {
     try {
-      isUploadingLogo.value = true;
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
       );
 
       if (image != null) {
-        final File imageFile = File(image.path);
-        final String fileName =
-            'restaurant_logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final Reference storageRef =
-            _storage.ref().child('restaurant_logos/$fileName');
-
-        final UploadTask uploadTask = storageRef.putFile(imageFile);
-        final TaskSnapshot snapshot = await uploadTask;
-        final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-        logoUrl.value = downloadUrl;
-        Get.snackbar('Success', 'Logo uploaded successfully');
+        logoFile.value = File(image.path);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to upload logo: $e');
-    } finally {
-      isUploadingLogo.value = false;
+      Get.snackbar('Error', 'Failed to pick logo: $e');
     }
   }
 
-  Future<void> pickAndUploadNationalIdFront() async {
+  Future<void> pickNationalIdFront() async {
     try {
-      isUploadingIdFront.value = true;
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
       );
 
       if (image != null) {
-        final File imageFile = File(image.path);
-        final String fileName =
-            'national_id_front_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final Reference storageRef =
-            _storage.ref().child('national_ids/$fileName');
-
-        final UploadTask uploadTask = storageRef.putFile(imageFile);
-        final TaskSnapshot snapshot = await uploadTask;
-        final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-        nationalIdFrontUrl.value = downloadUrl;
-        Get.snackbar('Success', 'National ID front uploaded successfully');
+        nationalIdFrontFile.value = File(image.path);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to upload National ID front: $e');
-    } finally {
-      isUploadingIdFront.value = false;
+      Get.snackbar('Error', 'Failed to pick National ID front: $e');
     }
   }
 
-  Future<void> pickAndUploadNationalIdBack() async {
+  Future<void> pickNationalIdBack() async {
     try {
-      isUploadingIdBack.value = true;
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
       );
 
       if (image != null) {
-        final File imageFile = File(image.path);
-        final String fileName =
-            'national_id_back_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final Reference storageRef =
-            _storage.ref().child('national_ids/$fileName');
-
-        final UploadTask uploadTask = storageRef.putFile(imageFile);
-        final TaskSnapshot snapshot = await uploadTask;
-        final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-        nationalIdBackUrl.value = downloadUrl;
-        Get.snackbar('Success', 'National ID back uploaded successfully');
+        nationalIdBackFile.value = File(image.path);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to upload National ID back: $e');
+      Get.snackbar('Error', 'Failed to pick National ID back: $e');
+    }
+  }
+
+  Future<String?> _uploadImage(File imageFile, String folder) async {
+    try {
+      final String fileName =
+          '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final Reference storageRef = _storage.ref().child('$folder/$fileName');
+
+      final UploadTask uploadTask = storageRef.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to upload image: $e');
+      return null;
+    }
+  }
+
+  Future<bool> uploadAllImages() async {
+    try {
+      isLoading.value = true;
+
+      if (logoFile.value != null) {
+        final url = await _uploadImage(logoFile.value!, 'restaurant_logos');
+        if (url == null) return false;
+        logoUrl.value = url;
+      }
+
+      if (nationalIdFrontFile.value != null) {
+        final url =
+            await _uploadImage(nationalIdFrontFile.value!, 'national_ids');
+        if (url == null) return false;
+        nationalIdFrontUrl.value = url;
+      }
+
+      if (nationalIdBackFile.value != null) {
+        final url =
+            await _uploadImage(nationalIdBackFile.value!, 'national_ids');
+        if (url == null) return false;
+        nationalIdBackUrl.value = url;
+      }
+
+      return true;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to upload images: $e');
+      return false;
     } finally {
-      isUploadingIdBack.value = false;
+      isLoading.value = false;
     }
   }
 
@@ -171,6 +178,13 @@ class RestaurantRegistrationController extends GetxController {
         return;
       }
 
+      // Upload all images first
+      final imagesUploaded = await uploadAllImages();
+      if (!imagesUploaded) {
+        Get.snackbar('Error', 'Failed to upload images');
+        return;
+      }
+
       // Create registration data
       final registration = RestaurantRegistrationModel(
         uid: user.uid,
@@ -179,9 +193,9 @@ class RestaurantRegistrationController extends GetxController {
         ownerName: ownerName.value.trim(),
         ownerNationalIdFront: nationalIdFrontUrl.value,
         ownerNationalIdBack: nationalIdBackUrl.value,
-        supportEmail: supportEmail.value.trim(),
-        bankDetails: bankDetails.value.trim(),
-        ibanNumber: ibanNumber.value.trim(),
+        supportEmail: '',
+        bankDetails: '',
+        ibanNumber: '',
         logoUrl: logoUrl.value,
         approvalStatus: 'pending',
         createdAt: DateTime.now(),
@@ -239,7 +253,6 @@ class RestaurantRegistrationController extends GetxController {
           'restaurantName': registration.restaurantName,
           'ownerName': registration.ownerName,
           'email': registration.email,
-          'supportEmail': registration.supportEmail,
         },
       });
     } catch (e) {
@@ -274,7 +287,7 @@ class RestaurantRegistrationController extends GetxController {
   }
 
   void nextStep() {
-    if (currentStep.value < 3) {
+    if (currentStep.value < 1) {
       currentStep.value++;
     }
   }
@@ -288,12 +301,38 @@ class RestaurantRegistrationController extends GetxController {
   void resetForm() {
     restaurantName.value = '';
     ownerName.value = '';
-    supportEmail.value = '';
-    bankDetails.value = '';
-    ibanNumber.value = '';
     logoUrl.value = '';
     nationalIdFrontUrl.value = '';
     nationalIdBackUrl.value = '';
     currentStep.value = 0;
   }
+
+  // Clear any previous rejection status when the restaurant registration page is loaded
+  Future<void> clearRejectionStatus() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      // Check if this user has a rejected registration
+      final doc = await _firestore
+          .collection('restaurant_registrations')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && doc.data()?['approvalStatus'] == 'rejected') {
+        if (kDebugMode) {
+          print(
+              'Clearing previous rejection status for restaurant: ${user.uid}');
+        }
+
+        // Reset the form
+        resetForm();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error clearing rejection status: $e');
+      }
+    }
+  }
 }
+

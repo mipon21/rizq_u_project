@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../controllers/restaurant_registration_controller.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
+import 'dart:io';
 
 class RestaurantRegistrationPage
     extends GetView<RestaurantRegistrationController> {
@@ -10,6 +11,11 @@ class RestaurantRegistrationPage
 
   @override
   Widget build(BuildContext context) {
+    // Clear any previous rejection status when the page is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.clearRejectionStatus();
+    });
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Restaurant Registration'),
@@ -20,7 +26,7 @@ class RestaurantRegistrationPage
         return Stepper(
           currentStep: controller.currentStep.value,
           onStepContinue: () {
-            if (controller.currentStep.value < 3) {
+            if (controller.currentStep.value < 1) {
               controller.nextStep();
             } else {
               controller.submitRestaurantRegistration();
@@ -63,8 +69,8 @@ class RestaurantRegistrationPage
                                 strokeWidth: 2,
                               ),
                             )
-                          : Text(controller.currentStep.value == 3
-                              ? 'Submit Registration'
+                          : Text(controller.currentStep.value == 1
+                              ? 'Submit'
                               : 'Next'),
                     ),
                   ),
@@ -75,8 +81,6 @@ class RestaurantRegistrationPage
           steps: [
             _buildBasicInfoStep(),
             _buildDocumentUploadStep(),
-            _buildContactInfoStep(),
-            _buildBankInfoStep(),
           ],
         );
       }),
@@ -121,9 +125,8 @@ class RestaurantRegistrationPage
           // Restaurant Logo
           _buildImageUploadSection(
             title: 'Restaurant Logo *',
-            imageUrl: controller.logoUrl.value,
-            isLoading: controller.isUploadingLogo.value,
-            onTap: controller.pickAndUploadLogo,
+            imageFile: controller.logoFile.value,
+            onTap: controller.pickLogo,
             icon: Icons.restaurant,
           ),
           const SizedBox(height: 16),
@@ -131,9 +134,8 @@ class RestaurantRegistrationPage
           // National ID Front
           _buildImageUploadSection(
             title: 'National ID Front *',
-            imageUrl: controller.nationalIdFrontUrl.value,
-            isLoading: controller.isUploadingIdFront.value,
-            onTap: controller.pickAndUploadNationalIdFront,
+            imageFile: controller.nationalIdFrontFile.value,
+            onTap: controller.pickNationalIdFront,
             icon: Icons.credit_card,
           ),
           const SizedBox(height: 16),
@@ -141,9 +143,8 @@ class RestaurantRegistrationPage
           // National ID Back
           _buildImageUploadSection(
             title: 'National ID Back *',
-            imageUrl: controller.nationalIdBackUrl.value,
-            isLoading: controller.isUploadingIdBack.value,
-            onTap: controller.pickAndUploadNationalIdBack,
+            imageFile: controller.nationalIdBackFile.value,
+            onTap: controller.pickNationalIdBack,
             icon: Icons.credit_card,
           ),
         ],
@@ -152,71 +153,9 @@ class RestaurantRegistrationPage
     );
   }
 
-  Step _buildContactInfoStep() {
-    return Step(
-      title: const Text('Contact Information'),
-      content: Column(
-        children: [
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Support Email *',
-              border: OutlineInputBorder(),
-              helperText: 'Email for customer support inquiries',
-            ),
-            keyboardType: TextInputType.emailAddress,
-            onChanged: (value) => controller.supportEmail.value = value,
-            validator: (value) {
-              if (value?.isEmpty ?? true) {
-                return 'Support email is required';
-              }
-              if (!GetUtils.isEmail(value!)) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
-          ),
-        ],
-      ),
-      isActive: controller.currentStep.value >= 2,
-    );
-  }
-
-  Step _buildBankInfoStep() {
-    return Step(
-      title: const Text('Bank Information'),
-      content: Column(
-        children: [
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Bank Details *',
-              border: OutlineInputBorder(),
-              helperText: 'Bank name and account holder name',
-            ),
-            onChanged: (value) => controller.bankDetails.value = value,
-            validator: (value) =>
-                value?.isEmpty ?? true ? 'Bank details are required' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'IBAN Number *',
-              border: OutlineInputBorder(),
-              helperText: 'International Bank Account Number',
-            ),
-            onChanged: (value) => controller.ibanNumber.value = value,
-            validator: (value) =>
-                value?.isEmpty ?? true ? 'IBAN number is required' : null,
-          ),
-        ],
-      ),
-      isActive: controller.currentStep.value >= 3,
-    );
-  }
-
   Widget _buildImageUploadSection({
     required String title,
-    required String imageUrl,
-    required bool isLoading,
+    required File? imageFile,
     required VoidCallback onTap,
     required IconData icon,
   }) {
@@ -232,37 +171,37 @@ class RestaurantRegistrationPage
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: isLoading ? null : onTap,
+          onTap: onTap,
           child: Container(
             width: double.infinity,
             height: 120,
             decoration: BoxDecoration(
               border: Border.all(
-                color:
-                    imageUrl.isNotEmpty ? Colors.green : Colors.grey.shade300,
+                color: imageFile != null ? Colors.green : Colors.grey.shade300,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: imageUrl.isNotEmpty
-                ? ClipRRect(
+            child: Stack(
+              children: [
+                if (imageFile != null)
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: CachedImageWidget(
-                      imageUrl: imageUrl,
+                    child: Image.file(
+                      imageFile,
                       width: double.infinity,
                       height: 120,
                       fit: BoxFit.cover,
                     ),
                   )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isLoading)
-                        const CircularProgressIndicator()
-                      else ...[
+                else
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Icon(
                           icon,
-                          size: (32).isFinite && 32 > 0 ? 32 : 24,
+                          size: 32,
                           color: Colors.grey.shade400,
                         ),
                         const SizedBox(height: 8),
@@ -272,13 +211,36 @@ class RestaurantRegistrationPage
                             color: Colors.grey.shade600,
                             fontSize: 14,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
-                    ],
+                    ),
                   ),
+                if (imageFile != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: onTap,
+                        tooltip: 'Change Image',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-        if (imageUrl.isNotEmpty)
+        if (imageFile != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Row(
@@ -286,11 +248,11 @@ class RestaurantRegistrationPage
                 Icon(
                   Icons.check_circle,
                   color: Colors.green,
-                  size: (16).isFinite && 16 > 0 ? 16 : 16,
+                  size: 16,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Uploaded successfully',
+                  'Image selected',
                   style: TextStyle(
                     color: Colors.green,
                     fontSize: 12,

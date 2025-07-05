@@ -14,7 +14,21 @@ class SubscriptionPage extends GetView<RestaurantController> {
 
   @override
   Widget build(BuildContext context) {
-    final adminController = Get.find<AdminController>();
+    // Try to get AdminController, if not found, put a new one
+    AdminController adminController;
+    try {
+      adminController = Get.find<AdminController>();
+    } catch (e) {
+      adminController = Get.put(AdminController(), permanent: true);
+    }
+
+    // Ensure subscription plans are loaded when the page is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (adminController.subscriptionPlans.isEmpty &&
+          !adminController.isLoadingSubscriptionPlans.value) {
+        adminController.loadSubscriptionPlans();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -96,7 +110,10 @@ class SubscriptionPage extends GetView<RestaurantController> {
         }
 
         return RefreshIndicator(
-          onRefresh: () => controller.fetchRestaurantProfile(),
+          onRefresh: () async {
+            await controller.fetchRestaurantProfile();
+            await adminController.loadSubscriptionPlans();
+          },
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             children: [
@@ -403,6 +420,17 @@ class SubscriptionPage extends GetView<RestaurantController> {
                         color: Colors.grey[500],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    // Add a manual refresh button
+                    ElevatedButton.icon(
+                      onPressed: () => adminController.loadSubscriptionPlans(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reload Plans'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -700,7 +728,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'This feature will be available soon. In the production app, this would connect to a payment gateway to process subscription changes.',
+              'This feature will be available soon. You will be able to change your subscription plan from the Here',
               style: TextStyle(fontSize: 14),
             ),
             SizedBox(height: 16),

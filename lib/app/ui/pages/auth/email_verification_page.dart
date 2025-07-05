@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
 
 class EmailVerificationPage extends GetView<AuthController> {
   const EmailVerificationPage({Key? key}) : super(key: key);
@@ -33,7 +34,7 @@ class EmailVerificationPage extends GetView<AuthController> {
                 child: Icon(
                   Icons.mail_outline,
                   size: 60,
-                  color: Colors.blue.shade600,
+                  color: MColors.primary,
                 ),
               ),
               const SizedBox(height: 30),
@@ -67,7 +68,7 @@ class EmailVerificationPage extends GetView<AuthController> {
                   controller.currentUser?.email ?? 'your-email@example.com',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade700,
+                        color: MColors.primary,
                   ),
                   textAlign: TextAlign.center,
                 ),

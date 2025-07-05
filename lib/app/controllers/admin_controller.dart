@@ -30,6 +30,7 @@ class AdminController extends GetxController {
   // Observable variables
   final RxBool isLoading = false.obs;
   final RxBool hidePassword = true.obs;
+  final RxBool isAssigningSubscription = false.obs; // Add this line
 
   // Dashboard metrics
   final RxInt totalRestaurants = 0.obs;
@@ -37,7 +38,8 @@ class AdminController extends GetxController {
   final RxDouble totalRevenue = 0.0.obs;
   final RxDouble customerPayments = 0.0.obs;
   final RxDouble adminAssignmentValue = 0.0.obs;
-  final RxString revenueMode = 'customer_only'.obs; // 'customer_only', 'combined', 'admin_value'
+  final RxString revenueMode =
+      'combined'.obs; // 'customer_only', 'combined', 'admin_value'
   final RxInt newRestaurantsThisMonth = 0.obs;
   final RxInt activeSubscriptions = 0.obs;
   final RxInt pendingApprovals = 0.obs;
@@ -85,11 +87,10 @@ class AdminController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Check if user is already logged in as admin
-    checkAdminAuth();
-    // Load custom subscription plans
+    // Load subscription plans automatically when controller is initialized
+    // This ensures plans are available when accessed from restaurant pages
     loadSubscriptionPlans();
-    // Load admin notifications
+    // Load notifications
     loadNotifications();
   }
 
@@ -403,6 +404,7 @@ class AdminController extends GetxController {
       if (kDebugMode) {
         print('=== REVENUE DEBUG INFO ===');
         print('Total subscription documents: ${subscriptionsSnapshot.docs.length}');
+        print('Current revenue mode: ${revenueMode.value}');
       }
       
       for (var doc in subscriptionsSnapshot.docs) {
@@ -414,37 +416,48 @@ class AdminController extends GetxController {
         final planName = data['planName'] as String? ?? 'Unknown';
         
         if (kDebugMode) {
-          print('Subscription ${doc.id}: amountPaid=$amountPaid, planPrice=$planPrice, paymentStatus=$paymentStatus, status=$status, plan=$planName');
+          print('\nSubscription ${doc.id}:');
+          print('- Plan: $planName');
+          print('- Amount Paid: $amountPaid');
+          print('- Plan Price: $planPrice');
+          print('- Payment Status: $paymentStatus');
+          print('- Status: $status');
         }
         
         // Separate customer payments from admin assignments
-        if (paymentStatus == 'admin_assigned' || paymentStatus == 'admin_extended') {
+        if (paymentStatus.toLowerCase() == 'admin_assigned' ||
+            paymentStatus.toLowerCase() == 'admin_extended') {
           // Admin assignments - use plan price as potential revenue value
           adminAssignments += planPrice;
           if (kDebugMode) {
-            print('  → Admin assignment: Plan value $planPrice MAD');
+            print('  → Added to Admin Assignments: $planPrice MAD');
+            print('  → Current admin assignments total: $adminAssignments MAD');
           }
         } else if (amountPaid > 0) {
           // Real customer payments
           customerPayments += amountPaid;
           revenue += amountPaid;
           if (kDebugMode) {
-            print('  → Customer payment: $amountPaid MAD');
+            print('  → Added to Customer Payments: $amountPaid MAD');
+            print('  → Current customer payments total: $customerPayments MAD');
           }
         } else {
           // Zero payments or unknown
           if (kDebugMode) {
-            print('  → Zero/Unknown payment');
+            print('  → Skipped: Zero/Unknown payment');
+            print('  → Payment status: $paymentStatus');
+            print('  → Plan price: $planPrice MAD');
           }
         }
       }
       
       if (kDebugMode) {
-        print('Revenue Summary:');
+        print('\nRevenue Summary:');
         print('- Customer Payments: $customerPayments MAD');
         print('- Admin Assignment Value: $adminAssignments MAD');
         print('- Total Revenue (Customer Only): $revenue MAD');
         print('- Combined Value: ${customerPayments + adminAssignments} MAD');
+        print('- Selected Mode: ${revenueMode.value}');
         print('==========================');
       }
       
@@ -456,15 +469,25 @@ class AdminController extends GetxController {
       switch (revenueMode.value) {
         case 'customer_only':
           totalRevenue.value = customerPayments;
+          if (kDebugMode)
+            print('Setting revenue to customer payments: $customerPayments');
           break;
         case 'combined':
           totalRevenue.value = customerPayments + adminAssignments;
+          if (kDebugMode)
+            print(
+                'Setting revenue to combined: ${customerPayments + adminAssignments}');
           break;
         case 'admin_value':
           totalRevenue.value = adminAssignments;
+          if (kDebugMode)
+            print('Setting revenue to admin value: $adminAssignments');
           break;
         default:
           totalRevenue.value = customerPayments;
+          if (kDebugMode)
+            print(
+                'Setting revenue to default (customer payments): $customerPayments');
       }
 
       // Count active subscriptions
@@ -552,6 +575,11 @@ class AdminController extends GetxController {
       }
 
       subscriptionPlans.value = plans;
+      
+      if (kDebugMode) {
+        print('Loaded ${plans.length} subscription plans');
+        print('Active plans: ${plans.where((p) => p.isActive).length}');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error loading subscription plans: $e');
@@ -750,11 +778,18 @@ class AdminController extends GetxController {
   }
 
   // Assign subscription plan to restaurant
-  Future<void> assignSubscriptionPlanToRestaurant({
+  Future<void> assignSubscriptionPlan({
     required String restaurantId,
     required String planId,
     required int durationDays,
+    bool resetScans = true,
   }) async {
+    if (isAssigningSubscription.value) {
+      // Prevent multiple simultaneous assignments
+      return;
+    }
+
+    isAssigningSubscription.value = true;
     try {
       // Get the subscription plan details
       final plan = subscriptionPlans.firstWhere((p) => p.id == planId);
@@ -820,8 +855,13 @@ class AdminController extends GetxController {
         'createdAt': Timestamp.now(),
       });
 
-      // Commit all changes atomically
+      // Commit the batch
       await batch.commit();
+
+      // After successfully updating the subscription, delete old scan records if resetScans is true
+      if (resetScans) {
+        await _resetRestaurantScans(restaurantId, now);
+      }
 
       Get.snackbar(
         'Success',
@@ -844,6 +884,68 @@ class AdminController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    } finally {
+      isAssigningSubscription.value = false;
+    }
+  }
+
+  // Helper method to reset restaurant scans when subscription changes
+  Future<void> _resetRestaurantScans(
+      String restaurantId, DateTime cutoffDate) async {
+    try {
+      // We don't actually delete the old scans for data integrity and reporting purposes
+      // Instead, we'll mark them as "archived" by adding a field
+
+      final oldScansSnapshot = await _firestore
+          .collection('scans')
+          .where('restaurantId', isEqualTo: restaurantId)
+          .where('timestamp', isLessThan: Timestamp.fromDate(cutoffDate))
+          .get();
+
+      if (oldScansSnapshot.docs.isEmpty) {
+        if (kDebugMode) {
+          print('No old scans to archive for restaurant: $restaurantId');
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print(
+            'Archiving ${oldScansSnapshot.docs.length} old scans for restaurant: $restaurantId');
+      }
+
+      // Use batches to update large numbers of documents
+      // Firestore batches can handle up to 500 operations
+      List<List<DocumentSnapshot>> batches = [];
+
+      for (var i = 0; i < oldScansSnapshot.docs.length; i += 400) {
+        final end = (i + 400 < oldScansSnapshot.docs.length)
+            ? i + 400
+            : oldScansSnapshot.docs.length;
+        batches.add(oldScansSnapshot.docs.sublist(i, end));
+      }
+
+      for (var batchDocs in batches) {
+        final writeBatch = _firestore.batch();
+
+        for (var doc in batchDocs) {
+          writeBatch.update(doc.reference, {
+            'archivedAt': Timestamp.fromDate(cutoffDate),
+            'archivedReason': 'subscription_change',
+            'archivedBy': _auth.currentUser?.uid,
+          });
+        }
+
+        await writeBatch.commit();
+      }
+
+      if (kDebugMode) {
+        print('Successfully archived old scans for restaurant: $restaurantId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error archiving old scans: $e');
+      }
     }
   }
 
@@ -920,6 +1022,7 @@ class AdminController extends GetxController {
     required List<String> restaurantIds,
     required String planId,
     required int durationDays,
+    bool resetScans = true, // Add parameter to control scan reset
   }) async {
     try {
       // Get the subscription plan details
@@ -983,6 +1086,13 @@ class AdminController extends GetxController {
 
       // Commit the batch
       await batch.commit();
+      
+      // After successfully updating subscriptions, reset scans for each restaurant if needed
+      if (resetScans) {
+        for (final restaurantId in restaurantIds) {
+          await _resetRestaurantScans(restaurantId, now);
+        }
+      }
 
       Get.snackbar(
         'Success',

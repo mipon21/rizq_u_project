@@ -7,12 +7,12 @@ import 'package:flutter/material.dart';
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
-    // Use put instead of lazyPut to initialize immediately
-    // permanent: true ensures it stays in memory throughout the app lifecycle
-    Get.put(AuthController(), permanent: true);
-
-    // Register AdminController for admin screens
-    Get.put(AdminController(), permanent: true);
+    // Use put with permanent to prevent multiple instances
+    // but make the heavy operations lazy inside the controller
+    Get.put<AuthController>(AuthController(), permanent: true);
+    
+    // Register AdminController for admin screens - permanent to prevent recreation
+    Get.put<AdminController>(AdminController(), permanent: true);
 
     // RouteObserver is now registered in main.dart
   }

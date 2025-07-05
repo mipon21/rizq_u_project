@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import path if needed
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import '../utils/snackbar_utils.dart'; // Import snackbar utilities
+import 'package:flutter/material.dart';
 
 class AuthController extends GetxController {
   static AuthController get instance => Get.find();
@@ -29,6 +30,9 @@ class AuthController extends GetxController {
   // This allows other controllers/widgets to listen using ever() or Obx()
   Rx<User?> get reactiveFirebaseUser => _firebaseUser;
 
+  // Flag to prevent multiple simultaneous navigation calls
+  bool _isNavigating = false;
+
   @override
   void onReady() {
     // Bind the Firebase user stream to our Rx variable
@@ -40,13 +44,25 @@ class AuthController extends GetxController {
 
   // Determines the initial screen based on auth state and role
   void _setInitialScreen(User? user) async {
-    if (user == null) {
-      // If user is logged out, go to Login page
-      if (kDebugMode) {
-        print('User is logged out. Navigating to Login.');
+    // Prevent multiple simultaneous navigation calls
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    try {
+      if (user == null) {
+        // If user is logged out, go to Login page
+        if (kDebugMode) {
+          print('User is logged out. Navigating to Login.');
+        }
+        // Only navigate if we're not already on the login page
+        if (Get.currentRoute != Routes.LOGIN) {
+          Get.offAllNamed(Routes.LOGIN);
+        }
+        return;
       }
-      Get.offAllNamed(Routes.LOGIN);
-    } else {
+
+      // Set loading state
+      isLoading.value = true;
       if (kDebugMode) {
         print('User is logged in (${user.uid}). Checking if user is admin...');
       }
@@ -59,7 +75,9 @@ class AuthController extends GetxController {
             print('User is admin. Navigating to Admin Dashboard.');
           }
           userRole.value = 'admin';
-          Get.offAllNamed(Routes.ADMIN_DASHBOARD);
+          if (Get.currentRoute != Routes.ADMIN_DASHBOARD) {
+            Get.offAllNamed(Routes.ADMIN_DASHBOARD);
+          }
           return;
         }
       } catch (e) {
@@ -82,7 +100,9 @@ class AuthController extends GetxController {
         if (kDebugMode) {
           print('Email not verified. Navigating to Email Verification.');
         }
-        Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+        if (Get.currentRoute != Routes.EMAIL_VERIFICATION) {
+          Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+        }
       } else {
         // If email is verified, check if user document exists in Firestore
         if (kDebugMode) {
@@ -108,9 +128,22 @@ class AuthController extends GetxController {
             print('Error checking/creating user document: $e');
           }
           // If there's an error, redirect to email verification to try again
-          Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+          if (Get.currentRoute != Routes.EMAIL_VERIFICATION) {
+            Get.offAllNamed(Routes.EMAIL_VERIFICATION);
+          }
         }
       }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error in _setInitialScreen: $e');
+      }
+      // Fallback to login on any error
+      if (Get.currentRoute != Routes.LOGIN) {
+        Get.offAllNamed(Routes.LOGIN);
+      }
+    } finally {
+      isLoading.value = false;
+      _isNavigating = false; // Reset navigation flag
     }
   }
 
@@ -177,10 +210,9 @@ class AuthController extends GetxController {
               return;
             } else if (registrationStatus == 'rejected') {
               if (kDebugMode) {
-                print(
-                    'Restaurant rejected, navigating to pending approval page.');
+                print('Restaurant rejected, showing rejection dialog.');
               }
-              Get.offAllNamed(Routes.RESTAURANT_PENDING_APPROVAL);
+              _showRejectionDialog();
               return;
             } else if (registrationStatus == 'approved') {
               // Update user document to reflect approval
@@ -203,9 +235,9 @@ class AuthController extends GetxController {
           }
         } else if (approvalStatus == 'rejected') {
           if (kDebugMode) {
-            print('Restaurant rejected, navigating to pending approval page.');
+            print('Restaurant rejected, showing rejection dialog.');
           }
-          Get.offAllNamed(Routes.RESTAURANT_PENDING_APPROVAL);
+          _showRejectionDialog();
           return;
         }
 
@@ -259,11 +291,28 @@ class AuthController extends GetxController {
       final user = userCredential.user;
 
       if (user != null) {
-        // Send email verification immediately
-        await user.sendEmailVerification();
-        
         // Store role temporarily for later use
         userRole.value = normalizedRole;
+        
+        // Create the user document immediately with the role
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid.replaceAll(RegExp(r'\\+'), ''),
+          'email': user.email ?? '',
+          'role': normalizedRole,
+          'createdAt': FieldValue.serverTimestamp(),
+          'registrationComplete': false,
+          // Initialize points map for customers
+          if (normalizedRole == 'customer') 'pointsByRestaurant': {},
+          // Add approval status for restaurants
+          if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
+        });
+
+        if (kDebugMode) {
+          print('User document created with role: $normalizedRole');
+        }
+
+        // Send email verification
+        await user.sendEmailVerification();
         
         if (kDebugMode) {
           print('Firebase Auth user created for ${user.email}, role: $normalizedRole');
@@ -312,15 +361,29 @@ class AuthController extends GetxController {
         try {
           final adminDoc = await _firestore.collection('admins').doc(userCredential.user!.uid).get();
           if (adminDoc.exists) {
+            userRole.value = 'admin';
             if (kDebugMode) {
               print('Admin login successful for $email.');
             }
             // Skip email verification for admins
             return;
           }
+          
+          // If not admin, try to fetch user role from users collection
+          final userDoc = await _firestore
+              .collection('users')
+              .doc(userCredential.user!.uid)
+              .get();
+          if (userDoc.exists && userDoc.data()!.containsKey('role')) {
+            userRole.value = userDoc.data()!['role'];
+            if (kDebugMode) {
+              print('Fetched user role during login: ${userRole.value}');
+            }
+          }
         } catch (e) {
           if (kDebugMode) {
-            print('Error checking admin status during login: $e');
+            print(
+                'Error checking admin status or fetching role during login: $e');
           }
         }
       }
@@ -551,30 +614,73 @@ class AuthController extends GetxController {
     try {
       String normalizedRole = userRole.value;
       
+      // If role is empty, try to determine it from registration data
+      if (normalizedRole.isEmpty) {
+        // Check if user has restaurant registration
+        final restaurantDoc = await _firestore
+            .collection('restaurant_registrations')
+            .doc(user.uid)
+            .get();
+
+        if (restaurantDoc.exists) {
+          normalizedRole = 'restaurateur';
+        } else {
+          // Default to customer if no specific role is found
+          normalizedRole = 'customer';
+        }
+
+        // Update the observable
+        userRole.value = normalizedRole;
+
+        if (kDebugMode) {
+          print('Determined user role as: $normalizedRole');
+        }
+      }
+      
       // Clean string function to remove extra backslashes
       String cleanString(String input) {
         return input.replaceAll(RegExp(r'\\+'), '');
       }
 
-      await _firestore.collection('users').doc(user.uid).set({
-        'uid': cleanString(user.uid),
-        'email': cleanString(user.email ?? ''),
-        'role': cleanString(normalizedRole),
-        'createdAt': FieldValue.serverTimestamp(),
-        // Initialize points map for customers
-        if (normalizedRole == 'customer') 'pointsByRestaurant': {},
-        // Add approval status for restaurants
-        if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
-      });
+      // Check if document already exists
+      final docRef = _firestore.collection('users').doc(user.uid);
+      final docSnapshot = await docRef.get();
 
-      if (kDebugMode) {
-        print('User document created in Firestore for ${user.email}, role: $normalizedRole');
+      if (!docSnapshot.exists) {
+        await docRef.set({
+          'uid': cleanString(user.uid),
+          'email': cleanString(user.email ?? ''),
+          'role': cleanString(normalizedRole),
+          'createdAt': FieldValue.serverTimestamp(),
+          'registrationComplete': false,
+          // Initialize points map for customers
+          if (normalizedRole == 'customer') 'pointsByRestaurant': {},
+          // Add approval status for restaurants
+          if (normalizedRole == 'restaurateur') 'approvalStatus': 'pending',
+        });
+
+        if (kDebugMode) {
+          print('Created new user document with role: $normalizedRole');
+        }
+      } else {
+        // Update existing document with role if needed
+        final data = docSnapshot.data()!;
+        if (!data.containsKey('role') || data['role'] != normalizedRole) {
+          await docRef.update({
+            'role': cleanString(normalizedRole),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          if (kDebugMode) {
+            print('Updated existing user document with role: $normalizedRole');
+          }
+        }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating user document: $e');
+        print('Error creating/updating user document: $e');
       }
-      throw Exception('Failed to create user account. Please try again.');
+      throw Exception('Failed to create user document: $e');
     }
   }
 
@@ -668,5 +774,29 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Show rejection dialog and navigate to registration page
+  void _showRejectionDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: Text(
+          'Account Rejected!',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: Text('Please Contact Support'),
+        actions: [
+          TextButton(
+            child: Text('Confirm'),
+            onPressed: () {
+              Get.back(); // Close dialog
+              Get.offAllNamed(
+                  Routes.RESTAURANT_REGISTRATION); // Navigate to registration
+            },
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 }

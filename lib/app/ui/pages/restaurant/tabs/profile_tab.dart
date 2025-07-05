@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/restaurant_controller.dart';
 import 'package:rizq/app/controllers/auth_controller.dart';
+import 'package:rizq/app/controllers/admin_controller.dart';
 import 'package:rizq/app/routes/app_pages.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,6 +13,7 @@ import 'package:rizq/app/ui/theme/widget_themes/shimmer_widget.dart';
 import 'package:rizq/app/ui/widgets/language_selector.dart';
 import 'package:rizq/app/utils/contact_us_helper.dart';
 import 'package:rizq/app/utils/account_deletion_helper.dart';
+import 'package:intl/intl.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({Key? key}) : super(key: key);
@@ -202,103 +204,104 @@ class _ProfileTabState extends State<ProfileTab> {
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Email is required' : null,
                   ),
+                  _buildProfessionalReadOnlyField('Restaurant Name', profile.name),
+                        _buildProfessionalReadOnlyField('Owner Name', profile.ownerName ?? 'Not provided'),
                   const SizedBox(height: 25),
 
                   // Restaurant Registration Information (Read-only)
-                  _buildLabelWithDivider('Registration Information'),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Restaurant Details',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildReadOnlyField('Restaurant Name', profile.name),
-                        _buildReadOnlyField(
-                            'Owner Name', profile.ownerName ?? 'Not provided'),
-                        _buildReadOnlyField('Support Email',
-                            profile.supportEmail ?? 'Not provided'),
-                        _buildReadOnlyField(
-                            'Bank Details', profile.bankDetails),
-                        _buildReadOnlyField('IBAN Number',
-                            profile.ibanNumber ?? 'Not provided'),
-                        const SizedBox(height: 16),
+                  // _buildLabelWithDivider('Registration Information'),
+                  // Container(
+                  //   width: double.infinity,
+                  //   padding: const EdgeInsets.all(16),
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.grey[50],
+                  //     borderRadius: BorderRadius.circular(8),
+                  //     border: Border.all(color: Colors.grey[300]!),
+                  //   ),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       const Text(
+                  //         'Restaurant Details',
+                  //         style: TextStyle(
+                  //           fontSize: 16,
+                  //           fontWeight: FontWeight.bold,
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 12),
+                  //       _buildProfessionalReadOnlyField('Restaurant Name', profile.name),
+                  //       _buildProfessionalReadOnlyField('Owner Name', profile.ownerName ?? 'Not provided'),
+                  //       // Support Email field removed as per requirements
+                  //       // Banking Options - Hidden for now but kept for future use
+                  //       // if (profile.bankDetails != null && profile.bankDetails!.isNotEmpty)
+                  //       //   _buildReadOnlyField('Bank Details', profile.bankDetails!),
+                  //       // if (profile.ibanNumber != null && profile.ibanNumber!.isNotEmpty)
+                  //       //   _buildReadOnlyField('IBAN Number', profile.ibanNumber!),
+                  //       const SizedBox(height: 16),
 
-                        // National ID Images
-                        if (profile.ownerNationalIdFront != null ||
-                            profile.ownerNationalIdBack != null) ...[
-                          const Text(
-                            'National ID Documents',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              if (profile.ownerNationalIdFront != null)
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      const Text('Front Side',
-                                          style: TextStyle(fontSize: 12)),
-                                      const SizedBox(height: 4),
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: CachedImageWidget(
-                                          imageUrl:
-                                              profile.ownerNationalIdFront!,
-                                          width: double.infinity,
-                                          height: 60,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              if (profile.ownerNationalIdFront != null &&
-                                  profile.ownerNationalIdBack != null)
-                                const SizedBox(width: 8),
-                              if (profile.ownerNationalIdBack != null)
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      const Text('Back Side',
-                                          style: TextStyle(fontSize: 12)),
-                                      const SizedBox(height: 4),
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: CachedImageWidget(
-                                          imageUrl:
-                                              profile.ownerNationalIdBack!,
-                                          width: double.infinity,
-                                          height: 60,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 25),
+                  //       // National ID Images
+                  //       if (profile.ownerNationalIdFront != null ||
+                  //           profile.ownerNationalIdBack != null) ...[
+                  //         const Text(
+                  //           'National ID Documents',
+                  //           style: TextStyle(
+                  //             fontSize: 14,
+                  //             fontWeight: FontWeight.w500,
+                  //           ),
+                  //         ),
+                  //         const SizedBox(height: 8),
+                  //         Row(
+                  //           children: [
+                  //             if (profile.ownerNationalIdFront != null)
+                  //               Expanded(
+                  //                 child: Column(
+                  //                   children: [
+                  //                     const Text('Front Side',
+                  //                         style: TextStyle(fontSize: 12)),
+                  //                     const SizedBox(height: 4),
+                  //                     ClipRRect(
+                  //                       borderRadius: BorderRadius.circular(4),
+                  //                       child: CachedImageWidget(
+                  //                         imageUrl:
+                  //                             profile.ownerNationalIdFront!,
+                  //                         width: double.infinity,
+                  //                         height: 60,
+                  //                         fit: BoxFit.cover,
+                  //                       ),
+                  //                     ),
+                  //                   ],
+                  //                 ),
+                  //               ),
+                  //             if (profile.ownerNationalIdFront != null &&
+                  //                 profile.ownerNationalIdBack != null)
+                  //               const SizedBox(width: 8),
+                  //             if (profile.ownerNationalIdBack != null)
+                  //               Expanded(
+                  //                 child: Column(
+                  //                   children: [
+                  //                     const Text('Back Side',
+                  //                         style: TextStyle(fontSize: 12)),
+                  //                     const SizedBox(height: 4),
+                  //                     ClipRRect(
+                  //                       borderRadius: BorderRadius.circular(4),
+                  //                       child: CachedImageWidget(
+                  //                         imageUrl:
+                  //                             profile.ownerNationalIdBack!,
+                  //                         width: double.infinity,
+                  //                         height: 60,
+                  //                         fit: BoxFit.cover,
+                  //                       ),
+                  //                     ),
+                  //                   ],
+                  //                 ),
+                  //               ),
+                  //           ],
+                  //         ),
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 25),
                   // Subscription section
                   _buildLabelWithDivider('Subscription'),
                   Container(
@@ -341,15 +344,60 @@ class _ProfileTabState extends State<ProfileTab> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Starter Tier',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            // Get the subscription plan name dynamically
+                            String planName = 'Starter Tier'; // Fallback
+                            String expiryText = '';
+                            
+                            if (profile.subscriptionStatus == 'free_trial') {
+                              planName = 'Free Trial';
+                              expiryText = '${profile.remainingTrialDays} days remaining';
+                            } else {
+                              // Try to get readable name from admin controller
+                              String fallbackName = profile.subscriptionPlan.capitalizeFirst ?? profile.subscriptionPlan;
+                              try {
+                                final adminController = Get.find<AdminController>();
+                                final plan = adminController.subscriptionPlans.firstWhere(
+                                  (p) => p.id == profile.subscriptionPlan
+                                );
+                                fallbackName = plan.name;
+                              } catch (_) {
+                                // Keep fallbackName if plan not found
+                              }
+                              planName = fallbackName;
+                              
+                              // Set expiry text for active subscriptions
+                              if (profile.subscriptionEnd != null) {
+                                expiryText = 'Expires on ${DateFormat('MMM d, yyyy').format(profile.subscriptionEnd!)}';
+                              }
+                            }
+                            
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Expiry date on the left
+                                if (expiryText.isNotEmpty)
+                                  Expanded(
+                                    child: Text(
+                                      expiryText,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                // Plan name on the right
+                                Text(
+                                  planName,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                         const SizedBox(height: 10),
                         SizedBox(
@@ -379,37 +427,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
-                  // Payment failure notice
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.red[200]!),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.error_outline,
-                            color: Colors.red[700], size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Payment failure. Please update your payment information (N.B it will integrated after CMI intregation)',
-                            style:
-                                TextStyle(color: Colors.red[700], fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 25),                  
 
                   // Logout button
                   Column(
@@ -546,6 +564,41 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 8),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfessionalReadOnlyField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(5),
+            color: Colors.grey[100],
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 

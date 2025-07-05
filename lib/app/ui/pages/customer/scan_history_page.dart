@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/customer_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
-import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:rizq/app/utils/constants/colors.dart';
+import '../../widgets/customer/customer_app_bar.dart';
+import '../../widgets/customer/loading_shimmer.dart';
 
 class ScanHistoryPage extends StatefulWidget {
   const ScanHistoryPage({Key? key}) : super(key: key);
@@ -61,23 +61,12 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
       child: DefaultTabController(
         length: 2,
         child: Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            centerTitle: true,
-            title: Image.asset('assets/icons/general-u.png', height: 70),
-            toolbarHeight: 80,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new_outlined,
-                color: MColors.primary,
-              ),
-              onPressed: () => Get.back(),
-            ),
+          appBar: CustomerAppBar(
+            showBackButton: true,
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(60),
               child: Container(
-                color: Colors.white, // Set your desired background color here
+                color: Colors.white,
                 child: TabBar(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   indicatorSize: TabBarIndicatorSize.tab,
@@ -102,7 +91,6 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
                 ),
               ),
             ),
-            shadowColor: Colors.transparent,
           ),
           body: TabBarView(
             children: [
@@ -118,7 +106,7 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
   Widget _buildScanHistoryTab() {
     return Obx(() {
       if (controller.isLoadingHistory.value) {
-        return _buildShimmerList();
+        return LoadingShimmer.buildListShimmer();
       }
       if (controller.scanHistory.isEmpty) {
         return const Center(child: Text('No scans recorded yet.'));
@@ -148,7 +136,7 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
   Widget _buildRewardHistoryTab() {
     return Obx(() {
       if (controller.isLoadingHistory.value) {
-        return _buildShimmerCards();
+        return LoadingShimmer.buildRewardHistoryShimmer();
       }
       if (controller.claimHistory.isEmpty) {
         return Center(
@@ -341,123 +329,5 @@ class _ScanHistoryPageState extends State<ScanHistoryPage>
     });
   }
 
-  // Add shimmer effect for list items
-  Widget _buildShimmerList() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
-      child: ListView.builder(
-        itemCount: 10,
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: Container(
-              width: 24,
-              height: 24,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-            ),
-            title: Container(
-              width: double.infinity,
-              height: 16,
-              color: Colors.white,
-            ),
-            subtitle: Container(
-              width: 150,
-              height: 12,
-              margin: const EdgeInsets.only(top: 4),
-              color: Colors.white,
-            ),
-            trailing: Container(
-              width: 40,
-              height: 16,
-              color: Colors.white,
-            ),
-          );
-        },
-      ),
-    );
-  }
 
-  // Add shimmer effect for card items
-  Widget _buildShimmerCards() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
-      child: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              width: 80,
-                              height: 12,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 60,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: double.infinity,
-                    height: 1,
-                    color: Colors.white,
-                  ),
-                  Container(
-                    width: double.infinity,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }

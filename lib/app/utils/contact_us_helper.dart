@@ -32,9 +32,9 @@ class ContactUsHelper {
 $body
 
 Regards,
-${profile?.name ?? 'Restaurant'}
-$userEmail
-Restaurant UID: $uid
+${ 'Restaurant Name: ' + (profile?.name ?? 'Restaurant')}
+${ 'Restaurant Email: ' + userEmail}
+${ 'Restaurant UID: ' + uid}
 ''';
 
     final Uri emailLaunchUri = Uri(

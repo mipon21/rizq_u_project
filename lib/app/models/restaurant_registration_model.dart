@@ -7,9 +7,9 @@ class RestaurantRegistrationModel {
   final String ownerName;
   final String ownerNationalIdFront;
   final String ownerNationalIdBack;
-  final String supportEmail;
-  final String bankDetails;
-  final String ibanNumber;
+  final String? supportEmail;
+  final String? bankDetails;
+  final String? ibanNumber;
   final String logoUrl;
   final String approvalStatus; // 'pending', 'approved', 'rejected'
   final String? rejectionReason;
@@ -25,9 +25,9 @@ class RestaurantRegistrationModel {
     required this.ownerName,
     required this.ownerNationalIdFront,
     required this.ownerNationalIdBack,
-    required this.supportEmail,
-    required this.bankDetails,
-    required this.ibanNumber,
+    this.supportEmail,
+    this.bankDetails,
+    this.ibanNumber,
     required this.logoUrl,
     this.approvalStatus = 'pending',
     this.rejectionReason,
@@ -48,9 +48,9 @@ class RestaurantRegistrationModel {
       ownerName: data['ownerName'] ?? '',
       ownerNationalIdFront: data['ownerNationalIdFront'] ?? '',
       ownerNationalIdBack: data['ownerNationalIdBack'] ?? '',
-      supportEmail: data['supportEmail'] ?? '',
-      bankDetails: data['bankDetails'] ?? '',
-      ibanNumber: data['ibanNumber'] ?? '',
+      supportEmail: data['supportEmail'],
+      bankDetails: data['bankDetails'],
+      ibanNumber: data['ibanNumber'],
       logoUrl: data['logoUrl'] ?? '',
       approvalStatus: data['approvalStatus'] ?? 'pending',
       rejectionReason: data['rejectionReason'],

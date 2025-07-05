@@ -8,8 +8,25 @@ import 'package:rizq/app/utils/constants/colors.dart';
 import 'package:rizq/app/ui/pages/restaurant/dashboard_page.dart';
 import 'package:rizq/app/controllers/admin_controller.dart';
 
-class DashboardTab extends StatelessWidget {
+class DashboardTab extends StatefulWidget {
   const DashboardTab({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends State<DashboardTab>
+    with AutomaticKeepAliveClientMixin {
+  final controller = Get.find<RestaurantController>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh data when tab is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.refreshDashboardData();
+    });
+  }
 
   // Calculate optimal Y-axis interval based on max scan count with proper spacing
   double _calculateYInterval(double maxScanCount) {
@@ -23,12 +40,12 @@ class DashboardTab extends StatelessWidget {
     return (maxScanCount / 5).ceil().toDouble();
   }
 
-
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<RestaurantController>();
-    
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/icons/general-u.png', height: 70),
@@ -69,20 +86,20 @@ class DashboardTab extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              scanCount.toString(),
+                            Obx(() => Text(
+                                  controller.scanCount.toString(),
                               style: TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
                                 color: MColors.primary,
                               ),
-                            ),
+                                )),
                             const SizedBox(width: 16),
                           ],
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Scans this month',
+                          'Scans this period',
                           style: TextStyle(
                             color: Colors.black54,
                             fontSize: 16,
@@ -91,43 +108,65 @@ class DashboardTab extends StatelessWidget {
                         const SizedBox(height: 4),
                         // Chart hint
                         Row(
-                                children: [
-                                                                     Icon(
-                                     Icons.zoom_out_map,
-                                     size: 14,
-                                     color: Colors.grey[600],
-                                   ),
-                                  const SizedBox(width: 4),
-                                                                     Text(
-                                     'Pinch to zoom, drag to scroll',
-                                     style: TextStyle(
-                                       fontSize: 10,
-                                       color: Colors.grey[600],
-                                     ),
-                                   ),
-                                ],
+                          children: [
+                            Icon(
+                              Icons.zoom_out_map,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Pinch to zoom, drag to scroll',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
                               ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 8),
-                                                SizedBox(
+                        SizedBox(
                           height: 180,
                           child: Obx(() {
-                            final chartData = controller.scanChartData;
                             if (controller.isLoadingProfile.value) {
                               return const Center(
                                   child: CircularProgressIndicator());
                             }
+
+                            final chartData = controller.scanChartData;
+                            final profile = controller.restaurantProfile.value;
+                            final periodStart =
+                                profile?.trialStartDate ?? profile?.createdAt;
+                            final periodEnd =
+                                profile?.subscriptionStatus == 'free_trial'
+                                    ? (profile?.trialStartDate ??
+                                            profile?.createdAt)
+                                        ?.add(const Duration(days: 30))
+                                    : profile?.subscriptionEnd;
+
+                            if (periodStart == null || periodEnd == null) {
+                              return const Center(
+                                  child: Text('No subscription period found'));
+                            }
+
+                            // Calculate total days in subscription period
+                            final totalDays =
+                                periodEnd.difference(periodStart).inDays + 1;
+
+                            // If no data, show empty state
                             if (chartData.isEmpty) {
                               return const Center(
-                                  child: Text('No scan data for this month'));
+                                  child: Text('No scan data available',
+                                      style: TextStyle(color: Colors.black54)));
                             }
-                            final maxScanCount = chartData.map((e) => e.y).fold<double>(
+
+                            final maxScanCount = chartData
+                                .map((e) => e.y)
+                                .fold<double>(
                                     0, (prev, y) => y > prev ? y : prev);
-                            // Dynamic Y-axis calculation
                             final maxY = maxScanCount * 1.1; // Add 10% padding at top
                             final yInterval = _calculateYInterval(maxScanCount);
-                            final now = DateTime.now();
-                            final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-                            
+
                             return InteractiveViewer(
                               constrained: false,
                               minScale: 0.5,
@@ -136,145 +175,187 @@ class DashboardTab extends StatelessWidget {
                               scaleEnabled: true,
                               boundaryMargin: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
                               child: Container(
-                                width: daysInMonth * 25.0, // Give more space per day
-                                height: maxScanCount > 100 ? 300 : maxScanCount > 50 ? 250 : 180, // Dynamic height based on scan count
+                                width: totalDays * 25.0,
+                                height: maxScanCount > 100
+                                    ? 300
+                                    : maxScanCount > 50
+                                        ? 250
+                                        : 180,
                                 padding: const EdgeInsets.all(12.0),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    DashboardPage.navigateToTab(3,
-                                        rewardsSubtabIndex: 1);
-                                  },
-                                  child: LineChart(
-                                LineChartData(
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: true,
-                                    drawHorizontalLine: true,
-                                    horizontalInterval: yInterval,
-                                    verticalInterval: 1,
-                                    getDrawingHorizontalLine: (value) {
-                                      return FlLine(
-                                        color: Colors.grey.withOpacity(0.2),
-                                        strokeWidth: 1,
-                                      );
-                                    },
-                                    getDrawingVerticalLine: (value) {
-                                      return FlLine(
-                                        color: Colors.grey.withOpacity(0.2),
-                                        strokeWidth: 1,
-                                      );
-                                    },
-                                  ),
-                                  titlesData: FlTitlesData(
-                                    leftTitles: AxisTitles(
-                                      axisNameWidget: const Text(
-                                        'Scans',
-                                        style: TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      axisNameSize: 22,
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: maxScanCount > 100 ? 60 : 50, // More space for larger numbers
-                                        interval: yInterval,
-                                        getTitlesWidget: (value, meta) {
-                                          if (value % yInterval == 0 && value >= 0 && value <= maxY) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(right: 8.0),
-                                              child: Text(
-                                                value.toInt().toString(),
-                                                style: const TextStyle(
-                                                  color: Colors.black54,
-                                                  fontSize: 11,
-                                                ),
-                                                textAlign: TextAlign.right,
-                                              ),
-                                            );
-                                          }
-                                          return const SizedBox.shrink();
-                                        },
-                                      ),
+                                child: LineChart(
+                                  LineChartData(
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: true,
+                                      drawHorizontalLine: true,
+                                      horizontalInterval: yInterval,
+                                      verticalInterval: 1,
+                                      getDrawingHorizontalLine: (value) {
+                                        return FlLine(
+                                          color: Colors.grey.withOpacity(0.2),
+                                          strokeWidth: 1,
+                                        );
+                                      },
+                                      getDrawingVerticalLine: (value) {
+                                        return FlLine(
+                                          color: Colors.grey.withOpacity(0.2),
+                                          strokeWidth: 1,
+                                        );
+                                      },
                                     ),
-                                    bottomTitles: AxisTitles(
-                                      axisNameWidget: const Text(
-                                        'Date',
-                                        style: TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
+                                    titlesData: FlTitlesData(
+                                      leftTitles: AxisTitles(
+                                        axisNameWidget: const Text(
+                                          'Scans',
+                                          style: TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 12,
+                                          ),
                                         ),
-                                      ),
-                                      axisNameSize: 22,
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 30,
-                                        interval: 1, // Show every day
-                                        getTitlesWidget: (value, meta) {
-                                          final now = DateTime.now();
-                                          final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-                                          
-                                          // Show every day but with smaller font for readability
-                                          if (value >= 1 && value <= daysInMonth && value % 1 == 0) {
-                                            try {
-                                              final date = DateTime(now.year, now.month, value.toInt());
+                                        axisNameSize: 22,
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: maxScanCount > 100
+                                              ? 60
+                                              : 50, // More space for larger numbers
+                                          interval: yInterval,
+                                          getTitlesWidget: (value, meta) {
+                                            if (value % yInterval == 0 &&
+                                                value >= 0 &&
+                                                value <= maxY) {
                                               return Padding(
-                                                padding:
-                                                    const EdgeInsets.only(top: 8.0),
+                                                padding: const EdgeInsets.only(
+                                                    right: 8.0),
                                                 child: Text(
                                                   value.toInt().toString(),
                                                   style: const TextStyle(
                                                     color: Colors.black54,
-                                                    fontSize: 9,
+                                                    fontSize: 11,
                                                   ),
+                                                  textAlign: TextAlign.right,
                                                 ),
                                               );
-                                            } catch (e) {
+                                            }
+                                            return const SizedBox.shrink();
+                                          },
+                                        ),
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        axisNameWidget: const Text(
+                                          'Date',
+                                          style: TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        axisNameSize: 22,
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 30,
+                                          interval: 1, // Show every day
+                                          getTitlesWidget: (value, meta) {
+                                            if (periodStart == null ||
+                                                periodEnd == null) {
                                               return const SizedBox.shrink();
                                             }
-                                          }
-                                          return const SizedBox.shrink();
-                                        },
+
+                                            // Show every day with month name
+                                            if (value >= 1 &&
+                                                value <= totalDays &&
+                                                value % 1 == 0) {
+                                              try {
+                                                final dayIndex =
+                                                    value.toInt() - 1;
+                                                final date = periodStart.add(
+                                                    Duration(days: dayIndex));
+
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 8.0),
+                                                  child: SizedBox(
+                                                    height: 40,
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          date.day.toString(),
+                                                          style:
+                                                              const TextStyle(
+                                                            color:
+                                                                Colors.black54,
+                                                            fontSize: 9,
+                                                            height: 1.0,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          DateFormat('MMM')
+                                                              .format(date),
+                                                          style:
+                                                              const TextStyle(
+                                                            color:
+                                                                Colors.black45,
+                                                            fontSize: 8,
+                                                            height: 1.0,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              } catch (e) {
+                                                return const SizedBox.shrink();
+                                              }
+                                            }
+                                            return const SizedBox.shrink();
+                                          },
+                                        ),
+                                      ),
+                                      rightTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
+                                      ),
+                                      topTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
                                       ),
                                     ),
-                                    rightTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                    topTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
+                                    borderData: FlBorderData(show: false),
+                                    minX: 1,
+                                    maxX: totalDays.toDouble(),
+                                    minY: 0,
+                                    maxY: maxY,
+                                    lineBarsData: [
+                                      LineChartBarData(
+                                        spots: chartData,
+                                        isCurved: true,
+                                        curveSmoothness: 0.3,
+                                        color: MColors.primary,
+                                        barWidth: 3,
+                                        dotData: FlDotData(
+                                          show: true,
+                                          getDotPainter:
+                                              (spot, percent, barData, index) {
+                                            return FlDotCirclePainter(
+                                              radius: 3,
+                                              color: MColors.primary,
+                                              strokeWidth: 2,
+                                              strokeColor: Colors.white,
+                                            );
+                                          },
+                                        ),
+                                        belowBarData: BarAreaData(
+                                          show: true,
+                                          color:
+                                              MColors.primary.withOpacity(0.1),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  borderData: FlBorderData(show: false),
-                                  minX: 1,
-                                  maxX: DateTime(DateTime.now().year, DateTime.now().month + 1, 0).day.toDouble(),
-                                  minY: 0,
-                                  maxY: maxY,
-                                  lineBarsData: [
-                                    LineChartBarData(
-                                      spots: chartData,
-                                      isCurved: true,
-                                      curveSmoothness: 0.3,
-                                      color: MColors.primary,
-                                      barWidth: 3,
-                                      dotData: FlDotData(
-                                        show: true,
-                                        getDotPainter: (spot, percent, barData, index) {
-                                          return FlDotCirclePainter(
-                                            radius: 3,
-                                            color: MColors.primary,
-                                            strokeWidth: 2,
-                                            strokeColor: Colors.white,
-                                          );
-                                        },
-                                      ),
-                                      belowBarData: BarAreaData(
-                                        show: true,
-                                        color: MColors.primary.withOpacity(0.1),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                                 ),
                               ),
                             );

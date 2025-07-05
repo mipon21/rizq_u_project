@@ -81,7 +81,7 @@ class DataMigrationService {
           'subscriptionEnd': data['approvedAt'] != null
               ? Timestamp.fromDate((data['approvedAt'] as Timestamp)
                   .toDate()
-                  .add(const Duration(days: 60)))
+                  .add(const Duration(days: 30)))
               : null,
           'currentScanCount': 0,
           'trialStartDate': data['approvedAt'],

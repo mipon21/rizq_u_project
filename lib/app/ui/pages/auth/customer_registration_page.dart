@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -247,27 +248,80 @@ class CustomerRegistrationPage extends GetView<CustomerRegistrationController> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime now = DateTime.now();
+    final DateTime minDate = DateTime(1925, 1, 1);
+    final DateTime maxDate = DateTime(2025, 12, 31);
+
+    await showModalBottomSheet(
       context: context,
-      initialDate: controller.dateOfBirth.value ?? DateTime(2000),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now().subtract(const Duration(days: 365 * 13)), // Must be at least 13 years old
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: MColors.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.4,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
           ),
-          child: child!,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: MColors.primary.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: MColors.primary),
+                      ),
+                    ),
+                    Text(
+                      'Select Date of Birth',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: MColors.primary,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Done',
+                        style: TextStyle(color: MColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime:
+                      controller.dateOfBirth.value ?? DateTime(1990),
+                  minimumDate: minDate,
+                  maximumDate: maxDate,
+                  onDateTimeChanged: (DateTime value) {
+                    controller.dateOfBirth.value = value;
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
-    if (picked != null) {
-      controller.dateOfBirth.value = picked;
-    }
   }
 } 

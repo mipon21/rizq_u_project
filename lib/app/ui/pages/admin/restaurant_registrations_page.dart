@@ -105,8 +105,8 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
   }
 
   Widget _buildRegistrationCard(BuildContext context, String registrationId, Map<String, dynamic> data) {
-    final restaurantName = data['restaurantName'] ?? 'Unknown';
-    final ownerName = data['ownerName'] ?? 'Unknown';
+    final restaurantName = data['restaurantName'] ?? 'No restaurant name';
+    final ownerName = data['ownerName'] ?? 'No owner name';
     final email = data['email'] ?? 'No email';
     final supportEmail = data['supportEmail'] ?? 'No support email';
     final approvalStatus = data['approvalStatus'] ?? 'pending';
@@ -225,7 +225,10 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
             ),
             const SizedBox(height: 8),
             _buildDetailRow('Email', email),
-            _buildDetailRow('Support Email', supportEmail),
+            if (supportEmail != null &&
+                supportEmail != 'No support email' &&
+                supportEmail.isNotEmpty)
+              _buildDetailRow('Support Email', supportEmail),
             
             // Bank Information
             const SizedBox(height: 12),
@@ -237,8 +240,10 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
               ),
             ),
             const SizedBox(height: 8),
-            _buildDetailRow('Bank Details', bankDetails),
-            _buildDetailRow('IBAN Number', ibanNumber),
+            if (bankDetails != null && bankDetails.isNotEmpty)
+              _buildDetailRow('Bank Details', bankDetails),
+            if (ibanNumber != null && ibanNumber.isNotEmpty)
+              _buildDetailRow('IBAN Number', ibanNumber),
             
             // National ID Images
             if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[

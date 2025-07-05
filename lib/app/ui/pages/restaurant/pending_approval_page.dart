@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:rizq/app/controllers/auth_controller.dart';
+import 'package:rizq/app/utils/contact_us_helper.dart';
 import '../../../controllers/restaurant_registration_controller.dart';
 import '../../../models/restaurant_registration_model.dart';
 import '../../../utils/constants/colors.dart';
@@ -17,9 +19,11 @@ class PendingApprovalPage extends StatefulWidget {
 }
 
 class _PendingApprovalPageState extends State<PendingApprovalPage> {
-  final RestaurantRegistrationController controller = Get.find<RestaurantRegistrationController>();
+  final RestaurantRegistrationController controller =
+      Get.find<RestaurantRegistrationController>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -35,23 +39,68 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registration Status'),
-        backgroundColor: MColors.primary,
-        foregroundColor: Colors.white,
+        title: Image.asset('assets/icons/general-u.png', height: 70),
+        toolbarHeight: 80,
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _auth.signOut();
-              Get.offAllNamed('/login');
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: PopupMenuButton<String>(
+              color: Colors.white,
+              onSelected: (value) {
+                if (value == 'contact_us') {
+                  ContactUsHelper.showContactUsDialog(context);
+                } else if (value == 'log_out') {
+                  authController.logout();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'contact_us',
+                  child: Row(
+                    children: [
+                      Icon(Icons.headset_mic_sharp,
+                          color: MColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Contact Us'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'log_out',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red[700], size: 20),
+                      const SizedBox(width: 8),
+                      Text('Log Out'),
+                    ],
+                  ),
+                ),
+              ],
+              child: Row(
+                children: [
+                  Icon(Icons.help,
+                      color: Theme.of(context).primaryColor, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Help',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              tooltip: 'Help',
+            ),
           ),
         ],
       ),
       body: Obx(() {
         final registration = controller.registrationData.value;
-        
+
         if (registration == null) {
           return const Center(
             child: CircularProgressIndicator(),
@@ -64,9 +113,9 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStatusCard(registration),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildRegistrationDetails(registration),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildActionButtons(),
             ],
           ),
@@ -86,69 +135,91 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
         statusColor = Colors.orange;
         statusIcon = Icons.pending;
         statusText = 'Under Review';
-        statusMessage = 'Your restaurant registration is currently under review by our admin team. This process typically takes 1-3 business days.';
+        statusMessage =
+            'Thank you for your subscription! Your registration is currently under review by our admin team. This process typically takes 1-3 business days.';
         break;
       case 'approved':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
         statusText = 'Approved';
-        statusMessage = 'Congratulations! Your restaurant has been approved. You can now access your dashboard.';
+        statusMessage =
+            'Congratulations! Your restaurant has been approved. You can now access your dashboard.';
         break;
       case 'rejected':
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
         statusText = 'Rejected';
-        statusMessage = registration.rejectionReason ?? SupportConstants.registrationRejectedMessage;
+        statusMessage = registration.rejectionReason ??
+            SupportConstants.registrationRejectedMessage;
         break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
         statusText = 'Unknown';
-        statusMessage = 'Unknown status. ${SupportConstants.genericSupportMessage}.';
+        statusMessage =
+            'Unknown status. ${SupportConstants.genericSupportMessage}.';
     }
 
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Icon(
-              statusIcon,
-              size: 64,
-              color: statusColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              statusText,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        color: Colors.white,
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              Icon(
+                statusIcon,
+                size: 64,
                 color: statusColor,
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              statusMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            if (registration.approvalStatus == 'pending') ...[
               const SizedBox(height: 16),
-              const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              const Text(
-                'Review in progress...',
+              Text(
+                statusText,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
                 ),
               ),
+              const SizedBox(height: 12),
+              Text(
+                statusMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+              if (registration.approvalStatus == 'rejected') ...[
+                Text(
+                  "[If you think this is a mistake, please contact us from the Help section]",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+              if (registration.approvalStatus == 'pending') ...[
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 8),
+                const Text(
+                  'Review in progress...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -156,7 +227,12 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
 
   Widget _buildRegistrationDetails(RestaurantRegistrationModel registration) {
     return Card(
-      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -170,7 +246,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Restaurant Logo
             if (registration.logoUrl.isNotEmpty) ...[
               const Text(
@@ -199,10 +275,16 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
             _buildDetailRow('Restaurant Name', registration.restaurantName),
             _buildDetailRow('Owner Name', registration.ownerName),
             _buildDetailRow('Email', registration.email),
-            _buildDetailRow('Support Email', registration.supportEmail),
-            _buildDetailRow('Bank Details', registration.bankDetails),
-            _buildDetailRow('IBAN Number', registration.ibanNumber),
-            
+            if (registration.supportEmail != null &&
+                registration.supportEmail!.isNotEmpty)
+              _buildDetailRow('Support Email', registration.supportEmail!),
+            if (registration.bankDetails != null &&
+                registration.bankDetails!.isNotEmpty)
+              _buildDetailRow('Bank Details', registration.bankDetails!),
+            if (registration.ibanNumber != null &&
+                registration.ibanNumber!.isNotEmpty)
+              _buildDetailRow('IBAN Number', registration.ibanNumber!),
+
             // National ID Images
             if (registration.ownerNationalIdFront.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -256,11 +338,14 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
             ],
 
             const SizedBox(height: 16),
-            _buildDetailRow('Submitted On', _formatDate(registration.createdAt)),
+            _buildDetailRow(
+                'Submitted On', _formatDate(registration.createdAt)),
             if (registration.approvedAt != null)
-              _buildDetailRow('Approved On', _formatDate(registration.approvedAt!)),
+              _buildDetailRow(
+                  'Approved On', _formatDate(registration.approvedAt!)),
             if (registration.rejectedAt != null)
-              _buildDetailRow('Rejected On', _formatDate(registration.rejectedAt!)),
+              _buildDetailRow(
+                  'Rejected On', _formatDate(registration.rejectedAt!)),
           ],
         ),
       ),
@@ -320,67 +405,11 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
               ),
             ),
           ),
-        
-        if (registration.approvalStatus == 'rejected')
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                _showContactSupportDialog();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Contact Support',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-        
-        if (registration.approvalStatus == 'pending')
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {
-                _showContactSupportDialog();
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Contact Support',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
       ],
-    );
-  }
-
-  void _showContactSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Contact Support'),
-        content: const Text(
-          'If you have any questions about your registration status, please contact our support team:\n\n'
-                      'Email: ${SupportConstants.supportEmail}\n\n'
-          'We\'re here to help!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
     );
   }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
-} 
+}

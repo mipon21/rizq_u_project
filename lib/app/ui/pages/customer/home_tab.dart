@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/customer_controller.dart';
 import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/customer/loading_shimmer.dart';
 
 class HomeTab extends StatefulWidget {
   final CustomerController controller;
@@ -88,7 +88,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             // Initial loading with empty data
             if (widget.controller.isLoadingPrograms.value &&
                 widget.controller.allPrograms.isEmpty) {
-              return _buildLoadingShimmer();
+              return LoadingShimmer.buildCardShimmer();
             }
 
             // Handle the case where allPrograms is null or empty
@@ -135,7 +135,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
             // Refreshing with existing data? Show shimmer cards instead of overlay
             if (widget.controller.isLoadingPrograms.value) {
-              return _buildLoadingShimmer();
+              return LoadingShimmer.buildCardShimmer();
             }
 
             // Show normal content when not loading
@@ -181,22 +181,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                           height: 40,
                                           decoration: BoxDecoration(
                                             color:
-                                                Colors.white.withOpacity(0.3),
+                                                Colors.grey.shade300,
                                             shape: BoxShape.circle,
-                                          ),
-                                          child: Shimmer.fromColors(
-                                            baseColor:
-                                                Colors.white.withOpacity(0.5),
-                                            highlightColor: Colors.white,
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white
-                                                    .withOpacity(0.5),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
                                           ),
                                         ),
                                         errorWidget: (context, url, error) =>
@@ -340,114 +326,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     return Theme.of(context).colorScheme.primary;
   }
 
-  // Update the _buildLoadingShimmer method with a more realistic card loading effect
-  Widget _buildLoadingShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
-      child: ListView.builder(
-        itemCount: 5,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (_, __) => Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    // Shimmer for restaurant logo
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Shimmer for restaurant name and points
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: 80,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Shimmer for status tag
-                    Container(
-                      width: 60,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Shimmer for progress bar
-                Container(
-                  width: double.infinity,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Shimmer for reward description
-                Container(
-                  width: 150,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Shimmer for claim button
-                Container(
-                  width: double.infinity,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 }
 
 // Separate widget for claim button to properly handle GetX reactivity
@@ -507,15 +386,21 @@ class _ClaimButtonState extends State<ClaimButton>
             child: SizedBox(
               width: double.infinity,
               child: isClaimingReward
-                  ? Shimmer.fromColors(
-                      baseColor: Colors.grey.shade300,
-                      highlightColor: Colors.grey.shade100,
-                      child: Container(
-                        width: double.infinity,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                  ? Container(
+                      width: double.infinity,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ),
                     )
