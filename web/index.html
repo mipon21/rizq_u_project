@@ -37,6 +37,33 @@
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
   </script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
+
+  <!-- Initialize Firebase -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfhUldTC3R2-Au4crJ9m86cqxquoY57kU",
+      authDomain: "connect-49e65.firebaseapp.com",
+      databaseURL: "https://connect-49e65-default-rtdb.firebaseio.com",
+      projectId: "connect-49e65",
+      storageBucket: "connect-49e65.appspot.com",
+      messagingSenderId: "317164897608",
+      appId: "1:317164897608:web:b7703cac1d90a2e5bc9f7d",
+      measurementId: "G-3N49ZNQ4EG"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+  </script>
+
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
 </head>
