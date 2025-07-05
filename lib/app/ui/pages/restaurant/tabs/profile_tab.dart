@@ -2,17 +2,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
-import 'package:rizq/app/routes/app_pages.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../../controllers/restaurant_controller.dart';
+import '../../../../controllers/auth_controller.dart';
+import '../../../../controllers/admin_controller.dart';
+import '../../../../routes/app_pages.dart';
+import '../../../../utils/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:rizq/app/ui/theme/widget_themes/cached_image_widget.dart';
-import 'package:rizq/app/ui/theme/widget_themes/shimmer_widget.dart';
-import 'package:rizq/app/ui/widgets/language_selector.dart';
-import 'package:rizq/app/utils/contact_us_helper.dart';
-import 'package:rizq/app/utils/account_deletion_helper.dart';
+import '../../../theme/widget_themes/cached_image_widget.dart';
+import '../../../theme/widget_themes/shimmer_widget.dart';
+import '../../../widgets/language_selector.dart';
+import '../../../../utils/contact_us_helper.dart';
+import '../../../../utils/account_deletion_helper.dart';
 import 'package:intl/intl.dart';
 
 class ProfileTab extends StatefulWidget {

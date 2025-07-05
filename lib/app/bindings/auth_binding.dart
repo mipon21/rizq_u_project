@@ -1,7 +1,5 @@
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../controllers/auth_controller.dart';
-
 // Binding for authentication-related screens (Login, Register, Forgot Password)
 class AuthBinding extends Bindings {
   @override

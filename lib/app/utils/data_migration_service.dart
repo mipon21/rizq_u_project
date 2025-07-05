@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get/get.dart';
+
 import '../models/database_schema.dart';
-import '../models/customer_loyalty_model.dart';
 
 /// Data Migration Service
 /// This service handles migrating and fixing existing data to ensure proper relationships

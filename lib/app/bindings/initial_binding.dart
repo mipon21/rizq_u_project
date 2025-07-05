@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/admin_controller.dart';
-import 'package:flutter/material.dart';
 
 // This binding ensures controllers are available globally and persist
 class InitialBinding extends Bindings {

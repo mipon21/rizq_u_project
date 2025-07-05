@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/utils/constants/support_constants.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
+import 'constants/colors.dart';
+import 'constants/support_constants.dart';
+import '../controllers/restaurant_controller.dart';
 
 class ContactUsHelper {
 

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../controllers/customer_controller.dart';
+import '../../../utils/constants/colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/customer/loading_shimmer.dart';
 

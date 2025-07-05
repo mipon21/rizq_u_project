@@ -13,8 +13,6 @@ import 'package:rizq/app/controllers/language_controller.dart';
 import 'package:rizq/app/routes/app_pages.dart';
 import 'package:rizq/app/theme/theme.dart';
 import 'package:rizq/app/ui/pages/admin/admin_login_page.dart';
-import 'package:rizq/app/ui/theme/app_theme.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
 import 'package:rizq/app/utils/translations.dart';
 import 'package:rizq/firebase_options.dart';
 
@@ -24,14 +22,21 @@ void main() async {
 
   // Initialize Firebase App Check with appropriate provider based on platform
   if (kIsWeb) {
-    await FirebaseAppCheck.instance.activate(
-      webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
-      // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
-      // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
-    );
+    try {
+      await FirebaseAppCheck.instance.activate(
+        webProvider:
+            ReCaptchaV3Provider('6LdB3ngrAAAAAIEJAOa_y-sErvf9NFOPxy06wsw8'),
+        // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
+        // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
+      );
+    } catch (e) {
+      // Handle the case where App Check is already initialized
+      debugPrint('Firebase App Check may already be initialized: $e');
+    }
   } else {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.appAttest,
       // Use AppleProvider.appAttest for iOS
     );
   }
@@ -94,7 +99,7 @@ class RizqApp extends StatelessWidget {
 
       // Register the observer for navigation
       navigatorObservers: [routeObserver],
-      // home:  AdminLoginPage(),
+      // home: AdminLoginPage(),
     );
   }
 }

@@ -90,6 +90,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  unused_import_remover: ^1.0.1
 
 flutter:
   uses-material-design: true

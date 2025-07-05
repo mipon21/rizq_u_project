@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
+import '../../../../controllers/restaurant_controller.dart';
 import 'package:intl/intl.dart';
-import 'package:rizq/app/ui/pages/restaurant/subscription_page.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/ui/pages/restaurant/dashboard_page.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
+import '../subscription_page.dart';
+import '../../../../utils/constants/colors.dart';
+import '../dashboard_page.dart';
+import '../../../../controllers/admin_controller.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({Key? key}) : super(key: key);

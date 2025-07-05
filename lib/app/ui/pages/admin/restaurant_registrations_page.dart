@@ -149,13 +149,34 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
               children: [
                 // Restaurant Logo
                 if (logoUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedImageWidget(
-                      imageUrl: logoUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
+                  GestureDetector(
+                    onTap: () => _showFullScreenImage(
+                        context, logoUrl, 'Restaurant Logo'),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          CachedImageWidget(
+                            imageUrl: logoUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.zoom_in,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 else
@@ -264,13 +285,34 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
                         children: [
                           const Text('Front Side'),
                           const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedImageWidget(
-                              imageUrl: nationalIdFront,
-                              width: double.infinity,
-                              height: 80,
-                              fit: BoxFit.cover,
+                          GestureDetector(
+                            onTap: () => _showFullScreenImage(context,
+                                nationalIdFront, 'National ID - Front'),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                children: [
+                                  CachedImageWidget(
+                                    imageUrl: nationalIdFront,
+                                    width: double.infinity,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.zoom_in,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -284,13 +326,34 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
                         children: [
                           const Text('Back Side'),
                           const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedImageWidget(
-                              imageUrl: nationalIdBack,
-                              width: double.infinity,
-                              height: 80,
-                              fit: BoxFit.cover,
+                          GestureDetector(
+                            onTap: () => _showFullScreenImage(
+                                context, nationalIdBack, 'National ID - Back'),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                children: [
+                                  CachedImageWidget(
+                                    imageUrl: nationalIdBack,
+                                    width: double.infinity,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.zoom_in,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -358,6 +421,65 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenImage(
+      BuildContext context, String imageUrl, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Image viewer
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: CachedImageWidget(
+                imageUrl: imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.contain,
+              ),
+            ),
+            // Close button
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black.withOpacity(0.5),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            // Title
+            Positioned(
+              top: 40,
+              left: 20,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -443,4 +565,4 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
       ),
     );
   }
-} 
+}

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../utils/constants/colors.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../controllers/customer_controller.dart';
 import 'package:intl/intl.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../../controllers/restaurant_controller.dart';
+import '../../../../utils/constants/colors.dart';
 import 'package:intl/intl.dart';
 
 class RewardsTab extends StatelessWidget {

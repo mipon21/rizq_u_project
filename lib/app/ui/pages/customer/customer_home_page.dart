@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
-import 'package:rizq/app/controllers/customer_navigation_controller.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/utils/app_events.dart';
-import 'package:rizq/app/ui/pages/customer/qr_code_page.dart';
-import 'package:rizq/app/ui/pages/customer/customer_profile_page.dart';
-import 'package:rizq/app/ui/pages/customer/home_tab.dart';
-import 'package:rizq/app/ui/pages/customer/rewards_tab.dart';
-import 'package:rizq/app/ui/widgets/customer/customer_app_bar.dart';
-import 'package:rizq/app/ui/widgets/customer/confirmation_dialog.dart';
-import 'package:rizq/app/services/contact_service.dart';
+import '../../../controllers/customer_controller.dart';
+import '../../../controllers/customer_navigation_controller.dart';
+import '../../../controllers/auth_controller.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/app_events.dart';
+import 'qr_code_page.dart';
+import 'customer_profile_page.dart';
+import 'home_tab.dart';
+import 'rewards_tab.dart';
+import '../../widgets/customer/customer_app_bar.dart';
+import '../../widgets/customer/confirmation_dialog.dart';
+import '../../../services/contact_service.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({Key? key}) : super(key: key);

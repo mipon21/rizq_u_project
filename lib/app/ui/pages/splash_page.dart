@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
+import '../../controllers/auth_controller.dart';
 import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
 
 class SplashPage extends StatefulWidget {

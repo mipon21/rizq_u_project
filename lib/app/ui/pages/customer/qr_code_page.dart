@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/customer_controller.dart';
+import '../../../controllers/customer_controller.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../utils/constants/colors.dart';
 
 class QrCodePage extends GetView<CustomerController> {
   const QrCodePage({Key? key}) : super(key: key);

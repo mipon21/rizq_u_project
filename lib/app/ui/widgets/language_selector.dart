@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/language_controller.dart';
+import '../../controllers/language_controller.dart';
 
 class LanguageSelector extends StatelessWidget {
   const LanguageSelector({Key? key}) : super(key: key);

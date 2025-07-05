@@ -1,6 +1,6 @@
     import 'package:cloud_firestore/cloud_firestore.dart';
-    import 'package:get/get.dart';
-    import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
 
 

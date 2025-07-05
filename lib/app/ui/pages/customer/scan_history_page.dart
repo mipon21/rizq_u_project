@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/customer_controller.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../utils/constants/colors.dart';
 import '../../widgets/customer/customer_app_bar.dart';
 import '../../widgets/customer/loading_shimmer.dart';
 

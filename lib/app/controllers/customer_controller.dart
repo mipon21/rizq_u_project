@@ -8,13 +8,12 @@ import 'package:intl/intl.dart'; // For date formatting
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:flutter/material.dart'; // For Material Design
 import 'package:image_picker/image_picker.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../utils/constants/colors.dart';
 import '../routes/app_pages.dart';
-import '../ui/pages/customer/scan_history_page.dart';
 import '../utils/app_events.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:rizq/app/utils/snackbar_utils.dart';
+
 
 // Represents the data needed for a loyalty card display
 class LoyaltyCardModel {

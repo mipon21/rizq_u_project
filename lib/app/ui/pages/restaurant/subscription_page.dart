@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:rizq/app/controllers/restaurant_controller.dart';
-import 'package:rizq/app/controllers/admin_controller.dart';
-import 'package:rizq/app/models/subscription_plan_model.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/utils/constants/sizes.dart';
-import 'package:rizq/app/utils/constants/support_constants.dart';
+import '../../../controllers/restaurant_controller.dart';
+import '../../../controllers/admin_controller.dart';
+import '../../../models/subscription_plan_model.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/sizes.dart';
+import '../../../utils/constants/support_constants.dart';
 
 class SubscriptionPage extends GetView<RestaurantController> {
   const SubscriptionPage({Key? key}) : super(key: key);

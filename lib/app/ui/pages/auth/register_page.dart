@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
-import 'package:rizq/app/utils/constants/colors.dart';
+import '../../../utils/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RegisterPage extends GetView<AuthController> {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/controllers/auth_controller.dart';
+import '../controllers/auth_controller.dart';
 
 class AccountDeletionHelper {
   // Show Delete Account Confirmation dialog

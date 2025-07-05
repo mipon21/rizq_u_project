@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rizq/app/utils/constants/colors.dart';
-import 'package:rizq/app/utils/constants/support_constants.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/support_constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../services/contact_service.dart';
 import 'confirmation_dialog.dart';

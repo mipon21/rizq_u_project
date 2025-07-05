@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import 'package:rizq/app/ui/pages/restaurant/tabs/profile_tab.dart';
-import 'package:rizq/app/ui/pages/restaurant/tabs/program_settings_tab.dart';
+import '../ui/pages/restaurant/tabs/profile_tab.dart';
+import '../ui/pages/restaurant/tabs/program_settings_tab.dart';
 import '../bindings/admin_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/customer_binding.dart';

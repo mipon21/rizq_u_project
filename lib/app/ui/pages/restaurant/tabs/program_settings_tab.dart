@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:rizq/app/controllers/program_controller.dart';
+import '../../../../controllers/program_controller.dart';
 import 'package:intl/intl.dart';
 
 class ProgramSettingsTab extends StatelessWidget {
