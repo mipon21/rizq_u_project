@@ -2807,4 +2807,146 @@ class AdminController extends GetxController {
       );
     }
   }
+
+  // Customer Management Methods
+  Future<void> updateCustomerDetails({
+    required String customerId,
+    required String firstName,
+    required String lastName,
+    required DateTime dateOfBirth,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      // Update the customer document
+      await _firestore.collection('users').doc(customerId).update({
+        'firstName': firstName,
+        'lastName': lastName,
+        'name': '$firstName $lastName',
+        'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      Get.snackbar(
+        'Success',
+        'Customer details updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating customer details: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to update customer details: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> createCustomerAccount({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      // Create user in Firebase Auth
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final User user = userCredential.user!;
+
+      // Create user document in Firestore
+      await _firestore.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': email,
+        'role': 'customer',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'registrationComplete': false, // Customer needs to complete registration
+      });
+
+      // Send email verification
+      await user.sendEmailVerification();
+
+      Get.snackbar(
+        'Success',
+        'Customer account created successfully. Verification email sent to $email',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+
+      if (kDebugMode) {
+        print('Customer account created: ${user.uid}');
+        print('Email verification sent to: $email');
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Failed to create customer account';
+      
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'An account with this email already exists';
+          break;
+        case 'weak-password':
+          errorMessage = 'Password is too weak. Please use a stronger password';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        default:
+          errorMessage = e.message ?? errorMessage;
+      }
+
+      Get.snackbar(
+        'Error',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+
+      if (kDebugMode) {
+        print('FirebaseAuthException in createCustomerAccount: ${e.code} - ${e.message}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating customer account: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to create customer account: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCustomerDetails(String customerId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(customerId).get();
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting customer details: $e');
+      }
+      return null;
+    }
+  }
 }

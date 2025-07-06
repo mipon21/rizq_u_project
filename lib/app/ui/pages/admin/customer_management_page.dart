@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 
@@ -86,7 +88,6 @@ class CustomerManagementPage extends GetView<AdminController> {
                             // Implement search functionality
                           },
                         ),
-                        
                       ],
                     ),
             ),
@@ -247,11 +248,9 @@ class CustomerManagementPage extends GetView<AdminController> {
           ],
         );
       }),
-      // FAB for adding customers (optional)
+      // FAB for adding customers
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Implement add customer functionality
-        },
+        onPressed: () => _showCreateCustomerDialog(context),
         backgroundColor: MColors.primary,
         child: const Icon(Icons.add),
       ),
@@ -320,12 +319,25 @@ class CustomerManagementPage extends GetView<AdminController> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Customer Information',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Customer Information',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: MColors.primary),
+                                        onPressed: () {
+                                          Get.back();
+                                          _showEditCustomerDialog(context, customerId, data);
+                                        },
+                                        tooltip: 'Edit Customer',
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 16),
                                   _buildDetailRow('First Name',
@@ -374,6 +386,27 @@ class CustomerManagementPage extends GetView<AdminController> {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Customer Information',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: MColors.primary),
+                                  onPressed: () {
+                                    Get.back();
+                                    _showEditCustomerDialog(context, customerId, data);
+                                  },
+                                  tooltip: 'Edit Customer',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
                             _buildDetailRow('First Name',
                                 data['firstName'] ?? 'Not provided'),
                             _buildDetailRow('Last Name',
@@ -692,4 +725,436 @@ class CustomerManagementPage extends GetView<AdminController> {
       },
     );
   }
-}
+
+  void _showEditCustomerDialog(BuildContext context, String customerId, Map<String, dynamic> data) {
+    final TextEditingController firstNameController = TextEditingController(text: data['firstName'] ?? '');
+    final TextEditingController lastNameController = TextEditingController(text: data['lastName'] ?? '');
+    final Rx<DateTime?> selectedDate = Rx<DateTime?>(
+      data['dateOfBirth'] != null ? (data['dateOfBirth'] as Timestamp).toDate() : null
+    );
+    final dateFormat = DateFormat('d MMMM, yyyy');
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Customer Details',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              // First Name
+              TextFormField(
+                controller: firstNameController,
+                decoration: const InputDecoration(
+                  labelText: 'First Name *',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter first name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Last Name
+              TextFormField(
+                controller: lastNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Last Name *',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter last name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Date of Birth
+              Obx(() => InkWell(
+                onTap: () => _selectDateForEdit(context, selectedDate),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Date of Birth *',
+                    prefixIcon: Icon(Icons.calendar_today),
+                    border: OutlineInputBorder(),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        selectedDate.value != null
+                            ? dateFormat.format(selectedDate.value!)
+                            : 'Select date of birth',
+                        style: TextStyle(
+                          color: selectedDate.value != null
+                              ? Colors.black
+                              : Colors.grey[600],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down),
+                    ],
+                  ),
+                ),
+              )),
+              const SizedBox(height: 24),
+
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  Obx(() => ElevatedButton(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : () async {
+                            if (firstNameController.text.trim().isEmpty ||
+                                lastNameController.text.trim().isEmpty ||
+                                selectedDate.value == null) {
+                              Get.snackbar(
+                                'Error',
+                                'Please fill all required fields',
+                                backgroundColor: Colors.red[100],
+                                colorText: Colors.red[800],
+                              );
+                              return;
+                            }
+
+                            await controller.updateCustomerDetails(
+                              customerId: customerId,
+                              firstName: firstNameController.text.trim(),
+                              lastName: lastNameController.text.trim(),
+                              dateOfBirth: selectedDate.value!,
+                            );
+                            Get.back();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: controller.isLoading.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Update'),
+                  )),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCreateCustomerDialog(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+    final RxBool isPasswordVisible = false.obs;
+    final RxBool isConfirmPasswordVisible = false.obs;
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Create New Customer',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              Form(
+                key: formKey,
+                child: Column(
+                  children: [
+                    // Email
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email *',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter email';
+                        }
+                        if (!GetUtils.isEmail(value.trim())) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password
+                    Obx(() => TextFormField(
+                      controller: passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password *',
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isPasswordVisible.value
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () => isPasswordVisible.value = !isPasswordVisible.value,
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                      obscureText: !isPasswordVisible.value,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    )),
+                    const SizedBox(height: 16),
+
+                    // Confirm Password
+                    Obx(() => TextFormField(
+                      controller: confirmPasswordController,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password *',
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isConfirmPasswordVisible.value
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () => isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value,
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                      obscureText: !isConfirmPasswordVisible.value,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please confirm password';
+                        }
+                        if (value != passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    )),
+                    const SizedBox(height: 24),
+
+                    // Info text
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Customer will receive an email verification link and must complete their profile information.',
+                              style: TextStyle(
+                                color: Colors.blue[800],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Get.back(),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        Obx(() => ElevatedButton(
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : () async {
+                                  if (formKey.currentState?.validate() ?? false) {
+                                    await controller.createCustomerAccount(
+                                      email: emailController.text.trim(),
+                                      password: passwordController.text,
+                                    );
+                                    Get.back();
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: controller.isLoading.value
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Create Customer'),
+                        )),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDateForEdit(BuildContext context, Rx<DateTime?> selectedDate) async {
+    final DateTime now = DateTime.now();
+    final DateTime minDate = DateTime(1925, 1, 1);
+    final DateTime maxDate = DateTime(2025, 12, 31);
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.4,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: MColors.primary.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: MColors.primary),
+                      ),
+                    ),
+                    Text(
+                      'Select Date of Birth',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: MColors.primary,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Done',
+                        style: TextStyle(color: MColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: selectedDate.value ?? DateTime(1990),
+                  minimumDate: minDate,
+                  maximumDate: maxDate,
+                  onDateTimeChanged: (DateTime value) {
+                    selectedDate.value = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+} 
