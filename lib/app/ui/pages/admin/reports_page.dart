@@ -8,7 +8,7 @@ import '../../../controllers/admin_controller.dart';
 import '../../../utils/constants/colors.dart';
 
 class ReportsPage extends GetView<AdminController> {
-  const ReportsPage({Key? key}) : super(key: key);
+  const ReportsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

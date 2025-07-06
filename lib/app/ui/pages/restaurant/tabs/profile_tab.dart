@@ -14,9 +14,9 @@ import '../../../widgets/language_selector.dart';
 import '../../../../utils/contact_us_helper.dart';
 import '../../../../utils/account_deletion_helper.dart';
 import 'package:intl/intl.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class ProfileTab extends StatefulWidget {
-  const ProfileTab({Key? key}) : super(key: key);
+  const ProfileTab({super.key});
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -43,7 +43,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -84,6 +84,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
               ],
+              tooltip: 'Help',
               child: Row(
                 children: [
                   Icon(Icons.help,
@@ -98,7 +99,6 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ],
               ),
-              tooltip: 'Help',
             ),
           ),
         ],

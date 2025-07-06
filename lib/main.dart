@@ -12,8 +12,8 @@ import 'package:rizq/app/bindings/initial_binding.dart';
 import 'package:rizq/app/controllers/language_controller.dart';
 import 'package:rizq/app/routes/app_pages.dart';
 import 'package:rizq/app/theme/theme.dart';
-import 'package:rizq/app/ui/pages/admin/admin_login_page.dart';
 import 'package:rizq/app/utils/translations.dart';
+import 'package:rizq/app/utils/constants/app_config.dart';
 import 'package:rizq/firebase_options.dart';
 
 void main() async {
@@ -29,16 +29,25 @@ void main() async {
         // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
         // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
       );
+      debugPrint('Firebase App Check activated successfully for web');
     } catch (e) {
-      // Handle the case where App Check is already initialized
-      debugPrint('Firebase App Check may already be initialized: $e');
+      // Handle AppCheck initialization errors gracefully
+      // This will catch both "already initialized" and throttling errors
+      debugPrint('Firebase App Check initialization error: $e');
+      // Continue app initialization even if AppCheck fails
     }
   } else {
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.playIntegrity,
-      appleProvider: AppleProvider.appAttest,
-      // Use AppleProvider.appAttest for iOS
-    );
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.playIntegrity,
+        appleProvider: AppleProvider.appAttest,
+        // Use AppleProvider.appAttest for iOS
+      );
+      debugPrint('Firebase App Check activated successfully for mobile');
+    } catch (e) {
+      debugPrint('Firebase App Check initialization error: $e');
+      // Continue app initialization even if AppCheck fails
+    }
   }
 
   await GetStorage.init();
@@ -50,6 +59,9 @@ void main() async {
 
   // Initialize language controller
   final languageController = Get.put(LanguageController());
+
+  // Print app configuration for debugging
+  AppConfig.printConfig();
 
   // Only use DevicePreview in debug mode when specifically needed
   // to reduce startup overhead
@@ -77,12 +89,12 @@ class RizqApp extends StatelessWidget {
     final languageController = Get.find<LanguageController>();
 
     return GetMaterialApp(
-      title: 'RIZQ APP',
+      title: AppConfig.appTitle,
       theme: MAppTheme.lightTheme,
-      // darkTheme: MAppTheme.darkTheme,
+      // darkTheme: MAppThePme.darkTheme,
       themeMode: ThemeMode.light,
       initialBinding: InitialBinding(),
-      initialRoute: AppPages.INITIAL,
+      initialRoute: AppConfig.initialRoute,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
 

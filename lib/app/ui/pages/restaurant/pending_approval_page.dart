@@ -10,9 +10,9 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/support_constants.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
 import '../../../routes/app_pages.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class PendingApprovalPage extends StatefulWidget {
-  const PendingApprovalPage({Key? key}) : super(key: key);
+  const PendingApprovalPage({super.key});
 
   @override
   State<PendingApprovalPage> createState() => _PendingApprovalPageState();
@@ -39,7 +39,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -79,6 +79,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                   ),
                 ),
               ],
+              tooltip: 'Help',
               child: Row(
                 children: [
                   Icon(Icons.help,
@@ -93,7 +94,6 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                   ),
                 ],
               ),
-              tooltip: 'Help',
             ),
           ),
         ],

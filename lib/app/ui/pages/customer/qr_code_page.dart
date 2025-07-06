@@ -5,7 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../utils/constants/colors.dart';
 
 class QrCodePage extends GetView<CustomerController> {
-  const QrCodePage({Key? key}) : super(key: key);
+  const QrCodePage({super.key});
 
   @override
   Widget build(BuildContext context) {

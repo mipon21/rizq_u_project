@@ -22,13 +22,7 @@ class ContactService {
       final userId = authController.currentUserUid;
 
       // Create a formatted message with footer containing customer information
-      final String messageWithFooter = message +
-          '\n\n---------------------------' +
-          '\nSent from Rizq App' +
-          '\nCustomer Information:' +
-          '\nName: ${profile?.name ?? "N/A"}' +
-          '\nEmail: ${profile?.email ?? "N/A"}' +
-          '\nUser ID: $userId';
+      final String messageWithFooter = '$message\n\n---------------------------\nSent from Rizq App\nCustomer Information:\nName: ${profile?.name ?? "N/A"}\nEmail: ${profile?.email ?? "N/A"}\nUser ID: $userId';
 
       await _launchEmail(
         email: email,

@@ -9,9 +9,9 @@ class AdminNotificationPanel extends StatelessWidget {
   final bool isBottomSheet;
 
   const AdminNotificationPanel({
-    Key? key,
+    super.key,
     this.isBottomSheet = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

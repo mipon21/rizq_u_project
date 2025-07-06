@@ -158,11 +158,11 @@ class CustomerProfileModel {
     DateTime? dateOfBirth,
   }) {
     return CustomerProfileModel(
-      uid: this.uid,
+      uid: uid,
       name: name ?? this.name,
       photoUrl: photoUrl ?? this.photoUrl,
-      email: this.email, // Email can't be changed
-      createdAt: this.createdAt,
+      email: email, // Email can't be changed
+      createdAt: createdAt,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
@@ -189,7 +189,7 @@ class CustomerController extends GetxController {
   // Pagination and caching for claim history
   final RxBool hasMoreClaimHistory = true.obs;
   DocumentSnapshot? _lastClaimDocument;
-  int _claimHistoryPageSize = 10;
+  final int _claimHistoryPageSize = 10;
 
   // For restaurant programs caching
   final RxBool isLoadingCachedPrograms = false.obs;
@@ -709,7 +709,7 @@ class CustomerController extends GetxController {
               ),
               const SizedBox(height: 5),
               Text(
-                program.rewardType + "!",
+                "${program.rewardType}!",
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,

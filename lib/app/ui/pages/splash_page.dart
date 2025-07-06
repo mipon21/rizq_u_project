@@ -3,9 +3,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import 'package:rizq/app/utils/constants/colors.dart'; // Adjust import
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class SplashPage extends StatefulWidget {
-  const SplashPage({Key? key}) : super(key: key);
+  const SplashPage({super.key});
 
   @override
   State<SplashPage> createState() => _SplashPageState();
@@ -65,7 +65,7 @@ class _SplashPageState extends State<SplashPage>
                   // color: MColors.primary,
                 ),
                 child: Image.asset(
-                  'assets/icons/general-u.png',
+                  MImages.generalLogo,
                 ),
               ),
               const SizedBox(height: 30),

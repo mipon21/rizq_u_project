@@ -1,0 +1,24 @@
+#### For Admin Panel
+# Development
+run_admin_dev.bat
+# or
+flutter run -d chrome --dart-define=ADMIN_PANEL_ONLY=true
+
+# Production Build
+build_admin_web.bat
+# or
+flutter build web --dart-define=ADMIN_PANEL_ONLY=true --release
+flutter build web --dart-define=ADMIN_PANEL_ONLY=true --release --no-tree-shake-icons
+
+
+####For Normal
+
+# Development
+run_normal_dev.bat
+# or
+flutter run -d chrome
+
+# Production Build
+build_normal_web.bat
+# or
+flutter build web --release --no-tree-shake-icons

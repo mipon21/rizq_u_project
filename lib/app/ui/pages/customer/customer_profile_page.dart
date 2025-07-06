@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import '../../widgets/customer/loading_shimmer.dart';
 
 class CustomerProfilePage extends GetView<CustomerController> {
-  const CustomerProfilePage({Key? key}) : super(key: key);
+  const CustomerProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
 
 
     // Date picker function
-    Future<void> _selectDate(BuildContext context) async {
+    Future<void> selectDate(BuildContext context) async {
       final DateTime? picked = await showDatePicker(
         context: context,
         initialDate: selectedDate.value ?? DateTime.now(),

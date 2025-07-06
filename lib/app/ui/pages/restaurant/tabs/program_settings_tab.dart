@@ -4,9 +4,9 @@ import 'package:iconsax/iconsax.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import '../../../../controllers/program_controller.dart';
 import 'package:intl/intl.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class ProgramSettingsTab extends StatelessWidget {
-  const ProgramSettingsTab({Key? key}) : super(key: key);
+  const ProgramSettingsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,7 @@ class ProgramSettingsTab extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,

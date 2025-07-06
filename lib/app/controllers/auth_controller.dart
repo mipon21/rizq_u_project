@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import path if needed
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import '../utils/snackbar_utils.dart'; // Import snackbar utilities
+import '../utils/constants/app_config.dart'; // Import app config
 import 'package:flutter/material.dart';
 
 class AuthController extends GetxController {
@@ -49,14 +50,31 @@ class AuthController extends GetxController {
     _isNavigating = true;
 
     try {
-      if (user == null) {
-        // If user is logged out, go to Login page
+      // Don't interfere if we're on admin login page
+      if (Get.currentRoute == Routes.ADMIN_LOGIN) {
         if (kDebugMode) {
-          print('User is logged out. Navigating to Login.');
+          print('Currently on admin login page, skipping auth state handling');
         }
-        // Only navigate if we're not already on the login page
-        if (Get.currentRoute != Routes.LOGIN) {
-          Get.offAllNamed(Routes.LOGIN);
+        _isNavigating = false;
+        return;
+      }
+
+      if (user == null) {
+        // If user is logged out, navigate based on app mode
+        if (kDebugMode) {
+          print('User is logged out. Navigating based on app mode: ${AppConfig.currentMode}');
+        }
+        
+        if (AppConfig.isAdminMode) {
+          // In admin mode, redirect to admin login
+          if (Get.currentRoute != Routes.ADMIN_LOGIN) {
+            Get.offAllNamed(Routes.ADMIN_LOGIN);
+          }
+        } else {
+          // In normal mode, redirect to regular login
+          if (Get.currentRoute != Routes.LOGIN) {
+            Get.offAllNamed(Routes.LOGIN);
+          }
         }
         return;
       }
@@ -86,60 +104,71 @@ class AuthController extends GetxController {
         }
       }
       
-      // For non-admin users, check email verification
+      // For non-admin users, check if they have a valid user document first
       if (kDebugMode) {
-        print('User is not admin. Checking email verification...');
+        print('User is not admin. Checking user document...');
       }
       
-      // Refresh user data to get latest email verification status
-      await user.reload();
-      user = _auth.currentUser;
-      
-      if (user != null && !user.emailVerified) {
-        // If email is not verified, redirect to email verification page
-        if (kDebugMode) {
-          print('Email not verified. Navigating to Email Verification.');
-        }
-        if (Get.currentRoute != Routes.EMAIL_VERIFICATION) {
-          Get.offAllNamed(Routes.EMAIL_VERIFICATION);
-        }
-      } else {
-        // If email is verified, check if user document exists in Firestore
-        if (kDebugMode) {
-          print('Email verified. Checking user document...');
+      try {
+        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        
+        if (!userDoc.exists) {
+          // User doesn't exist in Firestore - this might be an invalid login attempt
+          // or a user that hasn't completed registration
+          if (kDebugMode) {
+            print('User document not found in Firestore. This might be an invalid login.');
+          }
+          // Sign out the user to prevent further issues
+          await _auth.signOut();
+          return;
         }
         
-        try {
-          final docSnapshot = await _firestore.collection('users').doc(user!.uid).get();
-          
-          if (!docSnapshot.exists) {
-            // User doesn't exist in Firestore yet, create the document
-            if (kDebugMode) {
-              print('User document not found. Creating user document...');
-            }
-            await _createUserDocument(user);
-          }
-          
-          // Fetch user role and navigate accordingly
-          await _fetchUserRole(user.uid);
-          _navigateBasedOnRole();
-        } catch (e) {
+        // User exists in Firestore, now check email verification
+        if (kDebugMode) {
+          print('User document found. Checking email verification...');
+        }
+        
+        // Refresh user data to get latest email verification status
+        await user.reload();
+        user = _auth.currentUser;
+        
+        if (user != null && !user.emailVerified) {
+          // If email is not verified, redirect to email verification page
           if (kDebugMode) {
-            print('Error checking/creating user document: $e');
+            print('Email not verified. Navigating to Email Verification.');
           }
-          // If there's an error, redirect to email verification to try again
           if (Get.currentRoute != Routes.EMAIL_VERIFICATION) {
             Get.offAllNamed(Routes.EMAIL_VERIFICATION);
           }
+        } else {
+          // If email is verified, fetch user role and navigate accordingly
+          if (kDebugMode) {
+            print('Email verified. Fetching user role...');
+          }
+          
+          await _fetchUserRole(user!.uid);
+          _navigateBasedOnRole();
         }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking user document: $e');
+        }
+        // If there's an error, sign out the user to prevent issues
+        await _auth.signOut();
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error in _setInitialScreen: $e');
       }
-      // Fallback to login on any error
-      if (Get.currentRoute != Routes.LOGIN) {
-        Get.offAllNamed(Routes.LOGIN);
+      // Fallback to appropriate login based on app mode
+      if (AppConfig.isAdminMode) {
+        if (Get.currentRoute != Routes.ADMIN_LOGIN) {
+          Get.offAllNamed(Routes.ADMIN_LOGIN);
+        }
+      } else {
+        if (Get.currentRoute != Routes.LOGIN) {
+          Get.offAllNamed(Routes.LOGIN);
+        }
       }
     } finally {
       isLoading.value = false;

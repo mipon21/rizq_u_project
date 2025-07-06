@@ -34,10 +34,6 @@ class CustomerRegistrationController extends GetxController {
     ever(dateOfBirth, (_) => _validateForm());
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
 
   void _validateForm() {
     isFormValid.value = firstName.value.trim().isNotEmpty &&

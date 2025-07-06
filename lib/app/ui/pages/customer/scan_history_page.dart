@@ -6,7 +6,7 @@ import '../../widgets/customer/customer_app_bar.dart';
 import '../../widgets/customer/loading_shimmer.dart';
 
 class ScanHistoryPage extends StatefulWidget {
-  const ScanHistoryPage({Key? key}) : super(key: key);
+  const ScanHistoryPage({super.key});
 
   @override
   State<ScanHistoryPage> createState() => _ScanHistoryPageState();

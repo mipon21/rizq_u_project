@@ -8,9 +8,9 @@ import '../../../models/subscription_plan_model.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../../../utils/constants/support_constants.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class SubscriptionPage extends GetView<RestaurantController> {
-  const SubscriptionPage({Key? key}) : super(key: key);
+  const SubscriptionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         elevation: 0,
         backgroundColor: MColors.primary.withOpacity(0.02),

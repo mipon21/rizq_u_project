@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import '../routes/app_pages.dart';
+import '../utils/constants/app_config.dart';
 import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -276,6 +277,10 @@ class AdminController extends GetxController {
 
   // Admin login function
   Future<void> login() async {
+    if (kDebugMode) {
+      print('Admin login attempt for email: ${emailController.text.trim()}');
+    }
+    
     if (emailController.text.trim().isEmpty ||
         passwordController.text.isEmpty) {
       Get.snackbar(
@@ -302,8 +307,16 @@ class AdminController extends GetxController {
           .doc(userCredential.user!.uid)
           .get();
       if (!adminDoc.exists) {
+        // Sign out immediately if not an admin to prevent auth state listener interference
         await _auth.signOut();
-        throw 'Access denied: Not an admin account';
+        Get.snackbar(
+          'Error',
+          'Access denied: Not an admin account',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
       }
 
       if (kDebugMode) {
@@ -311,18 +324,24 @@ class AdminController extends GetxController {
         print('Attempting to navigate to: ${Routes.ADMIN_DASHBOARD}');
       }
 
-      // Force navigation by clearing middleware temporarily
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Navigate to admin dashboard
       Get.offAllNamed(Routes.ADMIN_DASHBOARD);
-
-      // If that doesn't work, try this alternative approach:
-      // Get.off(() => const AdminDashboardPage(), binding: AdminBinding());
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        print('FirebaseAuthException in admin login: ${e.code} - ${e.message}');
+      }
+      
       String message = '';
       if (e.code == 'user-not-found') {
         message = 'No admin found with this email';
       } else if (e.code == 'wrong-password') {
         message = 'Wrong password';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email format';
+      } else if (e.code == 'user-disabled') {
+        message = 'This account has been disabled';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many failed attempts. Please try again later';
       } else {
         message = e.message ?? 'Authentication failed';
       }
@@ -334,9 +353,13 @@ class AdminController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
+      if (kDebugMode) {
+        print('Unexpected error in admin login: $e');
+        print('Error type: ${e.runtimeType}');
+      }
       Get.snackbar(
         'Error',
-        e.toString(),
+        'An unexpected error occurred. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -408,7 +431,7 @@ class AdminController extends GetxController {
       }
       
       for (var doc in subscriptionsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final amountPaid = (data['amountPaid'] as num? ?? 0).toDouble();
         final planPrice = (data['planPrice'] as num? ?? 0).toDouble();
         final paymentStatus = data['paymentStatus'] as String? ?? 'unknown';
@@ -469,25 +492,29 @@ class AdminController extends GetxController {
       switch (revenueMode.value) {
         case 'customer_only':
           totalRevenue.value = customerPayments;
-          if (kDebugMode)
+          if (kDebugMode) {
             print('Setting revenue to customer payments: $customerPayments');
+          }
           break;
         case 'combined':
           totalRevenue.value = customerPayments + adminAssignments;
-          if (kDebugMode)
+          if (kDebugMode) {
             print(
                 'Setting revenue to combined: ${customerPayments + adminAssignments}');
+          }
           break;
         case 'admin_value':
           totalRevenue.value = adminAssignments;
-          if (kDebugMode)
+          if (kDebugMode) {
             print('Setting revenue to admin value: $adminAssignments');
+          }
           break;
         default:
           totalRevenue.value = customerPayments;
-          if (kDebugMode)
+          if (kDebugMode) {
             print(
                 'Setting revenue to default (customer payments): $customerPayments');
+          }
       }
 
       // Count active subscriptions
@@ -498,7 +525,7 @@ class AdminController extends GetxController {
       }
       
       for (var doc in subscriptionsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final status = data['status'];
         final restaurantId = data['restaurantId'];
         final planName = data['planName'] ?? 'Unknown Plan';

@@ -5,7 +5,7 @@ import '../../../utils/constants/colors.dart';
 import '../../../controllers/admin_controller.dart';
 
 class CustomerManagementPage extends GetView<AdminController> {
-  const CustomerManagementPage({Key? key}) : super(key: key);
+  const CustomerManagementPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +152,7 @@ class CustomerManagementPage extends GetView<AdminController> {
                                 scrollDirection: Axis.horizontal,
                                 child: DataTable(
                                   columnSpacing: 20,
-                                  headingRowColor: MaterialStateProperty.all(
+                                  headingRowColor: WidgetStateProperty.all(
                                     Colors.grey.shade100,
                                   ),
                                   columns: const [
@@ -686,7 +686,7 @@ class CustomerManagementPage extends GetView<AdminController> {
                   );
                 },
               );
-            }).toList(),
+            }),
           ],
         );
       },

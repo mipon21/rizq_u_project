@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/auth_controller.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 import '../../../utils/constants/colors.dart'; // Adjust import
 
 class ForgotPasswordPage extends GetView<AuthController> {
-  const ForgotPasswordPage({Key? key}) : super(key: key);
+  const ForgotPasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class ForgotPasswordPage extends GetView<AuthController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         iconTheme: IconThemeData(color: MColors.primary),
         leading: IconButton(

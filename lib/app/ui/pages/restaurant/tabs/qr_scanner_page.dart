@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:rizq/app/controllers/restaurant_controller.dart'; // Import mobile_scanner
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class QrScannerPage extends StatefulWidget {
-  const QrScannerPage({Key? key}) : super(key: key);
+  const QrScannerPage({super.key});
 
   @override
   State<StatefulWidget> createState() => _QrScannerPageState();
@@ -86,7 +86,7 @@ class _QrScannerPageState extends State<QrScannerPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         foregroundColor: Colors.white,

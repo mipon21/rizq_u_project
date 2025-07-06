@@ -11,7 +11,7 @@ import '../../../models/subscription_plan_model.dart';
 import 'package:intl/intl.dart';
 
 class RestaurantManagementPage extends GetView<AdminController> {
-  const RestaurantManagementPage({Key? key}) : super(key: key);
+  const RestaurantManagementPage({super.key});
 
   // Override the controller getter to ensure it's properly initialized
   @override

@@ -5,13 +5,13 @@ import '../../../controllers/admin_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/sample_data_creator.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../ui/theme/widget_themes/admin_notification_panel.dart';
 import '../../../utils/subscription_migration_helper.dart';
 class AdminDashboardPage extends GetView<AdminController> {
-  const AdminDashboardPage({Key? key}) : super(key: key);
+  const AdminDashboardPage({super.key});
 
   // Override the controller getter to ensure it's properly initialized
   @override
@@ -463,7 +463,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                 radius: 40,
                 backgroundColor: Colors.white,
                 child: Image.asset(
-                  'assets/icons/general-u.png',
+                  MImages.generalLogo,
                   width: 100,
                   height: 100,
                 ),
@@ -704,11 +704,11 @@ class AdminDashboardPage extends GetView<AdminController> {
             Text('Revenue Details'),
           ],
         ),
-        content: Container(
+        content: SizedBox(
           width: 400,
           child: Obx(() {
             if (controller.isLoading.value) {
-              return Container(
+              return SizedBox(
                 height: 200,
                 child: Center(
                   child: Column(

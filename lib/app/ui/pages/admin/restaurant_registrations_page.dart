@@ -7,7 +7,7 @@ import '../../../utils/constants/colors.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
 
 class RestaurantRegistrationsPage extends GetView<AdminController> {
-  const RestaurantRegistrationsPage({Key? key}) : super(key: key);
+  const RestaurantRegistrationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

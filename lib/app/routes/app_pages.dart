@@ -134,8 +134,7 @@ class AppPages {
       name: Routes.ADMIN_DASHBOARD,
       page: () => const AdminDashboardPage(),
       binding: AdminBinding(),
-      // Comment out middleware temporarily for testing
-      // middlewares: adminMiddleware,
+      middlewares: adminMiddleware,
     ),
     GetPage(
       name: Routes.ADMIN_RESTAURANTS,

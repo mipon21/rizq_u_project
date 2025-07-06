@@ -3,11 +3,11 @@ import 'package:get/get.dart';
 import '../../../../controllers/restaurant_controller.dart';
 import '../../../../utils/constants/colors.dart';
 import 'package:intl/intl.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class RewardsTab extends StatelessWidget {
   final int initialTabIndex;
 
-  const RewardsTab({Key? key, this.initialTabIndex = 0}) : super(key: key);
+  const RewardsTab({super.key, this.initialTabIndex = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class RewardsTab extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -69,8 +69,7 @@ class RewardsTab extends StatelessWidget {
 class RewardClaimsView extends StatelessWidget {
   final RestaurantController controller;
 
-  const RewardClaimsView({Key? key, required this.controller})
-      : super(key: key);
+  const RewardClaimsView({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +315,7 @@ class RewardClaimsView extends StatelessWidget {
             Expanded(
               child: filteredRewards.isEmpty
                   ? SingleChildScrollView(
-                      child: Container(
+                      child: SizedBox(
                         height: 200,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -611,7 +610,7 @@ class RewardClaimsView extends StatelessWidget {
 class RecentScansView extends StatelessWidget {
   final RestaurantController controller;
 
-  const RecentScansView({Key? key, required this.controller}) : super(key: key);
+  const RecentScansView({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

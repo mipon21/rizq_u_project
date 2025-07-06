@@ -294,7 +294,7 @@ class RestaurantController extends GetxController {
       
       if (doc.exists) {
         restaurantProfile.value = RestaurantProfileModel.fromSnapshot(
-          doc as DocumentSnapshot<Map<String, dynamic>>,
+          doc,
         );
         if (kDebugMode) {
           print(
@@ -765,13 +765,6 @@ class RestaurantController extends GetxController {
         print('fetchScanChartData: Period End: $periodEnd');
       }
 
-      if (effectiveStartDate == null) {
-        if (kDebugMode) print('fetchScanChartData: Missing period start date');
-        scanChartData.clear();
-        currentMonthScanCount.value = 0;
-        return;
-      }
-
       if (kDebugMode) print('fetchScanChartData: Querying scans...');
 
       // Query all scans for this restaurant within the period
@@ -942,8 +935,6 @@ class RestaurantController extends GetxController {
       // Get subscription start date - this is when the current plan was assigned
       final subscriptionStartDate = await _getSubscriptionStartDate();
       final effectiveStartDate = subscriptionStartDate ?? periodStart;
-
-      if (effectiveStartDate == null) return;
 
       // Count non-archived scans
       final querySnapshot = await _firestore

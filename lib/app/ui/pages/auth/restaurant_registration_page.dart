@@ -7,7 +7,7 @@ import 'dart:io';
 
 class RestaurantRegistrationPage
     extends GetView<RestaurantRegistrationController> {
-  const RestaurantRegistrationPage({Key? key}) : super(key: key);
+  const RestaurantRegistrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {

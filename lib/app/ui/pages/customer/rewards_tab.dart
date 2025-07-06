@@ -8,9 +8,9 @@ class RewardsTab extends StatefulWidget {
   final CustomerController controller;
 
   const RewardsTab({
-    Key? key,
+    super.key,
     required this.controller,
-  }) : super(key: key);
+  });
 
   @override
   State<RewardsTab> createState() => _RewardsTabState();
@@ -269,7 +269,7 @@ class _RewardsTabState extends State<RewardsTab>
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                      color: MColors.primary.withOpacity(0.5)!),
+                                      color: MColors.primary.withOpacity(0.5)),
                                 ),
                                 child: Text(
                                   rewardItem.id.substring(0, 6).toUpperCase(),

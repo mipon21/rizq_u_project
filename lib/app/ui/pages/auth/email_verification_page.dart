@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rizq/app/utils/constants/image_strings.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../utils/constants/colors.dart';
 
 class EmailVerificationPage extends GetView<AuthController> {
-  const EmailVerificationPage({Key? key}) : super(key: key);
+  const EmailVerificationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

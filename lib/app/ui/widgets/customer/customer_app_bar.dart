@@ -5,7 +5,7 @@ import '../../../utils/constants/support_constants.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../services/contact_service.dart';
 import 'confirmation_dialog.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showHelpMenu;
@@ -15,14 +15,14 @@ class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double? toolbarHeight;
 
   const CustomerAppBar({
-    Key? key,
+    super.key,
     this.showBackButton = false,
     this.showHelpMenu = false,
     this.title = '',
     this.actions,
     this.bottom,
     this.toolbarHeight = 80,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: true,
       title: title.isNotEmpty
           ? Text(title)
-          : Image.asset('assets/icons/general-u.png', height: 70),
+          : Image.asset(MImages.generalLogo, height: 70),
       toolbarHeight: toolbarHeight,
       leading: showBackButton
           ? IconButton(
@@ -81,6 +81,7 @@ class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ],
+            tooltip: 'Help',
             child: Row(
               children: [
                 Icon(Icons.help, color: Theme.of(context).primaryColor, size: 16),
@@ -94,7 +95,6 @@ class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            tooltip: 'Help',
           ),
         ),
       ];

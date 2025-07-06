@@ -61,7 +61,7 @@ import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
         try {
           final doc = await _firestore.collection('programs').doc(restaurantUid).get();
           if (doc.exists) {
-            loyaltyProgram.value = LoyaltyProgramModel.fromSnapshot(doc as DocumentSnapshot<Map<String, dynamic>>);
+            loyaltyProgram.value = LoyaltyProgramModel.fromSnapshot(doc);
              if (kDebugMode) {
                print("Fetched program for $restaurantUid: ${loyaltyProgram.value?.rewardType} requires ${loyaltyProgram.value?.pointsRequired} points.");
              }

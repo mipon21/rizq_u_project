@@ -7,9 +7,9 @@ import '../subscription_page.dart';
 import '../../../../utils/constants/colors.dart';
 import '../dashboard_page.dart';
 import '../../../../controllers/admin_controller.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class DashboardTab extends StatefulWidget {
-  const DashboardTab({Key? key}) : super(key: key);
+  const DashboardTab({super.key});
 
   @override
   State<DashboardTab> createState() => _DashboardTabState();
@@ -48,7 +48,7 @@ class _DashboardTabState extends State<DashboardTab>
     super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -254,8 +254,7 @@ class _DashboardTabState extends State<DashboardTab>
                                           reservedSize: 30,
                                           interval: 1, // Show every day
                                           getTitlesWidget: (value, meta) {
-                                            if (periodStart == null ||
-                                                periodEnd == null) {
+                                            if (periodEnd == null) {
                                               return const SizedBox.shrink();
                                             }
 

@@ -4,14 +4,14 @@ import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
 import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
 import '../../../utils/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class RegisterPage extends GetView<AuthController> {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   // Static method to launch Privacy Policy URL
   static Future<void> launchPrivacyPolicy() async {
     // Demo URL - replace with actual privacy policy URL later
-    final Uri url = Uri.parse('https://example.com/privacy-policy');
+    final Uri url = Uri.parse('https://sites.google.com/view/rizq-app-pdc/accueil');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       Get.snackbar(
         'Error',
@@ -47,7 +47,7 @@ class RegisterPage extends GetView<AuthController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
       ),
       body: Center(
@@ -59,7 +59,7 @@ class RegisterPage extends GetView<AuthController> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // const SizedBox(height: 50),
-                // Image.asset('assets/icons/general-u.png', height: 150),
+                // Image.asset(MImages.generalLogo, height: 150),
                 // const SizedBox(height: 20),
                 Text(
                   'Create Your Account',

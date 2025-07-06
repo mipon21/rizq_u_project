@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
-import 'package:rizq/app/routes/app_pages.dart'; // Adjust import
+import 'package:rizq/app/routes/app_pages.dart';
+import 'package:rizq/app/utils/constants/image_strings.dart'; // Adjust import
 
 class LoginPage extends GetView<AuthController> {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +16,7 @@ class LoginPage extends GetView<AuthController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
       ),
       body: Center(

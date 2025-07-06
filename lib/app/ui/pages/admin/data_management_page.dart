@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../utils/data_migration_service.dart';
-import '../../../models/database_schema.dart';
-import '../../../models/customer_loyalty_model.dart';
 
 class DataManagementPage extends StatefulWidget {
   const DataManagementPage({super.key});

@@ -17,9 +17,9 @@ import 'package:rizq/app/ui/pages/restaurant/tabs/profile_tab.dart';
 import 'package:rizq/app/utils/contact_us_helper.dart';
 import 'package:rizq/app/utils/account_deletion_helper.dart';
 import 'package:rizq/app/utils/constants/support_constants.dart';
-
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+  const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -88,7 +88,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return _buildSuspendedScreen(SupportConstants.supportEmail);
       }
       
-      final List<Widget> _pages = [
+      final List<Widget> pages = [
         DashboardTab(),
         ProgramSettingsTab(),
         QrScannerPage(),
@@ -109,7 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
           tooltip: 'Scan Customer QR',
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        body: _pages[_currentIndex],
+        body: pages[_currentIndex],
         bottomNavigationBar: BottomAppBar(
           color: Colors.transparent,
           shape: const CircularNotchedRectangle(),
@@ -191,7 +191,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildSuspendedScreen(String supportEmail) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/icons/general-u.png', height: 70),
+        title: Image.asset(MImages.generalLogo, height: 70),
         toolbarHeight: 80,
         // backgroundColor: Colors.red[700],
         foregroundColor: Colors.white,

@@ -12,11 +12,11 @@ class HomeTab extends StatefulWidget {
   final Function(dynamic) showClaimConfirmation;
 
   const HomeTab({
-    Key? key,
+    super.key,
     required this.controller,
     required this.refreshData,
     required this.showClaimConfirmation,
-  }) : super(key: key);
+  });
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -335,10 +335,10 @@ class ClaimButton extends StatefulWidget {
   final VoidCallback onPressed;
 
   const ClaimButton({
-    Key? key,
+    super.key,
     required this.program,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<ClaimButton> createState() => _ClaimButtonState();

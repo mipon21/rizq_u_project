@@ -6,7 +6,7 @@ import '../../../models/subscription_plan_model.dart';
 import '../../../utils/constants/colors.dart';
 
 class CustomSubscriptionPlansPage extends GetView<AdminController> {
-  const CustomSubscriptionPlansPage({Key? key}) : super(key: key);
+  const CustomSubscriptionPlansPage({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -7,7 +7,7 @@ import '../../../controllers/customer_registration_controller.dart';
 import '../../../utils/constants/colors.dart';
 
 class CustomerRegistrationPage extends GetView<CustomerRegistrationController> {
-  const CustomerRegistrationPage({Key? key}) : super(key: key);
+  const CustomerRegistrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {

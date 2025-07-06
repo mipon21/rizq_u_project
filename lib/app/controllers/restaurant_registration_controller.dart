@@ -57,10 +57,6 @@ class RestaurantRegistrationController extends GetxController {
     ever(nationalIdBackFile, (_) => _validateForm());
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
 
   void _validateForm() {
     isFormValid.value = restaurantName.value.trim().isNotEmpty &&

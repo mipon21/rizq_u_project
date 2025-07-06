@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 import '../../../controllers/admin_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../utils/constants/colors.dart';
-
+import '../../../utils/constants/app_config.dart';
+import 'package:rizq/app/utils/constants/image_strings.dart';
 class AdminLoginPage extends GetView<AdminController> {
-  const AdminLoginPage({Key? key}) : super(key: key);
+  const AdminLoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,7 @@ class AdminLoginPage extends GetView<AdminController> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Image.asset(
-                        'assets/icons/logo.png',
+                        MImages.generalLogo,
                         height: isDesktop ? 150 : 120,
                       ),
                       const SizedBox(height: 40),
@@ -141,15 +142,17 @@ class AdminLoginPage extends GetView<AdminController> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      TextButton(
-                        onPressed: () {
-                          Get.offAllNamed(Routes.LOGIN);
-                        },
-                        child: const Text(
-                          'Back to Main Login',
-                          style: TextStyle(color: MColors.primary),
+                      // Only show "Back to Main Login" in normal mode
+                      if (!AppConfig.isAdminMode)
+                        TextButton(
+                          onPressed: () {
+                            Get.offAllNamed(Routes.LOGIN);
+                          },
+                          child: const Text(
+                            'Back to Main Login',
+                            style: TextStyle(color: MColors.primary),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

@@ -44,7 +44,7 @@ class CreateAdminHelper {
       if (kDebugMode) {
         print('Error creating admin document: $e');
       }
-      throw e;
+      rethrow;
     }
   }
 

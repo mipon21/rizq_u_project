@@ -10,12 +10,12 @@ class AdminNotificationBadge extends StatelessWidget {
   final EdgeInsets padding;
 
   const AdminNotificationBadge({
-    Key? key,
+    super.key,
     required this.child,
     required this.onTap,
     this.badgeColor = Colors.red,
     this.padding = const EdgeInsets.all(0),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
