@@ -44,7 +44,6 @@ jobs:
         run: |
           echo "Setting up Flutter for iOS..."
           flutter config --enable-ios
-          flutter doctor --android-licenses || true
           
           # Generate Flutter iOS files
           cd ios
