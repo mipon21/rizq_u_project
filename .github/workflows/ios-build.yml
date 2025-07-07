@@ -40,15 +40,23 @@ jobs:
         flutter pub get --verbose
         flutter pub deps
     
-    - name: Clean iOS build
+    - name: Clean and Setup
       run: |
+        flutter clean
         cd ios
         rm -rf Pods Podfile.lock
         rm -rf ~/Library/Developer/Xcode/DerivedData
         cd ..
-        flutter clean
     
-    - name: Setup iOS
+    - name: Ensure Flutter Framework
+      run: |
+        # Ensure Flutter framework is properly cached
+        flutter precache --ios
+        # Verify Flutter framework location
+        echo "Flutter root: $FLUTTER_ROOT"
+        ls -la $FLUTTER_ROOT/bin/cache/artifacts/engine/ios*
+    
+    - name: Setup iOS with Flutter
       run: |
         cd ios
         # Ensure Podfile has correct platform version
@@ -59,13 +67,25 @@ jobs:
         pod install --repo-update --verbose
         cd ..
     
+    - name: Debug Pod Installation
+      run: |
+        cd ios
+        echo "=== Podfile contents ==="
+        cat Podfile
+        echo "=== Pods directory ==="
+        ls -la Pods/
+        echo "=== Flutter pods ==="
+        find Pods/ -name "*Flutter*" -type d
+        echo "=== Generated.xcconfig ==="
+        cat ../Flutter/Generated.xcconfig
+        cd ..
+    
     - name: Build iOS App Bundle
       run: |
         flutter clean
         flutter pub get
-        # Ensure Flutter framework is properly linked
-        flutter precache --ios
-        flutter build ios --release --no-codesign --dart-define=CI=true --verbose
+        # Build with explicit Flutter framework path and additional flags
+        flutter build ios --release --no-codesign --dart-define=CI=true --verbose --build-number=${{ github.run_number }}
       env:
         CI: true
         FLUTTER_BUILD_NUMBER: ${{ github.run_number }}
