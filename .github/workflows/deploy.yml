@@ -32,7 +32,9 @@ jobs:
       run: flutter config --enable-web
     
     - name: Get dependencies
-      run: flutter pub get
+      run: |
+        flutter pub get --verbose
+        flutter pub deps
     
     - name: Build web (Normal Mode)
       run: flutter build web --release --no-tree-shake-icons --base-href "/rizq_u_project/" --dart-define=CI=true

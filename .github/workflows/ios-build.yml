@@ -30,7 +30,9 @@ jobs:
         channel: 'stable'
     
     - name: Get dependencies
-      run: flutter pub get
+      run: |
+        flutter pub get --verbose
+        flutter pub deps
     
     - name: Clean iOS build
       run: |
