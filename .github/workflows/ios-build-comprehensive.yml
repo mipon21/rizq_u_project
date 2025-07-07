@@ -1,0 +1,81 @@
+name: iOS-ipa-build-comprehensive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: 🎉 iOS Build (Comprehensive)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          architecture: x64
+          flutter-version: '3.32.5'
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Show Flutter doctor
+        run: flutter doctor -v
+
+      - name: Clean project
+        run: |
+          flutter clean
+          rm -rf ios/Pods
+          rm -rf ios/.symlinks
+          rm -f ios/Podfile.lock
+          rm -rf build
+
+      - name: Get Flutter dependencies
+        run: |
+          flutter pub get
+          flutter pub deps
+
+      - name: Setup iOS dependencies
+        run: |
+          cd ios
+          pod repo update
+          pod install --repo-update --verbose
+          cd ..
+
+      - name: Verify iOS setup
+        run: |
+          cd ios
+          pod deintegrate
+          pod install --repo-update
+          cd ..
+
+      - name: Generate Flutter files
+        run: |
+          flutter packages pub run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      - name: Build iOS app
+        run: |
+          flutter build ios --release --no-codesign --verbose
+
+      - name: Create Payload directory
+        run: mkdir -p build/ios/iphoneos/Payload
+
+      - name: Move app to Payload
+        run: mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+
+      - name: Create IPA
+        run: |
+          cd build/ios/iphoneos
+          zip -qq -r -9 FlutterIpaExport.ipa Payload
+
+      - name: Upload IPA to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/ios/iphoneos/FlutterIpaExport.ipa
+          tag: v1.0
+          overwrite: true
+          body: "iOS IPA build - $(date)" 
