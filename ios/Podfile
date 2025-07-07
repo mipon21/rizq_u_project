@@ -48,6 +48,11 @@ post_install do |installer|
       # Additional framework search paths
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(inherited)'
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_CONFIGURATION_BUILD_DIR)'
+      # Add header search paths for Flutter
+      config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'
+      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers'
+      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers/Flutter'
     end
   end
 end

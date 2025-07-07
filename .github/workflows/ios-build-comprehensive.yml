@@ -46,10 +46,20 @@ jobs:
           flutter config --enable-ios
           flutter doctor --android-licenses || true
           
-          # Ensure Flutter framework is properly set up
+          # Generate Flutter iOS files
           cd ios
           flutter build ios --no-codesign --debug --simulator || true
           cd ..
+
+      - name: Generate Flutter iOS files
+        run: |
+          echo "Generating Flutter iOS files..."
+          flutter build ios --no-codesign --debug --simulator
+          
+          # Verify Flutter files were generated
+          echo "Checking generated Flutter files..."
+          ls -la ios/Flutter/ || echo "Flutter directory not found"
+          find ios/Flutter/ -name "*.h" -o -name "*.m" -o -name "*.swift" | head -10
 
       - name: Setup iOS dependencies
         run: |
@@ -86,6 +96,11 @@ jobs:
             echo "      # Ensure Flutter framework is properly linked" >> Podfile
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
+            echo "      # Add header search paths for Flutter" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers'" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers/Flutter'" >> Podfile
             echo "    end" >> Podfile
             echo "  end" >> Podfile
             echo "end" >> Podfile
@@ -125,6 +140,8 @@ jobs:
           grep -r "IPHONEOS_DEPLOYMENT_TARGET" Runner.xcodeproj/ || echo "No deployment target found in Runner.xcodeproj"
           echo "Checking Flutter framework:"
           ls -la Flutter/ || echo "Flutter directory not found"
+          echo "Checking Flutter headers:"
+          find Flutter/ -name "*.h" | head -5 || echo "No Flutter headers found"
           cd ..
 
       - name: Build iOS IPA
