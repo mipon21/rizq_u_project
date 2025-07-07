@@ -53,7 +53,7 @@ jobs:
 
       - name: Generate Flutter files
         run: |
-          flutter gen-l10n
+          flutter precache --ios
 
       - name: Build iOS app
         run: |
