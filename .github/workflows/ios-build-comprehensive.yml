@@ -33,31 +33,17 @@ jobs:
           rm -rf build
 
       - name: Get Flutter dependencies
-        run: |
-          flutter pub get
-          flutter pub deps
+        run: flutter pub get
 
       - name: Setup iOS dependencies
         run: |
           cd ios
           pod repo update
-          pod install --repo-update --verbose
-          cd ..
-
-      - name: Verify iOS setup
-        run: |
-          cd ios
-          pod deintegrate
           pod install --repo-update
           cd ..
 
-      - name: Generate Flutter files
-        run: |
-          flutter precache --ios
-
       - name: Build iOS app
-        run: |
-          flutter build ios --release --no-codesign --verbose
+        run: flutter build ios --release --no-codesign
 
       - name: Create Payload directory
         run: mkdir -p build/ios/iphoneos/Payload
