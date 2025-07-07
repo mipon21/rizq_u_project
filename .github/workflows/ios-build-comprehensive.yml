@@ -31,9 +31,14 @@ jobs:
           rm -rf ios/.symlinks
           rm -f ios/Podfile.lock
           rm -rf build
+          rm -rf ios/Flutter/Flutter.framework
+          rm -rf ios/Flutter/Flutter.podspec
 
       - name: Get Flutter dependencies
         run: flutter pub get
+
+      - name: Flutter precache iOS
+        run: flutter precache --ios
 
       - name: Setup iOS dependencies
         run: |
@@ -60,27 +65,35 @@ jobs:
           fi
           pod repo update
           pod install --repo-update
+          # Ensure Flutter framework is available after pod install
+          if [ ! -d "Flutter" ]; then
+            echo "Creating Flutter directory"
+            mkdir -p Flutter
+          fi
           cd ..
 
-      - name: Build iOS app
-        run: flutter build ios --release --no-codesign
-
-      - name: Create Payload directory
-        run: mkdir -p build/ios/iphoneos/Payload
-
-      - name: Move app to Payload
-        run: mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-
-      - name: Create IPA
+      - name: Prepare iOS build environment
         run: |
-          cd build/ios/iphoneos
-          zip -qq -r -9 FlutterIpaExport.ipa Payload
+          # Ensure Flutter can find iOS toolchain
+          flutter doctor -v
+          # Generate Flutter.framework if needed
+          cd ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -showBuildSettings | grep FLUTTER_ROOT || echo "Flutter root not found"
+          cd ..
+
+      - name: Build iOS IPA
+        run: |
+          # Set up Flutter environment
+          export FLUTTER_ROOT="${FLUTTER_HOME:-$HOME/flutter}"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
+          
+          # Build iOS IPA directly (this handles framework linking better)
+          flutter build ipa --release --no-codesign --verbose
 
       - name: Upload IPA to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
+          file: build/ios/ipa/rizq.ipa
           tag: v1.0
           overwrite: true
           body: "iOS IPA build - $(date)" 
