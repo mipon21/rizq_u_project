@@ -1,11 +1,11 @@
-name: iOS-ipa-build-comprehensive
+name: iOS-ipa-build-simple
 
 on:
   workflow_dispatch:
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build (Comprehensive)
+    name: 🎉 iOS Build (Simple)
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -21,52 +21,30 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
-      - name: Show Flutter doctor
-        run: flutter doctor -v
-
       - name: Clean project
         run: |
           flutter clean
           rm -rf ios/Pods
           rm -rf ios/.symlinks
           rm -f ios/Podfile.lock
-          rm -rf build
 
-      - name: Get Flutter dependencies
-        run: |
-          flutter pub get
-          flutter pub deps
+      - name: Get dependencies
+        run: flutter pub get
 
-      - name: Setup iOS dependencies
+      - name: Setup iOS
         run: |
           cd ios
           pod repo update
-          pod install --repo-update --verbose
-          cd ..
-
-      - name: Verify iOS setup
-        run: |
-          cd ios
-          pod deintegrate
           pod install --repo-update
           cd ..
 
-      - name: Generate Flutter files
-        run: |
-          flutter gen-l10n
-
       - name: Build iOS app
-        run: |
-          flutter build ios --release --no-codesign --verbose
-
-      - name: Create Payload directory
-        run: mkdir -p build/ios/iphoneos/Payload
-
-      - name: Move app to Payload
-        run: mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+        run: flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |
+          mkdir -p build/ios/iphoneos/Payload
+          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 

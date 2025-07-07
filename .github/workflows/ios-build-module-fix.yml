@@ -1,11 +1,11 @@
-name: iOS-ipa-build-comprehensive
+name: iOS-ipa-build-module-fix
 
 on:
   workflow_dispatch:
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build (Comprehensive)
+    name: 🎉 iOS Build (Module Fix)
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -18,55 +18,50 @@ jobs:
           architecture: x64
           flutter-version: '3.32.5'
 
-      - name: Show Flutter version
-        run: flutter --version
+      - name: Show environment
+        run: |
+          flutter --version
+          xcodebuild -version
+          pod --version
 
-      - name: Show Flutter doctor
-        run: flutter doctor -v
-
-      - name: Clean project
+      - name: Deep clean
         run: |
           flutter clean
           rm -rf ios/Pods
           rm -rf ios/.symlinks
           rm -f ios/Podfile.lock
           rm -rf build
+          rm -rf .dart_tool
+          rm -rf .flutter-plugins
+          rm -rf .flutter-plugins-dependencies
 
-      - name: Get Flutter dependencies
+      - name: Get dependencies
         run: |
           flutter pub get
           flutter pub deps
 
-      - name: Setup iOS dependencies
+      - name: Setup iOS with retry
         run: |
           cd ios
           pod repo update
           pod install --repo-update --verbose
+          # Verify installation
+          pod install --verbose
           cd ..
 
-      - name: Verify iOS setup
+      - name: Verify Flutter iOS setup
         run: |
-          cd ios
-          pod deintegrate
-          pod install --repo-update
-          cd ..
+          flutter doctor -v
+          flutter build ios --debug --no-codesign
 
-      - name: Generate Flutter files
-        run: |
-          flutter gen-l10n
-
-      - name: Build iOS app
+      - name: Build release
         run: |
           flutter build ios --release --no-codesign --verbose
 
-      - name: Create Payload directory
-        run: mkdir -p build/ios/iphoneos/Payload
-
-      - name: Move app to Payload
-        run: mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-
       - name: Create IPA
         run: |
+          mkdir -p build/ios/iphoneos/Payload
+          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 
