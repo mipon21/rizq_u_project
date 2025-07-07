@@ -40,6 +40,17 @@ jobs:
       - name: Flutter precache iOS
         run: flutter precache --ios
 
+      - name: Setup Flutter for iOS
+        run: |
+          echo "Setting up Flutter for iOS..."
+          flutter config --enable-ios
+          flutter doctor --android-licenses || true
+          
+          # Ensure Flutter framework is properly set up
+          cd ios
+          flutter build ios --no-codesign --debug --simulator || true
+          cd ..
+
       - name: Setup iOS dependencies
         run: |
           cd ios
@@ -72,6 +83,9 @@ jobs:
             echo "      # Fix for Xcode 15 warnings" >> Podfile
             echo "      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']" >> Podfile
             echo "      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_CAMERA=1'" >> Podfile
+            echo "      # Ensure Flutter framework is properly linked" >> Podfile
+            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
+            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
             echo "    end" >> Podfile
             echo "  end" >> Podfile
             echo "end" >> Podfile
@@ -109,11 +123,17 @@ jobs:
           cat Podfile
           echo "Checking Runner.xcodeproj deployment target:"
           grep -r "IPHONEOS_DEPLOYMENT_TARGET" Runner.xcodeproj/ || echo "No deployment target found in Runner.xcodeproj"
+          echo "Checking Flutter framework:"
+          ls -la Flutter/ || echo "Flutter directory not found"
           cd ..
 
       - name: Build iOS IPA
         run: |
           echo "Starting iOS build..."
+          
+          # Ensure Flutter is properly configured
+          flutter config --enable-ios
+          
           # Build IPA directly with Flutter - this should handle framework linking properly
           flutter build ipa --release --no-codesign --verbose
           
