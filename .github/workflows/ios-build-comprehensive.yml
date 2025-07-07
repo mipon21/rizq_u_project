@@ -55,7 +55,7 @@ jobs:
           find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
           find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
           find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          # Update Podfile to ensure minimum deployment target
+          # Update Podfile to ensure minimum deployment target and add post_install hook
           if ! grep -q "platform :ios" Podfile; then
             echo "platform :ios, '15.5'" > Podfile.tmp
             cat Podfile >> Podfile.tmp
@@ -63,31 +63,44 @@ jobs:
           else
             sed -i '' "s/platform :ios, '[^']*'/platform :ios, '15.5'/g" Podfile
           fi
+          
+          # Add post_install hook to fix all target deployment versions
+          if ! grep -q "post_install" Podfile; then
+            echo "" >> Podfile
+            echo "post_install do |installer|" >> Podfile
+            echo "  installer.pods_project.targets.each do |target|" >> Podfile
+            echo "    target.build_configurations.each do |config|" >> Podfile
+            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'" >> Podfile
+            echo "    end" >> Podfile
+            echo "  end" >> Podfile
+            echo "end" >> Podfile
+            echo "Added post_install hook to Podfile"
+          fi
           pod repo update
           pod install --repo-update
-          # Ensure Flutter framework is available after pod install
-          if [ ! -d "Flutter" ]; then
-            echo "Creating Flutter directory"
-            mkdir -p Flutter
+          # Fix deployment targets for all pods after installation
+          echo "Fixing pod deployment targets..."
+          xcodeproj_path="Pods/Pods.xcodeproj/project.pbxproj"
+          if [ -f "$xcodeproj_path" ]; then
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 8.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 9.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
+            echo "Pod deployment targets updated to 15.5"
           fi
-          cd ..
-
-      - name: Prepare iOS build environment
-        run: |
-          # Ensure Flutter can find iOS toolchain
-          flutter doctor -v
-          # Generate Flutter.framework if needed
-          cd ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -showBuildSettings | grep FLUTTER_ROOT || echo "Flutter root not found"
           cd ..
 
       - name: Build iOS IPA
         run: |
-          # Set up Flutter environment
-          export FLUTTER_ROOT="${FLUTTER_HOME:-$HOME/flutter}"
-          export PATH="$FLUTTER_ROOT/bin:$PATH"
-          
-          # Build iOS IPA directly (this handles framework linking better)
+          # Build IPA directly with Flutter - this should handle framework linking properly
           flutter build ipa --release --no-codesign --verbose
+          
+          # List generated files for debugging
+          echo "Generated IPA files:"
+          find build/ios/ipa -name "*.ipa" -type f
 
       - name: Upload IPA to release
         uses: svenstaro/upload-release-action@v2
