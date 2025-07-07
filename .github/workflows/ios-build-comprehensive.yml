@@ -38,11 +38,21 @@ jobs:
       - name: Setup iOS dependencies
         run: |
           cd ios
+          # Update minimum deployment target in iOS project files before pod install
+          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
+          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
+          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
+          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
+          # Update Podfile to ensure minimum deployment target
+          if ! grep -q "platform :ios" Podfile; then
+            echo "platform :ios, '12.0'" > Podfile.tmp
+            cat Podfile >> Podfile.tmp
+            mv Podfile.tmp Podfile
+          else
+            sed -i '' "s/platform :ios, '[^']*'/platform :ios, '12.0'/g" Podfile
+          fi
           pod repo update
           pod install --repo-update
-          # Fix deployment target issues in pods
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' {} \;
           cd ..
 
       - name: Build iOS app
