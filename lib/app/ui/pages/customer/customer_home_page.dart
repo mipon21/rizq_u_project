@@ -83,6 +83,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> with RouteAware {
     controller.fetchAllRestaurantPrograms();
     controller.fetchClaimHistory();
     controller.fetchScanHistory();
+    controller.fetchCustomerProfile();
   }
 
   Widget _getPage(int index) {

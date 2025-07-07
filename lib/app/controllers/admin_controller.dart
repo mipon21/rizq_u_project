@@ -2949,4 +2949,186 @@ class AdminController extends GetxController {
       return null;
     }
   }
+
+  // Customer Restriction Methods
+  Future<void> restrictCustomer(String customerId, {String? reason}) async {
+    try {
+      isLoading.value = true;
+
+      await _firestore.collection('users').doc(customerId).update({
+        'isRestricted': true,
+        'restrictionReason': reason ?? 'Admin restriction',
+        'restrictedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      Get.snackbar(
+        'Success',
+        'Customer has been restricted',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error restricting customer: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to restrict customer: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> unrestrictCustomer(String customerId) async {
+    try {
+      isLoading.value = true;
+
+      await _firestore.collection('users').doc(customerId).update({
+        'isRestricted': false,
+        'restrictionReason': null,
+        'restrictedAt': null,
+        'unrestrictedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      Get.snackbar(
+        'Success',
+        'Customer restriction has been removed',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error unrestricting customer: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to remove customer restriction: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Point Earning Limit Methods
+  Future<void> setCustomerPointLimit(String customerId, int dailyLimit) async {
+    try {
+      isLoading.value = true;
+
+      await _firestore.collection('users').doc(customerId).update({
+        'dailyPointLimit': dailyLimit,
+        'pointLimitSetAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      Get.snackbar(
+        'Success',
+        'Daily point limit set to $dailyLimit points',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error setting point limit: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to set point limit: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> removeCustomerPointLimit(String customerId) async {
+    try {
+      isLoading.value = true;
+
+      await _firestore.collection('users').doc(customerId).update({
+        'dailyPointLimit': null,
+        'pointLimitSetAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      Get.snackbar(
+        'Success',
+        'Daily point limit has been removed',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error removing point limit: $e');
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to remove point limit: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Get customer's daily point usage
+  Future<Map<String, dynamic>> getCustomerDailyPointUsage(String customerId) async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final scansSnapshot = await _firestore
+          .collection('scans')
+          .where('clientId', isEqualTo: customerId)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      int totalPointsToday = 0;
+      Map<String, int> pointsByRestaurant = {};
+
+      for (var doc in scansSnapshot.docs) {
+        final data = doc.data();
+        final points = data['pointsAwarded'] as int? ?? 0;
+        final restaurantId = data['restaurantId'] as String? ?? '';
+        
+        totalPointsToday += points;
+        if (restaurantId.isNotEmpty) {
+          pointsByRestaurant[restaurantId] = (pointsByRestaurant[restaurantId] ?? 0) + points;
+        }
+      }
+
+      return {
+        'totalPointsToday': totalPointsToday,
+        'pointsByRestaurant': pointsByRestaurant,
+        'scanCountToday': scansSnapshot.docs.length,
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting daily point usage: $e');
+      }
+      return {
+        'totalPointsToday': 0,
+        'pointsByRestaurant': {},
+        'scanCountToday': 0,
+      };
+    }
+  }
 }

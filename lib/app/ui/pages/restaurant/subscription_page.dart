@@ -375,11 +375,24 @@ class SubscriptionPage extends GetView<RestaurantController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Available Plans',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Available Plans',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            IconButton(
+                onPressed: () {
+                  adminController.loadSubscriptionPlans();
+                },
+                icon: const Icon(
+                  Icons.refresh,
+                  color: MColors.primary,
+                ))
+          ],
         ),
         const SizedBox(height: 16),
 
@@ -418,17 +431,6 @@ class SubscriptionPage extends GetView<RestaurantController> {
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Add a manual refresh button
-                    ElevatedButton.icon(
-                      onPressed: () => adminController.loadSubscriptionPlans(),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reload Plans'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MColors.primary,
-                        foregroundColor: Colors.white,
                       ),
                     ),
                   ],

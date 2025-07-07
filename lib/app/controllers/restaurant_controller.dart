@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust if needed
@@ -402,7 +403,7 @@ class RestaurantController extends GetxController {
         return;
       }
 
-      // 2. Validate Customer UID
+      // 2. Validate Customer UID and check restrictions
       final customerDoc =
           await _firestore.collection('users').doc(customerUid).get();
       if (!customerDoc.exists || customerDoc.data()?['role'] != 'customer') {
@@ -412,6 +413,53 @@ class RestaurantController extends GetxController {
           'This QR code is not linked to a valid customer.',
         );
         return;
+      }
+
+      // Check if customer is restricted
+      final isRestricted = customerDoc.data()?['isRestricted'] ?? false;
+      if (isRestricted) {
+        final restrictionReason = customerDoc.data()?['restrictionReason'] ?? 'Admin restriction';
+        Get.closeAllSnackbars();
+        Get.snackbar(
+          'Customer Restricted',
+          'This customer is restricted: $restrictionReason',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Check daily point limit
+      final dailyPointLimit = customerDoc.data()?['dailyPointLimit'] as int?;
+      if (dailyPointLimit != null) {
+        final now = DateTime.now();
+        final startOfDay = DateTime(now.year, now.month, now.day);
+        final endOfDay = startOfDay.add(const Duration(days: 1));
+
+        final todayScans = await _firestore
+            .collection('scans')
+            .where('clientId', isEqualTo: customerUid)
+            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+            .get();
+
+        int pointsToday = 0;
+        for (var doc in todayScans.docs) {
+          pointsToday += (doc.data()['pointsAwarded'] as int?) ?? 0;
+        }
+
+        if (pointsToday >= dailyPointLimit) {
+          Get.closeAllSnackbars();
+          Get.snackbar(
+            'Daily Limit Reached',
+            'This customer has reached their daily point limit of $dailyPointLimit points.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+          return;
+        }
       }
 
       // NEW: Check if the customer already has 10 or more points but hasn't claimed their reward

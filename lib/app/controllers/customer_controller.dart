@@ -120,6 +120,10 @@ class CustomerProfileModel {
   final String email;
   final DateTime createdAt;
   final DateTime? dateOfBirth;
+  final bool isRestricted;
+  final String? restrictionReason;
+  final int? dailyPointLimit;
+  final DateTime? restrictedAt;
 
   CustomerProfileModel({
     required this.uid,
@@ -128,6 +132,10 @@ class CustomerProfileModel {
     required this.email,
     required this.createdAt,
     this.dateOfBirth,
+    this.isRestricted = false,
+    this.restrictionReason,
+    this.dailyPointLimit,
+    this.restrictedAt,
   });
 
   factory CustomerProfileModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -138,6 +146,10 @@ class CustomerProfileModel {
       email: data['email'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       dateOfBirth: (data['dateOfBirth'] as Timestamp?)?.toDate(),
+      isRestricted: data['isRestricted'] ?? false,
+      restrictionReason: data['restrictionReason'],
+      dailyPointLimit: data['dailyPointLimit'] as int?,
+      restrictedAt: (data['restrictedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -147,6 +159,10 @@ class CustomerProfileModel {
       'photoUrl': photoUrl,
       'email': email,
       'dateOfBirth': dateOfBirth,
+      'isRestricted': isRestricted,
+      'restrictionReason': restrictionReason,
+      'dailyPointLimit': dailyPointLimit,
+      'restrictedAt': restrictedAt,
       // We don't update createdAt or uid as they should remain constant
     };
   }
@@ -156,6 +172,10 @@ class CustomerProfileModel {
     String? name,
     String? photoUrl,
     DateTime? dateOfBirth,
+    bool? isRestricted,
+    String? restrictionReason,
+    int? dailyPointLimit,
+    DateTime? restrictedAt,
   }) {
     return CustomerProfileModel(
       uid: uid,
@@ -164,6 +184,10 @@ class CustomerProfileModel {
       email: email, // Email can't be changed
       createdAt: createdAt,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      isRestricted: isRestricted ?? this.isRestricted,
+      restrictionReason: restrictionReason ?? this.restrictionReason,
+      dailyPointLimit: dailyPointLimit ?? this.dailyPointLimit,
+      restrictedAt: restrictedAt ?? this.restrictedAt,
     );
   }
 }
@@ -1507,6 +1531,91 @@ class CustomerController extends GetxController {
           icon: const Icon(Icons.error_outline, color: Colors.red),
         );
       }
+    }
+  }
+
+  // Check daily point limit and show snackbar if reached
+  Future<void> checkDailyPointLimit() async {
+    try {
+      final profile = customerProfile.value;
+      if (profile?.dailyPointLimit == null) return;
+
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final todayScans = await _firestore
+          .collection('scans')
+          .where('clientId', isEqualTo: userUid)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      int pointsToday = 0;
+      for (var doc in todayScans.docs) {
+        pointsToday += (doc.data()['pointsAwarded'] as int?) ?? 0;
+      }
+
+      if (pointsToday >= profile!.dailyPointLimit!) {
+        Get.snackbar(
+          'Daily Limit Reached',
+          'Please try again later.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking daily point limit: $e');
+      }
+    }
+  }
+
+  // Get customer's daily point usage
+  Future<Map<String, dynamic>> getDailyPointUsage() async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final scansSnapshot = await _firestore
+          .collection('scans')
+          .where('clientId', isEqualTo: userUid)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      int totalPointsToday = 0;
+      Map<String, int> pointsByRestaurant = {};
+
+      for (var doc in scansSnapshot.docs) {
+        final data = doc.data();
+        final points = data['pointsAwarded'] as int? ?? 0;
+        final restaurantId = data['restaurantId'] as String? ?? '';
+        
+        totalPointsToday += points;
+        if (restaurantId.isNotEmpty) {
+          pointsByRestaurant[restaurantId] = (pointsByRestaurant[restaurantId] ?? 0) + points;
+        }
+      }
+
+      return {
+        'totalPointsToday': totalPointsToday,
+        'pointsByRestaurant': pointsByRestaurant,
+        'scanCountToday': scansSnapshot.docs.length,
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting daily point usage: $e');
+      }
+      return {
+        'totalPointsToday': 0,
+        'pointsByRestaurant': {},
+        'scanCountToday': 0,
+      };
     }
   }
 }

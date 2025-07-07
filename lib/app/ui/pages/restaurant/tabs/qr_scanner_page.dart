@@ -111,7 +111,7 @@ class _QrScannerPageState extends State<QrScannerPage>
             ),
             // Torch Button - Positioned at top right
             Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
+              top: MediaQuery.of(context).padding.top-10 ,
               right: 16,
               child: Container(
                 decoration: BoxDecoration(

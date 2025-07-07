@@ -175,7 +175,47 @@ class CustomerManagementPage extends GetView<AdminController> {
 
                                     return DataRow(
                                       cells: [
-                                        DataCell(Text(name)),
+                                        DataCell(
+                                          Row(
+                                            children: [
+                                              Text(name),
+                                              if (data['isRestricted'] == true)
+                                                Container(
+                                                  margin: const EdgeInsets.only(left: 8),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red,
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text(
+                                                    'RESTRICTED',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (data['dailyPointLimit'] != null)
+                                                Container(
+                                                  margin: const EdgeInsets.only(left: 4),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.orange,
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    'LIMIT: ${data['dailyPointLimit']}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
                                         DataCell(Text(email)),
                                         DataCell(Text(_formatDate(joinDate))),
                                         DataCell(
@@ -224,16 +264,57 @@ class CustomerManagementPage extends GetView<AdminController> {
 
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: MColors.primary.withOpacity(0.2),
+                            backgroundColor: data['isRestricted'] == true 
+                                ? Colors.red.withOpacity(0.2)
+                                : MColors.primary.withOpacity(0.2),
                             child: Text(
                               name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                color: MColors.primary,
+                              style: TextStyle(
+                                color: data['isRestricted'] == true 
+                                    ? Colors.red
+                                    : MColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          title: Text(name),
+                          title: Row(
+                            children: [
+                              Expanded(child: Text(name)),
+                              if (data['isRestricted'] == true)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'RESTRICTED',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              if (data['dailyPointLimit'] != null)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'LIMIT: ${data['dailyPointLimit']}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                           subtitle: Text(email),
                           trailing: _buildTotalPointsChip(doc.id),
                           onTap: () =>
@@ -359,6 +440,19 @@ class CustomerManagementPage extends GetView<AdminController> {
                                               (data['createdAt'] as Timestamp)
                                                   .toDate())
                                           : 'Unknown'),
+                                  _buildDetailRow(
+                                      'Status',
+                                      data['isRestricted'] == true
+                                          ? 'Restricted'
+                                          : 'Active'),
+                                  if (data['isRestricted'] == true)
+                                    _buildDetailRow(
+                                        'Restriction Reason',
+                                        data['restrictionReason'] ?? 'No reason provided'),
+                                  if (data['dailyPointLimit'] != null)
+                                    _buildDetailRow(
+                                        'Daily Point Limit',
+                                        '${data['dailyPointLimit']} points'),
                                 ],
                               ),
                             ),
@@ -426,6 +520,19 @@ class CustomerManagementPage extends GetView<AdminController> {
                                         (data['createdAt'] as Timestamp)
                                             .toDate())
                                     : 'Unknown'),
+                            _buildDetailRow(
+                                'Status',
+                                data['isRestricted'] == true
+                                    ? 'Restricted'
+                                    : 'Active'),
+                            if (data['isRestricted'] == true)
+                              _buildDetailRow(
+                                  'Restriction Reason',
+                                  data['restrictionReason'] ?? 'No reason provided'),
+                            if (data['dailyPointLimit'] != null)
+                              _buildDetailRow(
+                                  'Daily Point Limit',
+                                  '${data['dailyPointLimit']} points'),
                             const Divider(),
                             const Text(
                               'Points By Restaurant',
@@ -442,21 +549,83 @@ class CustomerManagementPage extends GetView<AdminController> {
               ),
               const Divider(),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text('Close'),
+                  // Left side - Restriction actions
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Customer Management',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (data['isRestricted'] == true)
+                            ElevatedButton.icon(
+                              onPressed: () => _showUnrestrictDialog(context, customerId),
+                              icon: const Icon(Icons.check_circle, size: 16),
+                              label: const Text('Unrestrict'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            )
+                          else
+                            ElevatedButton.icon(
+                              onPressed: () => _showRestrictDialog(context, customerId),
+                              icon: const Icon(Icons.block, size: 16),
+                              label: const Text('Restrict'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: () => _showPointLimitDialog(context, customerId, data),
+                            icon: const Icon(Icons.speed, size: 16),
+                            label: const Text('Point Limit'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: MColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () =>
-                        _showDeleteConfirmation(context, customerId),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Delete Customer'),
+                  // Right side - Close and Delete
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('Close'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () =>
+                                _showDeleteConfirmation(context, customerId),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Delete Customer'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1155,6 +1324,187 @@ class CustomerManagementPage extends GetView<AdminController> {
           ),
         );
       },
+    );
+  }
+
+  void _showRestrictDialog(BuildContext context, String customerId) {
+    final TextEditingController reasonController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Restrict Customer'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Are you sure you want to restrict this customer?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason for restriction (optional)',
+                border: OutlineInputBorder(),
+                hintText: 'e.g., Violation of terms, suspicious activity',
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await controller.restrictCustomer(
+                customerId,
+                reason: reasonController.text.trim().isEmpty 
+                    ? null 
+                    : reasonController.text.trim(),
+              );
+              Get.back();
+              Get.back(); // Close customer details dialog
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Restrict'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUnrestrictDialog(BuildContext context, String customerId) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Remove Restriction'),
+        content: const Text('Are you sure you want to remove the restriction from this customer?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await controller.unrestrictCustomer(customerId);
+              Get.back();
+              Get.back(); // Close customer details dialog
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Unrestrict'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPointLimitDialog(BuildContext context, String customerId, Map<String, dynamic> data) {
+    final TextEditingController limitController = TextEditingController(
+      text: data['dailyPointLimit']?.toString() ?? '',
+    );
+    final currentLimit = data['dailyPointLimit'] as int?;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Set Daily Point Limit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (currentLimit != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[600]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Current limit: $currentLimit points per day',
+                        style: TextStyle(color: Colors.blue[800]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (currentLimit != null) const SizedBox(height: 16),
+            TextField(
+              controller: limitController,
+              decoration: const InputDecoration(
+                labelText: 'Daily point limit',
+                border: OutlineInputBorder(),
+                hintText: 'e.g., 5',
+                suffixText: 'points',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Set to 0 or leave empty to remove limit',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          if (currentLimit != null)
+            ElevatedButton(
+              onPressed: () async {
+                await controller.removeCustomerPointLimit(customerId);
+                Get.back();
+                Get.back(); // Close customer details dialog
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Remove Limit'),
+            ),
+          ElevatedButton(
+            onPressed: () async {
+              final limitText = limitController.text.trim();
+              if (limitText.isEmpty) {
+                await controller.removeCustomerPointLimit(customerId);
+              } else {
+                final limit = int.tryParse(limitText);
+                if (limit != null && limit >= 0) {
+                  await controller.setCustomerPointLimit(customerId, limit);
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Please enter a valid number (0 or greater)',
+                    backgroundColor: Colors.red[100],
+                    colorText: Colors.red[800],
+                  );
+                  return;
+                }
+              }
+              Get.back();
+              Get.back(); // Close customer details dialog
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(currentLimit != null ? 'Update Limit' : 'Set Limit'),
+          ),
+        ],
+      ),
     );
   }
 } 
