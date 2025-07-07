@@ -1,13 +1,15 @@
-name: Deploy Flutter Web to GitHub Pages
+name: Deploy Flutter Admin Web to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/deploy-admin.yml'
 
 jobs:
-  build:
+  build-admin:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,16 +27,17 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
     
-    - name: Build web (Normal Mode)
-      run: flutter build web --release --no-tree-shake-icons --base-href "/rizq_u_project/" --dart-define=CI=true
+    - name: Build web (Admin Mode)
+      run: flutter build web --release --no-tree-shake-icons --base-href "/rizq_u_project/" --dart-define=ADMIN_PANEL_ONLY=true --dart-define=CI=true
       env:
         # Disable Firebase App Check for CI/CD to avoid reCAPTCHA issues
         FLUTTER_WEB_USE_SKIA: true
         CI: true
     
-    - name: Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages (Admin)
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build/web 
+        publish_dir: ./build/web
+        destination_dir: admin 

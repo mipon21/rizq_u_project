@@ -21,32 +21,36 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Firebase App Check with appropriate provider based on platform
-  if (kIsWeb) {
-    try {
-      await FirebaseAppCheck.instance.activate(
-        webProvider:
-            ReCaptchaV3Provider('6LdB3ngrAAAAAIEJAOa_y-sErvf9NFOPxy06wsw8'),
-        // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
-        // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
-      );
-      debugPrint('Firebase App Check activated successfully for web');
-    } catch (e) {
-      // Handle AppCheck initialization errors gracefully
-      // This will catch both "already initialized" and throttling errors
-      debugPrint('Firebase App Check initialization error: $e');
-      // Continue app initialization even if AppCheck fails
-    }
-  } else {
-    try {
-      await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.playIntegrity,
-        appleProvider: AppleProvider.appAttest,
-        // Use AppleProvider.appAttest for iOS
-      );
-      debugPrint('Firebase App Check activated successfully for mobile');
-    } catch (e) {
-      debugPrint('Firebase App Check initialization error: $e');
-      // Continue app initialization even if AppCheck fails
+  // Skip App Check in CI/CD environments to avoid reCAPTCHA issues
+  final bool isCI = const bool.fromEnvironment('CI', defaultValue: false);
+  
+  if (!isCI) {
+    if (kIsWeb) {
+      try {
+        await FirebaseAppCheck.instance.activate(
+          webProvider:
+              ReCaptchaV3Provider('6LdB3ngrAAAAAIEJAOa_y-sErvf9NFOPxy06wsw8'),
+          // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
+          // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
+        );
+        debugPrint('Firebase App Check activated successfully for web');
+      } catch (e) {
+        // Handle AppCheck initialization errors gracefully
+        // This will catch both "already initialized" and throttling errors
+        debugPrint('Firebase App Check initialization error: $e');
+        // Continue app initialization even if AppCheck fails
+      }
+          try {
+        await FirebaseAppCheck.instance.activate(
+          androidProvider: AndroidProvider.playIntegrity,
+          appleProvider: AppleProvider.appAttest,
+          // Use AppleProvider.appAttest for iOS
+        );
+        debugPrint('Firebase App Check activated successfully for mobile');
+      } catch (e) {
+        debugPrint('Firebase App Check initialization error: $e');
+        // Continue app initialization even if AppCheck fails
+      }
     }
   }
 
