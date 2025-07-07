@@ -140,3 +140,18 @@ To make it **production-ready**, you need:
 **For App Store distribution**, you'll need to add Apple Developer credentials and enhance the signing process.
 
 **Recommendation**: Start with testing your current setup using the comprehensive workflow, then gradually add distribution signing capabilities as needed.
+
+## ⚠️ RESOLVED DEPLOYMENT TARGET ISSUE
+
+**Issue**: The `mobile_scanner` plugin (version 6.0.10) requires iOS 15.0+ but the project was configured for iOS 14.0.
+
+**Fixed**:
+- ✅ Updated `ios/Podfile` from `platform :ios, '14.0'` to `platform :ios, '15.0'`
+- ✅ Updated `ios/Runner.xcodeproj/project.pbxproj` deployment targets from 14.0 to 15.0
+- ✅ Updated GitHub workflow to handle iOS 15.0 deployment target
+- ✅ Cleaned up old pods (removed Pods, .symlinks, Podfile.lock)
+
+**Next Steps**:
+1. Run `flutter clean && flutter pub get` in the project root
+2. Try running the iOS build workflow again
+3. The CocoaPods dependency conflict should now be resolved
