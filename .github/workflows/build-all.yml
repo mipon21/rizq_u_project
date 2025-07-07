@@ -1,0 +1,77 @@
+name: Build Flutter App (Web & iOS)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    name: Build Web App
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+    
+    - name: Enable web
+      run: flutter config --enable-web
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build web (Normal Mode)
+      run: flutter build web --release --no-tree-shake-icons --base-href "/rizq_u_project/" --dart-define=CI=true
+      env:
+        FLUTTER_WEB_USE_SKIA: true
+        CI: true
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build/web
+
+  build-ios:
+    runs-on: macos-latest
+    name: Build iOS App
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Setup iOS
+      run: |
+        cd ios
+        # Update Podfile platform to 15.5
+        sed -i '' 's/platform :ios, '\''13.0'\''/platform :ios, '\''15.5'\''/' Podfile
+        # Install pods
+        pod install --repo-update
+        cd ..
+    
+    - name: Build iOS
+      run: flutter build ios --release --no-codesign --dart-define=CI=true
+      env:
+        CI: true
+    
+    - name: Upload iOS build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-build
+        path: build/ios/iphoneos/Runner.app
+        retention-days: 7 
