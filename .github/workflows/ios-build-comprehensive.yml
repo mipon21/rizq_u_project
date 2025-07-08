@@ -33,6 +33,8 @@ jobs:
           rm -rf build
           rm -rf ios/Flutter/Flutter.framework
           rm -rf ios/Flutter/Flutter.podspec
+          rm -rf ios/Flutter/Generated.xcconfig
+          rm -rf ios/Flutter/flutter_export_environment.sh
 
       - name: Get Flutter dependencies
         run: flutter pub get
@@ -40,29 +42,39 @@ jobs:
       - name: Flutter precache iOS
         run: flutter precache --ios
 
-      - name: Setup Flutter for iOS
+      - name: Generate Flutter iOS files
         run: |
           echo "Setting up Flutter for iOS..."
           flutter config --enable-ios
           
-          # Generate Flutter iOS files first - this creates the Flutter.framework
+          # First generate the Flutter framework and project files
+          cd ios
+          flutter build ios-framework --no-profile --no-release --cocoapods
+          cd ..
+          
+          # Now generate debug build to ensure all files are created
           echo "Generating Flutter iOS files..."
           flutter build ios --no-codesign --debug --simulator
           
           # Verify Flutter files were generated
           echo "Checking generated Flutter files..."
           ls -la ios/Flutter/ || echo "Flutter directory not found"
-          find ios/Flutter/ -name "*.h" -o -name "*.m" -o -name "*.swift" | head -10
           
-          # Ensure Flutter.framework exists
+          # Ensure critical files exist
           if [ ! -d "ios/Flutter/Flutter.framework" ]; then
-            echo "❌ Flutter.framework not found - attempting to regenerate..."
-            flutter clean
-            flutter pub get
-            flutter build ios --no-codesign --debug --simulator
+            echo "❌ Flutter.framework not found!"
+            exit 1
+          fi
+          if [ ! -f "ios/Flutter/Flutter.podspec" ]; then
+            echo "❌ Flutter.podspec not found!"
+            exit 1
+          fi
+          if [ ! -f "ios/Flutter/Generated.xcconfig" ]; then
+            echo "❌ Generated.xcconfig not found!"
+            exit 1
           fi
           
-          echo "✅ Flutter iOS setup complete"
+          echo "✅ Flutter iOS files generated successfully"
 
       - name: Setup iOS dependencies
         run: |
@@ -71,6 +83,17 @@ jobs:
           # First, update the Podfile platform version to 15.5
           echo "Updating Podfile platform version to 15.5..."
           sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.5'/g" Podfile
+          
+          # Add Flutter framework search paths to Podfile
+          echo "Adding Flutter framework paths to Podfile..."
+          if ! grep -q "flutter_application_path = " Podfile; then
+            sed -i '' '1i\
+            flutter_application_path = '"'"'..'"'"'\
+            ' Podfile
+            sed -i '' '2i\
+            load File.join(flutter_application_path, ".ios/Flutter/podhelper.rb")\
+            ' Podfile
+          fi
           
           # Update minimum deployment target in iOS project files
           echo "Updating iOS deployment targets to 15.5..."
@@ -98,12 +121,12 @@ jobs:
             echo "      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_CAMERA=1'" >> Podfile
             echo "      # Ensure Flutter framework is properly linked" >> Podfile
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
-            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
+            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_ROOT}/../Flutter'" >> Podfile
+            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_CONFIGURATION_BUILD_DIR}/Flutter'" >> Podfile
             echo "      # Add header search paths for Flutter" >> Podfile
             echo "      config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers'" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers/Flutter'" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '${PODS_ROOT}/../Flutter'" >> Podfile
+            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '${PODS_ROOT}/../.symlinks/flutter/ios/Flutter.framework/Headers'" >> Podfile
             echo "    end" >> Podfile
             echo "  end" >> Podfile
             echo "end" >> Podfile
@@ -150,6 +173,8 @@ jobs:
           if [ -d "Flutter/Flutter.framework" ]; then
             echo "✅ Flutter.framework found"
             ls -la Flutter/Flutter.framework/
+            echo "Checking Flutter.framework headers:"
+            ls -la Flutter/Flutter.framework/Headers/
           else
             echo "❌ Flutter.framework not found - this will cause build failures"
             exit 1
@@ -168,6 +193,9 @@ jobs:
             echo "❌ Flutter.framework missing - regenerating..."
             flutter clean
             flutter pub get
+            cd ios
+            flutter build ios-framework --no-profile --no-release --cocoapods
+            cd ..
             flutter build ios --no-codesign --debug --simulator
           fi
           
