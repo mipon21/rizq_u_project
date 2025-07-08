@@ -1,6 +1,5 @@
 // ignore_for_file: unused_local_variable
 
-import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -18,68 +17,39 @@ import 'package:rizq/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Firebase App Check with appropriate provider based on platform
-  // Skip App Check in CI/CD environments to avoid reCAPTCHA issues
-  final bool isCI = const bool.fromEnvironment('CI', defaultValue: false);
-  
-  if (!isCI) {
-    if (kIsWeb) {
-      try {
-        await FirebaseAppCheck.instance.activate(
-          webProvider:
-              ReCaptchaV3Provider('6LdB3ngrAAAAAIEJAOa_y-sErvf9NFOPxy06wsw8'),
-          // You need to replace 'recaptcha-v3-site-key' with your actual reCAPTCHA site key
-          // or use ReCaptchaEnterpriseProvider if you're using Enterprise reCAPTCHA
-        );
-        debugPrint('Firebase App Check activated successfully for web');
-      } catch (e) {
-        // Handle AppCheck initialization errors gracefully
-        // This will catch both "already initialized" and throttling errors
-        debugPrint('Firebase App Check initialization error: $e');
-        // Continue app initialization even if AppCheck fails
-      }
-          try {
-        await FirebaseAppCheck.instance.activate(
-          androidProvider: AndroidProvider.playIntegrity,
-          appleProvider: AppleProvider.appAttest,
-          // Use AppleProvider.appAttest for iOS
-        );
-        debugPrint('Firebase App Check activated successfully for mobile');
-      } catch (e) {
-        debugPrint('Firebase App Check initialization error: $e');
-        // Continue app initialization even if AppCheck fails
-      }
-    }
+  // Optimize for release builds
+  if (kReleaseMode) {
+    // Disable debug prints in release
+    debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Firebase App Check
+  await FirebaseAppCheck.instance.activate(
+    // For Android, use Play Integrity provider
+    androidProvider: AndroidProvider.playIntegrity,
+    // For iOS, use App Attest provider
+    appleProvider: AppleProvider.appAttest,
+  );
+
+  // Initialize GetStorage
   await GetStorage.init();
 
-  // Create the RouteObserver before app initialization
-  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
-  // Register the RouteObserver globally
-  Get.put<RouteObserver<PageRoute>>(routeObserver, permanent: true);
-
-  // Initialize language controller
-  final languageController = Get.put(LanguageController());
+  // Create a route observer for navigation tracking
+  final routeObserver = RouteObserver<PageRoute>();
 
   // Print app configuration for debugging
   AppConfig.printConfig();
 
-  // Only use DevicePreview in debug mode when specifically needed
-  // to reduce startup overhead
-  if (kDebugMode && false) {
-    // Set to true only when needed for device preview
-    runApp(
-      DevicePreview(
-        enabled: true,
-        builder: (context) => RizqApp(routeObserver: routeObserver),
-      ),
-    );
-  } else {
-    runApp(RizqApp(routeObserver: routeObserver));
-  }
+  // Initialize LanguageController before running the app
+  Get.put<LanguageController>(LanguageController(), permanent: true);
+
+  runApp(RizqApp(routeObserver: routeObserver));
 }
 
 class RizqApp extends StatelessWidget {
@@ -101,6 +71,10 @@ class RizqApp extends StatelessWidget {
       initialRoute: AppConfig.initialRoute,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
+
+      // Performance optimizations
+      showPerformanceOverlay: false,
+      showSemanticsDebugger: false,
 
       // Localization setup
       translations: AppTranslations(),

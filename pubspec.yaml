@@ -36,8 +36,6 @@ dependencies:
   # QR Code & Camera
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.10
-  # qr_code_scanner: ^1.0.1
-  # camera: ^0.10.6
 
   # Icons
   iconsax: ^0.0.8
@@ -57,23 +55,20 @@ dependencies:
   firebase_core: ^3.13.0
   cloud_firestore: ^5.6.7
   firebase_storage: ^12.4.5
-
   firebase_auth: ^5.5.3
+  firebase_app_check: ^0.3.2+5
 
   qr_code_scanner_plus: ^2.0.10+1
-  # Consider adding firebase_messaging if notifications are needed later
-  #--------------- ./ PACKAGES END ------------------#
 
-  # New packages
+  # Charts and Data
   syncfusion_flutter_charts: ^29.1.39
   pdf: ^3.10.8
   csv: ^5.1.1
+  fl_chart: ^0.64.0
+
+  # UI Components
   responsive_builder: ^0.7.0
   file_picker: ^10.1.2
-  firebase_app_check: ^0.3.2+5
-  device_preview: ^1.2.0
-  rename_app: ^1.6.3
-  fl_chart: ^0.64.0
   badges: ^3.1.2
   share_plus: ^7.2.1
   path_provider: ^2.1.1

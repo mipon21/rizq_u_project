@@ -45,13 +45,7 @@ jobs:
           echo "Setting up Flutter for iOS..."
           flutter config --enable-ios
           
-          # Generate Flutter iOS files
-          cd ios
-          flutter build ios --no-codesign --debug --simulator || true
-          cd ..
-
-      - name: Generate Flutter iOS files
-        run: |
+          # Generate Flutter iOS files first - this creates the Flutter.framework
           echo "Generating Flutter iOS files..."
           flutter build ios --no-codesign --debug --simulator
           
@@ -59,6 +53,16 @@ jobs:
           echo "Checking generated Flutter files..."
           ls -la ios/Flutter/ || echo "Flutter directory not found"
           find ios/Flutter/ -name "*.h" -o -name "*.m" -o -name "*.swift" | head -10
+          
+          # Ensure Flutter.framework exists
+          if [ ! -d "ios/Flutter/Flutter.framework" ]; then
+            echo "❌ Flutter.framework not found - attempting to regenerate..."
+            flutter clean
+            flutter pub get
+            flutter build ios --no-codesign --debug --simulator
+          fi
+          
+          echo "✅ Flutter iOS setup complete"
 
       - name: Setup iOS dependencies
         run: |
@@ -141,6 +145,15 @@ jobs:
           ls -la Flutter/ || echo "Flutter directory not found"
           echo "Checking Flutter headers:"
           find Flutter/ -name "*.h" | head -5 || echo "No Flutter headers found"
+          
+          # Verify Flutter.framework exists and is properly linked
+          if [ -d "Flutter/Flutter.framework" ]; then
+            echo "✅ Flutter.framework found"
+            ls -la Flutter/Flutter.framework/
+          else
+            echo "❌ Flutter.framework not found - this will cause build failures"
+            exit 1
+          fi
           cd ..
 
       - name: Build iOS IPA
@@ -149,6 +162,14 @@ jobs:
           
           # Ensure Flutter is properly configured
           flutter config --enable-ios
+          
+          # Verify Flutter.framework exists before building IPA
+          if [ ! -d "ios/Flutter/Flutter.framework" ]; then
+            echo "❌ Flutter.framework missing - regenerating..."
+            flutter clean
+            flutter pub get
+            flutter build ios --no-codesign --debug --simulator
+          fi
           
           # Build IPA directly with Flutter - this should handle framework linking properly
           flutter build ipa --release --no-codesign --verbose

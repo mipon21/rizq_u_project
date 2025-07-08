@@ -8,6 +8,12 @@ class LanguageController extends GetxController {
   final _localStorage = GetStorage();
   final String _storageKey = 'language';
 
+  @override
+  void onInit() {
+    super.onInit();
+    initLanguage();
+  }
+
   // Available locales
   final List<Locale> supportedLocales = [
     const Locale('en', 'US'), // English
