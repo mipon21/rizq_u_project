@@ -49,7 +49,16 @@ jobs:
           
           # First generate the Flutter framework and project files
           cd ios
+          
+          # Create .symlinks directory if it doesn't exist
+          mkdir -p .symlinks/flutter/ios
+          
+          # Generate Flutter framework
           flutter build ios-framework --no-profile --no-release --cocoapods
+          
+          # Copy Flutter.framework to .symlinks directory
+          cp -R Flutter/Flutter.framework .symlinks/flutter/ios/
+          
           cd ..
           
           # Now generate debug build to ensure all files are created
@@ -74,6 +83,10 @@ jobs:
             exit 1
           fi
           
+          # Verify symlinks
+          echo "Verifying Flutter framework symlinks..."
+          ls -la ios/.symlinks/flutter/ios/ || echo "Symlinks directory not found"
+          
           echo "✅ Flutter iOS files generated successfully"
 
       - name: Setup iOS dependencies
@@ -93,6 +106,16 @@ jobs:
             sed -i '' '2i\
             load File.join(flutter_application_path, ".ios/Flutter/podhelper.rb")\
             ' Podfile
+          fi
+          
+          # Ensure proper framework linking in Podfile
+          if ! grep -q "use_frameworks!" Podfile; then
+            echo "use_frameworks!" >> Podfile
+          fi
+          
+          # Add explicit Flutter framework path
+          if ! grep -q "pod 'Flutter'" Podfile; then
+            echo "pod 'Flutter', :path => 'Flutter'" >> Podfile
           fi
           
           # Update minimum deployment target in iOS project files
@@ -123,10 +146,13 @@ jobs:
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_ROOT}/../Flutter'" >> Podfile
             echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_CONFIGURATION_BUILD_DIR}/Flutter'" >> Podfile
+            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '${PODS_ROOT}/../.symlinks/flutter/ios'" >> Podfile
             echo "      # Add header search paths for Flutter" >> Podfile
             echo "      config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
             echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '${PODS_ROOT}/../Flutter'" >> Podfile
             echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '${PODS_ROOT}/../.symlinks/flutter/ios/Flutter.framework/Headers'" >> Podfile
+            echo "      # Fix for arm64 architecture" >> Podfile
+            echo "      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'" >> Podfile
             echo "    end" >> Podfile
             echo "  end" >> Podfile
             echo "end" >> Podfile
