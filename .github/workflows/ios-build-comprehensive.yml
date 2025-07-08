@@ -1,11 +1,11 @@
-name: iOS-ipa-build-comprehensive
+name: iOS-ipa-build-version-fixed
 
 on:
   workflow_dispatch:
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build (Comprehensive)
+    name: 🎉 iOS Build (Version Fixed)
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -21,158 +21,41 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
+      - name: Show Dart version
+        run: dart --version
+
+      - name: Clean and get dependencies
+        run: |
+          flutter clean
+          flutter pub get
+          flutter pub deps
       - name: Show Flutter doctor
         run: flutter doctor -v
 
-      - name: Clean project
-        run: |
-          flutter clean
-          rm -rf ios/Pods
-          rm -rf ios/.symlinks
-          rm -f ios/Podfile.lock
-          rm -rf build
-          rm -rf ios/Flutter/Flutter.framework
-          rm -rf ios/Flutter/Flutter.podspec
-
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
-      - name: Flutter precache iOS
-        run: flutter precache --ios
-
-      - name: Setup Flutter for iOS
-        run: |
-          echo "Setting up Flutter for iOS..."
-          flutter config --enable-ios
-          
-          # Generate Flutter iOS files
-          cd ios
-          flutter build ios --no-codesign --debug --simulator || true
-          cd ..
-
-      - name: Generate Flutter iOS files
-        run: |
-          echo "Generating Flutter iOS files..."
-          flutter build ios --no-codesign --debug --simulator
-          
-          # Verify Flutter files were generated
-          echo "Checking generated Flutter files..."
-          ls -la ios/Flutter/ || echo "Flutter directory not found"
-          find ios/Flutter/ -name "*.h" -o -name "*.m" -o -name "*.swift" | head -10
-
-      - name: Setup iOS dependencies
+      - name: Setup iOS
         run: |
           cd ios
-          
-          # First, update the Podfile platform version to 15.5
-          echo "Updating Podfile platform version to 15.5..."
-          sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.5'/g" Podfile
-          
-          # Update minimum deployment target in iOS project files
-          echo "Updating iOS deployment targets to 15.5..."
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          find . -name "*.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' {} \;
-          
-          # Add post_install hook to fix all target deployment versions
-          echo "Adding post_install hook to Podfile..."
-          if ! grep -q "post_install" Podfile; then
-            echo "" >> Podfile
-            echo "post_install do |installer|" >> Podfile
-            echo "  installer.pods_project.targets.each do |target|" >> Podfile
-            echo "    target.build_configurations.each do |config|" >> Podfile
-            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'" >> Podfile
-            echo "      # Fix for Xcode 15 warnings" >> Podfile
-            echo "      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']" >> Podfile
-            echo "      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_CAMERA=1'" >> Podfile
-            echo "      # Ensure Flutter framework is properly linked" >> Podfile
-            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
-            echo "      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
-            echo "      # Add header search paths for Flutter" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter'" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers'" >> Podfile
-            echo "      config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/../Flutter/Flutter.framework/Headers/Flutter'" >> Podfile
-            echo "    end" >> Podfile
-            echo "  end" >> Podfile
-            echo "end" >> Podfile
-            echo "Added post_install hook to Podfile"
-          fi
-          
-          # Show the updated Podfile
-          echo "Updated Podfile contents:"
-          cat Podfile
-          
-          echo "Installing pods..."
           pod repo update
           pod install --repo-update
-          
-          # Fix deployment targets for all pods after installation
-          echo "Fixing pod deployment targets..."
-          xcodeproj_path="Pods/Pods.xcodeproj/project.pbxproj"
-          if [ -f "$xcodeproj_path" ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 8.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 9.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' "$xcodeproj_path"
-            echo "Pod deployment targets updated to 15.5"
-          fi
           cd ..
+      - name: Build iOS app
+        run: flutter build ios --release --no-codesign
 
-      - name: Verify iOS setup
+      - name: Create Payload directory
+        run: mkdir -p build/ios/iphoneos/Payload
+
+      - name: Move app to Payload
+        run: mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+
+      - name: Create IPA
         run: |
-          echo "Verifying iOS setup..."
-          cd ios
-          echo "Podfile contents:"
-          cat Podfile
-          echo "Checking Runner.xcodeproj deployment target:"
-          grep -r "IPHONEOS_DEPLOYMENT_TARGET" Runner.xcodeproj/ || echo "No deployment target found in Runner.xcodeproj"
-          echo "Checking Flutter framework:"
-          ls -la Flutter/ || echo "Flutter directory not found"
-          echo "Checking Flutter headers:"
-          find Flutter/ -name "*.h" | head -5 || echo "No Flutter headers found"
-          cd ..
-
-      - name: Build iOS IPA
-        run: |
-          echo "Starting iOS build..."
-          
-          # Ensure Flutter is properly configured
-          flutter config --enable-ios
-          
-          # Build IPA directly with Flutter - this should handle framework linking properly
-          flutter build ipa --release --no-codesign --verbose
-          
-          # List generated files for debugging
-          echo "Generated IPA files:"
-          find build/ios/ipa -name "*.ipa" -type f
-          
-          # Check if IPA was created successfully
-          if [ -f "build/ios/ipa/rizq.ipa" ]; then
-            echo "✅ IPA build successful!"
-            ls -la build/ios/ipa/
-          else
-            echo "❌ IPA build failed - file not found"
-            echo "Build directory contents:"
-            find build/ -type f -name "*.ipa" || echo "No IPA files found"
-            exit 1
-          fi
-
+          cd build/ios/iphoneos
+          zip -qq -r -9 FlutterIpaExport.ipa Payload
       - name: Upload IPA to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/ipa/rizq.ipa
+          file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0
           overwrite: true
           body: "iOS IPA build - $(date)" 
