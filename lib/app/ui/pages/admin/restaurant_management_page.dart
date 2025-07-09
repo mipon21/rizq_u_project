@@ -169,6 +169,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                   DataColumn(label: Text('Subscription')),
                                   DataColumn(label: Text('Expiry Date')),
                                   DataColumn(label: Text('Status')),
+                                  DataColumn(label: Text('Suspended')),
                                   DataColumn(label: Text('Approval')),
                                   DataColumn(label: Text('Actions')),
                                 ],
@@ -195,22 +196,21 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                           subscriptionPlan))),
                                       DataCell(Text(_formatExpiryDate(subscriptionEndDate, subscriptionPlan))),
                                       DataCell(
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Chip(
-                                              label: Text(
-                                                subscriptionStatus,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              backgroundColor: _getStatusColor(
-                                                  subscriptionStatus),
+                                        Chip(
+                                          label: Text(
+                                            subscriptionStatus,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
                                             ),
-                                            if (isSuspended)
-                                              const Chip(
+                                          ),
+                                          backgroundColor: _getStatusColor(
+                                              subscriptionStatus),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        isSuspended
+                                            ? const Chip(
                                                 label: Text(
                                                   'SUSPENDED',
                                                   style: TextStyle(
@@ -220,9 +220,18 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                                   ),
                                                 ),
                                                 backgroundColor: Colors.red,
+                                              )
+                                            : const Chip(
+                                                label: Text(
+                                                  'NOT SUSPENDED',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                backgroundColor: Colors.grey,
                                               ),
-                                          ],
-                                        ),
                                       ),
                                       DataCell(
                                         Chip(
@@ -321,65 +330,74 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
                               return ListTile(
                                 title: Text(name),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                        'Plan: ${_getPlanDisplayName(subscriptionPlan)}'),
-                                    Text(
-                                        'Expires: ${_formatExpiryDate(subscriptionEndDate, subscriptionPlan)}'),
-                                    const SizedBox(height: 4),
-                                    Wrap(
-                                      spacing: 4,
-                                      runSpacing: 4,
-                                      children: [
-                                        Chip(
-                                          label: Text(
-                                            subscriptionStatus,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                          backgroundColor: _getStatusColor(
-                                              subscriptionStatus),
-                                          padding: EdgeInsets.zero,
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        Chip(
-                                          label: Text(
-                                            approvalStatus,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                          backgroundColor:
-                                              _getApprovalStatusColor(
-                                                  approvalStatus),
-                                          padding: EdgeInsets.zero,
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        if (isSuspended)
-                                          const Chip(
-                                            label: Text(
-                                              'SUSPENDED',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
+                                subtitle: Container(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 60,
+                                    maxHeight: 100,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                          'Plan: ${_getPlanDisplayName(subscriptionPlan)}'),
+                                      Text(
+                                          'Expires: ${_formatExpiryDate(subscriptionEndDate, subscriptionPlan)}'),
+                                      const SizedBox(height: 4),
+                                      Flexible(
+                                        child: Wrap(
+                                          spacing: 4,
+                                          runSpacing: 4,
+                                          children: [
+                                            Chip(
+                                              label: Text(
+                                                subscriptionStatus,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                ),
                                               ),
+                                              backgroundColor: _getStatusColor(
+                                                  subscriptionStatus),
+                                              padding: EdgeInsets.zero,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
                                             ),
-                                            backgroundColor: Colors.red,
-                                            padding: EdgeInsets.zero,
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize.shrinkWrap,
-                                          ),
-                                      ],
-                                    ),
-                                  ],
+                                            Chip(
+                                              label: Text(
+                                                approvalStatus,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                              backgroundColor:
+                                                  _getApprovalStatusColor(
+                                                      approvalStatus),
+                                              padding: EdgeInsets.zero,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                            if (isSuspended)
+                                              const Chip(
+                                                label: Text(
+                                                  'SUSPENDED',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                                padding: EdgeInsets.zero,
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize.shrinkWrap,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

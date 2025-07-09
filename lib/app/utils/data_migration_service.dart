@@ -75,7 +75,7 @@ class DataMigrationService {
           'bankDetails': data['bankDetails'],
           'ibanNumber': data['ibanNumber'],
           'subscriptionPlanId': 'free_trial', // Default to free trial
-          'subscriptionStatus': 'trial',
+          'subscriptionStatus': 'active', // Set to 'active' for any valid subscription
           'subscriptionStart': data['approvedAt'],
           'subscriptionEnd': data['approvedAt'] != null
               ? Timestamp.fromDate((data['approvedAt'] as Timestamp)

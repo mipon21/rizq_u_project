@@ -181,6 +181,8 @@ class SubscriptionMigrationHelper {
     }
   }
 
+
+
   /// Full migration process
   static Future<void> performFullMigration() async {
     print('Starting subscription system migration...');

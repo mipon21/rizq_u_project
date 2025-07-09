@@ -134,6 +134,7 @@ class RestaurantRegistrationPage
       title: const Text('Basic Information'),
       content: Column(
         children: [
+          SizedBox(height: 16),
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Restaurant Name *',
@@ -165,6 +166,7 @@ class RestaurantRegistrationPage
       content: Column(
         children: [
           // Phone Number with Country Code
+          SizedBox(height: 16),
           Row(
             children: [
               // Country Code Picker

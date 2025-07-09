@@ -1386,7 +1386,7 @@ class AdminController extends GetxController {
         'bankDetails': registrationData['bankDetails'] ?? '',
         'ibanNumber': registrationData['ibanNumber'] ?? '',
         'subscriptionPlan': initialPlan.id,
-        'subscriptionStatus': initialPlan.planType,
+        'subscriptionStatus': 'active', // Always set to 'active' for any valid subscription
         'currentScanCount': 0,
         'trialStartDate': Timestamp.fromDate(now),
         'subscriptionEnd': Timestamp.fromDate(planEndDate),
@@ -3240,4 +3240,6 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to set initial plan: $e', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
+
+
 }
