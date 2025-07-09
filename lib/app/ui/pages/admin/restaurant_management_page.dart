@@ -9,6 +9,7 @@ import '../../../ui/theme/widget_themes/shimmer_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/subscription_plan_model.dart';
 import 'package:intl/intl.dart';
+import 'package:country_picker/country_picker.dart';
 
 class RestaurantManagementPage extends GetView<AdminController> {
   const RestaurantManagementPage({super.key});
@@ -574,18 +575,39 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
   void _showEditDialog(
       BuildContext context, String restaurantId, Map<String, dynamic> data) {
-    // Initialize controllers with current data
     final restaurantNameController = TextEditingController(text: data['restaurantName'] ?? data['name'] ?? '');
     final ownerNameController = TextEditingController(text: data['ownerName'] ?? '');
     final emailController = TextEditingController(text: data['email'] ?? '');
-    final supportEmailController = TextEditingController(text: data['supportEmail'] ?? '');
-    final bankDetailsController = TextEditingController(text: data['bankDetails'] ?? '');
-    final ibanController = TextEditingController(text: data['ibanNumber'] ?? '');
-    
-    // Non-editable display data
+    final phoneNumberFull = data['phoneNumber'] ?? '';
+    String initialCountryCode = '+212';
+    String initialPhone = '';
+    if (phoneNumberFull.startsWith('+')) {
+      // Use country_picker's country list to find the longest matching code
+      final countries = countryList;
+      String? matchedCode;
+      for (final country in countries) {
+        final code = '+${country.phoneCode}';
+        if (phoneNumberFull.startsWith(code)) {
+          if (matchedCode == null || code.length > matchedCode.length) {
+            matchedCode = code;
+          }
+        }
+      }
+      if (matchedCode != null) {
+        initialCountryCode = matchedCode;
+        initialPhone = phoneNumberFull.substring(matchedCode.length);
+      } else {
+        // fallback: treat first 4 as code
+        initialCountryCode = phoneNumberFull.substring(0, 4);
+        initialPhone = phoneNumberFull.substring(4);
+      }
+    } else {
+      initialPhone = phoneNumberFull;
+    }
+    final countryCode = ValueNotifier<String>(initialCountryCode);
+    final phoneController = TextEditingController(text: initialPhone);
+    final postalAddressController = TextEditingController(text: data['postalAddress'] ?? '');
     final logoUrl = data['logoUrl'] ?? '';
-    final phoneNumber = data['phoneNumber'] ?? '';
-    final postalAddress = data['postalAddress'] ?? '';
     final createdAt = data['createdAt'];
     final approvalStatus = data['approvalStatus'] ?? 'unknown';
 
@@ -602,7 +624,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Restaurant Logo (Display Only)
                   if (logoUrl.isNotEmpty) ...[
                     const Text(
                       'Restaurant Logo',
@@ -662,40 +683,79 @@ class RestaurantManagementPage extends GetView<AdminController> {
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: supportEmailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Support Email',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.support_agent),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
+                  Row(
+                    children: [
+                      ValueListenableBuilder<String>(
+                        valueListenable: countryCode,
+                        builder: (context, value, _) {
+                          return Container(
+                            width: 100,
+                            child: TextFormField(
+                              readOnly: true,
+                              decoration: InputDecoration(
+                                labelText: 'Code',
+                                border: OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: Icon(Icons.arrow_drop_down),
+                                  onPressed: () {
+                                    showCountryPicker(
+                                      context: context,
+                                      showPhoneCode: true,
+                                      onSelect: (Country country) {
+                                        countryCode.value = '+${country.phoneCode}';
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                              controller: TextEditingController(text: value),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: phoneController,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone Number *',
+                            hintText: '6XX XXX XXX',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Bank Information Section
-                  const Text(
-                    'Bank Information',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: bankDetailsController,
-                    decoration: const InputDecoration(
-                      labelText: 'Bank Details',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.account_balance),
-                    ),
-                    maxLines: 2,
+                  ValueListenableBuilder<String>(
+                    valueListenable: countryCode,
+                    builder: (context, value, _) {
+                      return phoneController.text.isNotEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Full number: $value${phoneController.text}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            )
+                          : SizedBox.shrink();
+                    },
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: ibanController,
+                    controller: postalAddressController,
                     decoration: const InputDecoration(
-                      labelText: 'IBAN Number',
+                      labelText: 'Postal Address *',
+                      hintText: 'Enter your complete postal address',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.credit_card),
+                      prefixIcon: Icon(Icons.location_on),
                     ),
+                    maxLines: 3,
                   ),
                   const SizedBox(height: 16),
 
@@ -725,31 +785,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                   ),
 
                   // Contact Information (Display Only)
-                  if (phoneNumber.isNotEmpty || postalAddress.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Contact Information (View Only)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                                                  if (phoneNumber.isNotEmpty)
-                          _buildInfoRow('Phone Number', _formatPhoneNumber(phoneNumber)),
-                          if (postalAddress.isNotEmpty)
-                            _buildInfoRow('Postal Address', postalAddress),
-                        ],
-                      ),
-                    ),
-                  ],
+                  // Removed support email and bank information sections
                 ],
               ),
             ),
@@ -761,10 +797,11 @@ class RestaurantManagementPage extends GetView<AdminController> {
             ),
             ElevatedButton(
               onPressed: () async {
-                // Validate required fields
                 if (restaurantNameController.text.trim().isEmpty ||
                     ownerNameController.text.trim().isEmpty ||
-                    emailController.text.trim().isEmpty) {
+                    emailController.text.trim().isEmpty ||
+                    phoneController.text.trim().isEmpty ||
+                    postalAddressController.text.trim().isEmpty) {
                   Get.snackbar(
                     'Validation Error',
                     'Please fill in all required fields (marked with *)',
@@ -776,18 +813,16 @@ class RestaurantManagementPage extends GetView<AdminController> {
                 }
 
                 try {
-                  // Update restaurant document with comprehensive data
                   await FirebaseFirestore.instance
                       .collection('restaurants')
                       .doc(restaurantId)
                       .update({
                     'restaurantName': restaurantNameController.text.trim(),
-                    'name': restaurantNameController.text.trim(), // Keep both for compatibility
+                    'name': restaurantNameController.text.trim(),
                     'ownerName': ownerNameController.text.trim(),
                     'email': emailController.text.trim(),
-                    'supportEmail': supportEmailController.text.trim(),
-                    'bankDetails': bankDetailsController.text.trim(),
-                    'ibanNumber': ibanController.text.trim(),
+                    'phoneNumber': countryCode.value + phoneController.text.trim(),
+                    'postalAddress': postalAddressController.text.trim(),
                     'updatedAt': FieldValue.serverTimestamp(),
                   });
 
@@ -855,19 +890,15 @@ class RestaurantManagementPage extends GetView<AdminController> {
 
   void _showRestaurantDetails(
       BuildContext context, String restaurantId, Map<String, dynamic> data) {
-    // Extract all data fields
     final restaurantName = data['restaurantName'] ?? data['name'] ?? 'Unknown';
     final ownerName = data['ownerName'] ?? 'Not provided';
     final email = data['email'] ?? 'Not provided';
-    final supportEmail = data['supportEmail'] ?? 'Not provided';
-    final bankDetails = data['bankDetails'] ?? 'Not provided';
-    final ibanNumber = data['ibanNumber'] ?? 'Not provided';
+    final phoneNumber = data['phoneNumber'] ?? '';
+    final postalAddress = data['postalAddress'] ?? '';
     final isSuspended = data['isSuspended'] ?? false;
     final approvalStatus = data['approvalStatus'] ?? 'pending';
     final createdAt = data['createdAt'];
     final logoUrl = data['logoUrl'] ?? '';
-    final phoneNumber = data['phoneNumber'] ?? '';
-    final postalAddress = data['postalAddress'] ?? '';
 
     showDialog(
       context: context,
@@ -882,7 +913,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Restaurant Logo (Display Only)
                   if (logoUrl.isNotEmpty) ...[
                     Center(
                       child: ClipRRect(
@@ -929,34 +959,12 @@ class RestaurantManagementPage extends GetView<AdminController> {
                   const SizedBox(height: 8),
                   _buildInfoCard([
                     _buildDetailRow('Primary Email', email),
-                    if (supportEmail != null &&
-                        supportEmail != 'Not provided' &&
-                        supportEmail.isNotEmpty)
-                      _buildDetailRow('Support Email', supportEmail),
+                    if (phoneNumber.isNotEmpty)
+                      _buildDetailRow('Phone Number', phoneNumber),
+                    if (postalAddress.isNotEmpty)
+                      _buildDetailRow('Postal Address', postalAddress),
                   ]),
                   const SizedBox(height: 16),
-
-                  // Bank Information Section (only show if data exists)
-                  if ((bankDetails != null &&
-                          bankDetails != 'Not provided' &&
-                          bankDetails.isNotEmpty) ||
-                      (ibanNumber != null &&
-                          ibanNumber != 'Not provided' &&
-                          ibanNumber.isNotEmpty)) ...[
-                    _buildSectionTitle('Bank Information'),
-                    const SizedBox(height: 8),
-                    _buildInfoCard([
-                      if (bankDetails != null &&
-                          bankDetails != 'Not provided' &&
-                          bankDetails.isNotEmpty)
-                        _buildDetailRow('Bank Details', bankDetails),
-                      if (ibanNumber != null &&
-                          ibanNumber != 'Not provided' &&
-                          ibanNumber.isNotEmpty)
-                        _buildDetailRow('IBAN Number', ibanNumber),
-                    ]),
-                    const SizedBox(height: 16),
-                  ],
 
                   // Account Information Section
                   _buildSectionTitle('Account Information'),
@@ -972,19 +980,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
                       _buildDetailRow('Registration Date', 
                         (createdAt as Timestamp).toDate().toString().split(' ')[0]),
                   ]),
-
-                  // Contact Information (Display Only)
-                  if (phoneNumber.isNotEmpty || postalAddress.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _buildSectionTitle('Contact Information'),
-                    const SizedBox(height: 8),
-                    _buildInfoCard([
-                      if (phoneNumber.isNotEmpty)
-                        _buildDetailRow('Phone Number', phoneNumber),
-                      if (postalAddress.isNotEmpty)
-                        _buildDetailRow('Postal Address', postalAddress),
-                    ]),
-                  ],
                 ],
               ),
             ),
@@ -1641,3 +1636,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
     return phoneNumber;
   }
 }
+
+// Helper to get all countries from country_picker
+List<Country> get countryList => CountryService().getAll();
