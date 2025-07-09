@@ -12,6 +12,7 @@ class SubscriptionPlanModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<String> features;
+  final String planType; // 'regular' or 'free_trial'
 
   SubscriptionPlanModel({
     required this.id,
@@ -25,6 +26,7 @@ class SubscriptionPlanModel {
     required this.createdAt,
     this.updatedAt,
     required this.features,
+    this.planType = 'regular',
   });
 
   factory SubscriptionPlanModel.fromFirestore(
@@ -43,6 +45,7 @@ class SubscriptionPlanModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       features: List<String>.from(data['features'] ?? []),
+      planType: data['planType'] ?? 'regular',
     );
   }
 
@@ -58,6 +61,7 @@ class SubscriptionPlanModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'features': features,
+      'planType': planType,
     };
   }
 
@@ -73,6 +77,7 @@ class SubscriptionPlanModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? features,
+    String? planType,
   }) {
     return SubscriptionPlanModel(
       id: id ?? this.id,
@@ -86,10 +91,11 @@ class SubscriptionPlanModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       features: features ?? this.features,
+      planType: planType ?? this.planType,
     );
   }
 
-  String get formattedPrice => '$price $currency';
+  String get formattedPrice => planType == 'free_trial' ? 'Free' : '$price $currency';
 
   String get formattedDuration =>
       durationDays == 1 ? '1 day' : '$durationDays days';
@@ -99,4 +105,6 @@ class SubscriptionPlanModel {
 
   String get displayName =>
       '$name - $formattedScanLimit for $formattedDuration';
+
+  bool get isFreeTrial => planType == 'free_trial';
 }

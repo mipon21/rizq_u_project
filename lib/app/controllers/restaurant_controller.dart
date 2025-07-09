@@ -128,13 +128,24 @@ class RestaurantProfileModel {
     if (subscriptionStatus != 'free_trial' || trialStartDate == null) {
       return false;
     }
-    // Check if trial period (30 days) is still valid
+    // Check if trial period is still valid using subscriptionEnd date
+    if (subscriptionEnd != null) {
+      return DateTime.now().isBefore(subscriptionEnd!);
+    }
+    // Fallback to 30 days if no subscriptionEnd is set
     return DateTime.now().difference(trialStartDate!).inDays <= 30;
   }
 
   // Example: Get remaining trial days
   int get remainingTrialDays {
     if (!isTrialActive || trialStartDate == null) return 0;
+    
+    if (subscriptionEnd != null) {
+      final remaining = subscriptionEnd!.difference(DateTime.now()).inDays;
+      return remaining > 0 ? remaining : 0;
+    }
+    
+    // Fallback to 30 days if no subscriptionEnd is set
     final expiryDate = trialStartDate!.add(const Duration(days: 30));
     final remaining = expiryDate.difference(DateTime.now()).inDays;
     return remaining > 0 ? remaining : 0;
@@ -491,7 +502,7 @@ class RestaurantController extends GetxController {
 
       // 3. Check 10-Minute Cooldown for this specific customer
       final now = DateTime.now();
-      final tenMinutesAgo = now.subtract(const Duration(minutes: 10));
+      final tenMinutesAgo = now.subtract(const Duration(hours: 4));
 
       final recentScans = await _firestore
           .collection('scans')
@@ -508,19 +519,33 @@ class RestaurantController extends GetxController {
       if (recentScans.docs.isNotEmpty) {
         final lastScanTime =
             (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
-        final timeDifference = now.difference(lastScanTime).inMinutes;
-        final remainingMinutes = 10 - timeDifference;
+        final timeDifference = now.difference(lastScanTime);
+        final totalRemainingMinutes = (4 * 60) - timeDifference.inMinutes;
+        
+        if (totalRemainingMinutes > 0) {
+          final remainingHours = totalRemainingMinutes ~/ 60;
+          final remainingMinutes = totalRemainingMinutes % 60;
+          
+          String timeDisplay;
+          if (remainingHours > 0 && remainingMinutes > 0) {
+            timeDisplay = '$remainingHours hr $remainingMinutes min';
+          } else if (remainingHours > 0) {
+            timeDisplay = '$remainingHours hr';
+          } else {
+            timeDisplay = '$remainingMinutes min';
+          }
 
-        Get.closeAllSnackbars();
-        Get.snackbar(
-          colorText: MColors.error,
-          'Cooldown Active',
-          'This customer can scan again in $remainingMinutes minute${remainingMinutes != 1 ? 's' : ''}.',
-          duration: const Duration(seconds: 5),
-          backgroundColor: MColors.white.withOpacity(0.8),
-          margin: EdgeInsets.fromLTRB(0, 70, 0, 0),
-        );
-        return;
+          Get.closeAllSnackbars();
+          Get.snackbar(
+            colorText: MColors.error,
+            'Cooldown Active',
+            'This customer can scan again in $timeDisplay.',
+            duration: const Duration(seconds: 5),
+            backgroundColor: MColors.white.withOpacity(0.8),
+            margin: EdgeInsets.fromLTRB(0, 70, 0, 0),
+          );
+          return;
+        }
       }
 
       // --- If all checks pass, proceed with scan ---

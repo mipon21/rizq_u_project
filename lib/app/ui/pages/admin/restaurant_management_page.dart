@@ -192,7 +192,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                       DataCell(Text(email)),
                                       DataCell(Text(_getPlanDisplayName(
                                           subscriptionPlan))),
-                                      DataCell(Text(_formatExpiryDate(subscriptionEndDate))),
+                                      DataCell(Text(_formatExpiryDate(subscriptionEndDate, subscriptionPlan))),
                                       DataCell(
                                         Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -326,7 +326,7 @@ class RestaurantManagementPage extends GetView<AdminController> {
                                     Text(
                                         'Plan: ${_getPlanDisplayName(subscriptionPlan)}'),
                                     Text(
-                                        'Expires: ${_formatExpiryDate(subscriptionEndDate)}'),
+                                        'Expires: ${_formatExpiryDate(subscriptionEndDate, subscriptionPlan)}'),
                                     const SizedBox(height: 4),
                                     Wrap(
                                       spacing: 4,
@@ -1593,11 +1593,6 @@ class RestaurantManagementPage extends GetView<AdminController> {
   }
 
   String _getPlanDisplayName(String planId) {
-    // Handle free trial
-    if (planId == 'free_trial') {
-      return 'Free Trial';
-    }
-
     // Look up custom plans
     SubscriptionPlanModel? plan;
     if (controller.subscriptionPlans.isNotEmpty) {
@@ -1687,18 +1682,17 @@ class RestaurantManagementPage extends GetView<AdminController> {
     }
   }
 
-  String _formatExpiryDate(Timestamp? subscriptionEndDate) {
+  String _formatExpiryDate(Timestamp? subscriptionEndDate, String planType) {
     if (subscriptionEndDate == null) {
+      if (planType == 'free_trial') {
+        return 'No expiry date set for free trial';
+      }
       return 'No expiry';
     }
-    
     final DateTime expiryDate = subscriptionEndDate.toDate();
     final DateTime now = DateTime.now();
     final Duration difference = expiryDate.difference(now);
-    
-    // Format the date
     final String formattedDate = DateFormat('MMM dd, yyyy').format(expiryDate);
-    
     if (difference.isNegative) {
       final int daysExpired = difference.inDays.abs();
       return '$formattedDate (Expired $daysExpired days ago)';

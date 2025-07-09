@@ -407,9 +407,16 @@ class SubscriptionPage extends GetView<RestaurantController> {
             );
           }
 
-          final activePlans = adminController.activeSubscriptionPlans;
+          // Show all active plans, including free trial
+          final allPlans = adminController.allActivePlans;
+          // Ensure the current plan is always shown, even if not active
+          final currentPlan = adminController.subscriptionPlans.firstWhereOrNull((plan) => plan.id == profile.subscriptionPlan);
+          final plansToShow = List<SubscriptionPlanModel>.from(allPlans);
+          if (currentPlan != null && !plansToShow.any((plan) => plan.id == currentPlan.id)) {
+            plansToShow.insert(0, currentPlan);
+          }
 
-          if (activePlans.isEmpty) {
+          if (plansToShow.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -440,7 +447,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
           }
 
           return Column(
-            children: activePlans.asMap().entries.map((entry) {
+            children: plansToShow.asMap().entries.map((entry) {
               final index = entry.key;
               final plan = entry.value;
               final isCurrentPlan = profile.subscriptionPlan == plan.id;
@@ -453,7 +460,7 @@ class SubscriptionPage extends GetView<RestaurantController> {
                     isCurrentPlan: isCurrentPlan,
                     isRecommended: index == 1, // Make second plan recommended
                   ),
-                  if (index < activePlans.length - 1)
+                  if (index < plansToShow.length - 1)
                     const SizedBox(height: 12),
                 ],
               );

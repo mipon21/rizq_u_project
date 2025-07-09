@@ -170,127 +170,127 @@ class CustomerProfilePage extends GetView<CustomerController> {
                       fillColor: Color(0xFFF5F5F5),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  // const SizedBox(height: 16),
 
                   // Account Status Section
-                  if (profile.isRestricted || profile.dailyPointLimit != null)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Account Status',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
+                  // if (profile.isRestricted || profile.dailyPointLimit != null)
+                  //   Container(
+                  //     padding: const EdgeInsets.all(16),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.grey[100],
+                  //       borderRadius: BorderRadius.circular(8),
+                  //       border: Border.all(color: Colors.grey[300]!),
+                  //     ),
+                  //     child: Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         const Text(
+                  //           'Account Status',
+                  //           style: TextStyle(
+                  //             fontSize: 16,
+                  //             fontWeight: FontWeight.bold,
+                  //           ),
+                  //         ),
+                  //         const SizedBox(height: 12),
                           
-                          // Restriction Status
-                          if (profile.isRestricted)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red[200]!),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.block,
-                                    color: Colors.red[600],
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Account Restricted',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          profile.restrictionReason ?? 'Admin restriction',
-                                          style: TextStyle(
-                                            color: Colors.red[700],
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        if (profile.restrictedAt != null)
-                                          Text(
-                                            'Restricted on: ${DateFormat('MMM d, yyyy').format(profile.restrictedAt!)}',
-                                            style: TextStyle(
-                                              color: Colors.red[600],
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                  //         // Restriction Status
+                  //         if (profile.isRestricted)
+                  //           Container(
+                  //             padding: const EdgeInsets.all(12),
+                  //             decoration: BoxDecoration(
+                  //               color: Colors.red[50],
+                  //               borderRadius: BorderRadius.circular(8),
+                  //               border: Border.all(color: Colors.red[200]!),
+                  //             ),
+                  //             child: Row(
+                  //               children: [
+                  //                 Icon(
+                  //                   Icons.block,
+                  //                   color: Colors.red[600],
+                  //                   size: 20,
+                  //                 ),
+                  //                 const SizedBox(width: 12),
+                  //                 Expanded(
+                  //                   child: Column(
+                  //                     crossAxisAlignment: CrossAxisAlignment.start,
+                  //                     children: [
+                  //                       const Text(
+                  //                         'Account Restricted',
+                  //                         style: TextStyle(
+                  //                           fontWeight: FontWeight.bold,
+                  //                           color: Colors.red,
+                  //                         ),
+                  //                       ),
+                  //                       const SizedBox(height: 4),
+                  //                       Text(
+                  //                         profile.restrictionReason ?? 'Admin restriction',
+                  //                         style: TextStyle(
+                  //                           color: Colors.red[700],
+                  //                           fontSize: 12,
+                  //                         ),
+                  //                       ),
+                  //                       if (profile.restrictedAt != null)
+                  //                         Text(
+                  //                           'Restricted on: ${DateFormat('MMM d, yyyy').format(profile.restrictedAt!)}',
+                  //                           style: TextStyle(
+                  //                             color: Colors.red[600],
+                  //                             fontSize: 11,
+                  //                           ),
+                  //                         ),
+                  //                     ],
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //           ),
                           
-                          // Daily Point Limit
-                          if (profile.dailyPointLimit != null) ...[
-                            if (profile.isRestricted) const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.orange[200]!),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.speed,
-                                    color: Colors.orange[600],
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Daily Point Limit',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${profile.dailyPointLimit} points per day',
-                                          style: TextStyle(
-                                            color: Colors.orange[700],
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
+                  //         // Daily Point Limit
+                  //         if (profile.dailyPointLimit != null) ...[
+                  //           if (profile.isRestricted) const SizedBox(height: 12),
+                  //           Container(
+                  //             padding: const EdgeInsets.all(12),
+                  //             decoration: BoxDecoration(
+                  //               color: Colors.orange[50],
+                  //               borderRadius: BorderRadius.circular(8),
+                  //               border: Border.all(color: Colors.orange[200]!),
+                  //             ),
+                  //             child: Row(
+                  //               children: [
+                  //                 Icon(
+                  //                   Icons.speed,
+                  //                   color: Colors.orange[600],
+                  //                   size: 20,
+                  //                 ),
+                  //                 const SizedBox(width: 12),
+                  //                 Expanded(
+                  //                   child: Column(
+                  //                     crossAxisAlignment: CrossAxisAlignment.start,
+                  //                     children: [
+                  //                       const Text(
+                  //                         'Daily Point Limit',
+                  //                         style: TextStyle(
+                  //                           fontWeight: FontWeight.bold,
+                  //                           color: Colors.orange,
+                  //                         ),
+                  //                       ),
+                  //                       const SizedBox(height: 4),
+                  //                       Text(
+                  //                         '${profile.dailyPointLimit} points per day',
+                  //                         style: TextStyle(
+                  //                           color: Colors.orange[700],
+                  //                           fontSize: 12,
+                  //                         ),
+                  //                       ),
+                  //                     ],
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ],
+                  //     ),
+                  //   ),
 
                   if (profile.isRestricted || profile.dailyPointLimit != null)
                     const SizedBox(height: 20),
@@ -312,7 +312,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'This information was provided during registration and cannot be changed.',
+                            'This information was provided during registration. For any updates, please contact support.',
                             style: TextStyle(
                               color: Colors.blue.shade800,
                               fontSize: 14,

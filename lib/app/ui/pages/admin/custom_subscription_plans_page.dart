@@ -80,15 +80,18 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
   }
 
   Widget _buildPlanCard(BuildContext context, SubscriptionPlanModel plan) {
+    // Remove special styling for free trial plan
+    final cardColor = null;
+    final borderColor = plan.isActive ? Colors.green.withOpacity(0.3) : Colors.grey.withOpacity(0.3);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 4,
+      color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: plan.isActive
-              ? Colors.green.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.3),
+          color: borderColor,
           width: 1,
         ),
       ),
@@ -114,24 +117,44 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: plan.isActive ? Colors.green : Colors.grey,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              plan.isActive ? 'Active' : 'Inactive',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                          if (plan.isFreeTrial)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Free Trial',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
+                          if (!plan.isFreeTrial)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: plan.isActive ? Colors.green : Colors.grey,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                plan.isActive ? 'Active' : 'Inactive',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -226,6 +249,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                 ),
                 Row(
                   children: [
+                    // Show toggle for all plans, including free trial
                     Switch(
                       value: plan.isActive,
                       onChanged: (value) =>
@@ -241,11 +265,12 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                       onPressed: () => _showEditPlanDialog(context, plan),
                       tooltip: 'Edit Plan',
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmation(context, plan),
-                      tooltip: 'Delete Plan',
-                    ),
+                    if (!plan.isFreeTrial)
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _showDeleteConfirmation(context, plan),
+                        tooltip: 'Delete Plan',
+                      ),
                   ],
                 ),
               ],
@@ -297,6 +322,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
     final durationController = TextEditingController();
     final priceController = TextEditingController();
     final featuresController = TextEditingController();
+    final planTypeController = TextEditingController(text: 'regular');
 
     Get.dialog(
       AlertDialog(
@@ -370,6 +396,27 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                 ),
                 maxLines: 3,
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Plan Type',
+                  border: OutlineInputBorder(),
+                ),
+                value: planTypeController.text,
+                items: const [
+                  DropdownMenuItem(value: 'regular', child: Text('Regular Plan')),
+                  DropdownMenuItem(value: 'free_trial', child: Text('Free Trial Plan')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    planTypeController.text = value;
+                    // Auto-fill price for free trial
+                    if (value == 'free_trial') {
+                      priceController.text = '0';
+                    }
+                  }
+                },
+              ),
             ],
           ),
         ),
@@ -386,6 +433,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                 scanLimitController,
                 durationController,
                 priceController,
+                planTypeController, // pass planTypeController for create dialog
               )) {
                 final features = featuresController.text
                     .split(',')
@@ -400,6 +448,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                   durationDays: int.parse(durationController.text.trim()),
                   price: double.parse(priceController.text.trim()),
                   features: features,
+                  planType: planTypeController.text,
                 );
                 Get.back();
               }
@@ -500,15 +549,41 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Active: '),
-                  Switch(
-                    value: isActive,
-                    onChanged: (value) => isActive = value,
+              if (plan.isFreeTrial)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This is a Free Trial plan. It will be automatically assigned to new restaurants upon approval.',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (!plan.isFreeTrial) ...[
+                Row(
+                  children: [
+                    const Text('Active: '),
+                    Switch(
+                      value: isActive,
+                      onChanged: (value) => isActive = value,
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -525,6 +600,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                 scanLimitController,
                 durationController,
                 priceController,
+                null, // pass null for edit dialog
               )) {
                 final features = featuresController.text
                     .split(',')
@@ -541,6 +617,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                   price: double.parse(priceController.text.trim()),
                   isActive: isActive,
                   features: features,
+                  planType: plan.planType,
                 );
                 Get.back();
               }
@@ -591,6 +668,7 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
     TextEditingController scanLimitController,
     TextEditingController durationController,
     TextEditingController priceController,
+    [TextEditingController? planTypeController] // optional, for new dialog
   ) {
     if (nameController.text.trim().isEmpty) {
       Get.snackbar('Error', 'Plan name is required');
@@ -625,7 +703,13 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
       Get.snackbar('Error', 'Duration must be a positive number');
       return false;
     }
-    if (price == null || price <= 0) {
+
+    // Allow price = 0 for free_trial plans
+    String planType = planTypeController?.text ?? '';
+    if (planType.isEmpty && nameController.text.toLowerCase().contains('free trial')) {
+      planType = 'free_trial';
+    }
+    if (price == null || price < 0 || (planType != 'free_trial' && price == 0)) {
       Get.snackbar('Error', 'Price must be a positive number');
       return false;
     }

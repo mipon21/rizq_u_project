@@ -145,17 +145,20 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               itemBuilder: (context, index) {
                 final program = widget.controller.allPrograms[index];
 
-                return Card(
+                return Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 0,
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: MColors.grey.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
+                   decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.4),
+                              spreadRadius: 1,
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(

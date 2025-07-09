@@ -10,6 +10,24 @@ class SubscriptionMigrationHelper {
       final defaultPlans = [
         SubscriptionPlanModel(
           id: '',
+          name: 'Free Trial',
+          description: 'Free trial period for new restaurants',
+          scanLimit: 100,
+          durationDays: 30,
+          price: 0.0,
+          currency: 'MAD',
+          isActive: true,
+          createdAt: DateTime.now(),
+          features: [
+            'Up to 100 customer scans',
+            'Basic analytics',
+            'Email support',
+            'Perfect for testing the platform'
+          ],
+          planType: 'free_trial',
+        ),
+        SubscriptionPlanModel(
+          id: '',
           name: 'Basic Plan',
           description: 'Perfect for small cafes and restaurants',
           scanLimit: 100,
@@ -25,6 +43,7 @@ class SubscriptionMigrationHelper {
             'QR code generation',
             'Customer loyalty tracking'
           ],
+          planType: 'regular',
         ),
         SubscriptionPlanModel(
           id: '',
@@ -44,6 +63,7 @@ class SubscriptionMigrationHelper {
             'Detailed customer insights',
             'Export data to CSV'
           ],
+          planType: 'regular',
         ),
         SubscriptionPlanModel(
           id: '',
@@ -64,6 +84,7 @@ class SubscriptionMigrationHelper {
             'Dedicated account manager',
             'Multi-location support'
           ],
+          planType: 'regular',
         ),
       ];
 
@@ -91,9 +112,16 @@ class SubscriptionMigrationHelper {
           await _firestore.collection('custom_subscription_plans').get();
 
       final plans = <String, String>{}; // old plan ID -> new plan ID
+      String? freeTrialPlanId;
 
       for (var doc in plansSnapshot.docs) {
         final plan = SubscriptionPlanModel.fromFirestore(doc);
+        
+        // Store free trial plan ID
+        if (plan.isFreeTrial) {
+          freeTrialPlanId = plan.id;
+        }
+        
         // Map old plan IDs to new plan IDs
         if (plan.name == 'Basic Plan') {
           plans['plan_100'] = plan.id;
@@ -110,6 +138,17 @@ class SubscriptionMigrationHelper {
         final data = doc.data();
         final currentPlan = data['subscriptionPlan'] as String?;
 
+        // Handle free trial migration
+        if (currentPlan == 'free_trial' && freeTrialPlanId != null) {
+          await _firestore.collection('restaurants').doc(doc.id).update({
+            'subscriptionPlan': freeTrialPlanId,
+            'updatedAt': Timestamp.now(),
+          });
+          migratedCount++;
+          continue;
+        }
+
+        // Handle other plan migrations
         if (currentPlan != null &&
             (currentPlan == 'plan_100' ||
                 currentPlan == 'plan_250' ||

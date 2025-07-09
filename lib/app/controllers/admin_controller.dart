@@ -90,7 +90,10 @@ class AdminController extends GetxController {
     super.onInit();
     // Load subscription plans automatically when controller is initialized
     // This ensures plans are available when accessed from restaurant pages
-    loadSubscriptionPlans();
+    loadSubscriptionPlans().then((_) {
+      // Create default free trial plan if it doesn't exist
+      createDefaultFreeTrialPlan();
+    });
     // Load notifications
     loadNotifications();
   }
@@ -606,6 +609,7 @@ class AdminController extends GetxController {
       if (kDebugMode) {
         print('Loaded ${plans.length} subscription plans');
         print('Active plans: ${plans.where((p) => p.isActive).length}');
+        print('Free trial plan: ${plans.where((p) => p.isFreeTrial).length}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -623,6 +627,20 @@ class AdminController extends GetxController {
     }
   }
 
+  // Get the active free trial plan
+  SubscriptionPlanModel? get freeTrialPlan {
+    try {
+      return subscriptionPlans.firstWhere((plan) => plan.isFreeTrial && plan.isActive);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get all active plans including free trial
+  List<SubscriptionPlanModel> get allActivePlans {
+    return subscriptionPlans.where((plan) => plan.isActive).toList();
+  }
+
   // Create a new subscription plan
   Future<void> createSubscriptionPlan({
     required String name,
@@ -632,6 +650,7 @@ class AdminController extends GetxController {
     required double price,
     String currency = 'MAD',
     required List<String> features,
+    String planType = 'regular',
   }) async {
     try {
       final plan = SubscriptionPlanModel(
@@ -645,6 +664,7 @@ class AdminController extends GetxController {
         isActive: true,
         createdAt: DateTime.now(),
         features: features,
+        planType: planType,
       );
 
       await _firestore
@@ -686,8 +706,12 @@ class AdminController extends GetxController {
     String currency = 'MAD',
     required bool isActive,
     required List<String> features,
+    String? planType,
   }) async {
     try {
+      // Get existing plan to preserve planType if not provided
+      final existingPlan = subscriptionPlans.firstWhere((p) => p.id == planId);
+      
       final updatedPlan = SubscriptionPlanModel(
         id: planId,
         name: name,
@@ -697,9 +721,10 @@ class AdminController extends GetxController {
         price: price,
         currency: currency,
         isActive: isActive,
-        createdAt: DateTime.now(), // Keep original creation date
+        createdAt: existingPlan.createdAt, // Keep original creation date
         updatedAt: DateTime.now(),
         features: features,
+        planType: planType ?? existingPlan.planType,
       );
 
       await _firestore
@@ -763,6 +788,46 @@ class AdminController extends GetxController {
     }
   }
 
+  // Create default free trial plan if it doesn't exist
+  Future<void> createDefaultFreeTrialPlan() async {
+    try {
+      // Check if free trial plan already exists
+      final existingFreeTrial = subscriptionPlans.where((plan) => plan.isFreeTrial).toList();
+      
+      if (existingFreeTrial.isNotEmpty) {
+        if (kDebugMode) {
+          print('Free trial plan already exists: ${existingFreeTrial.first.name}');
+        }
+        return;
+      }
+
+      // Create default free trial plan
+      await createSubscriptionPlan(
+        name: 'Free Trial',
+        description: 'Free trial period for new restaurants',
+        scanLimit: 100,
+        durationDays: 30,
+        price: 0.0,
+        currency: 'MAD',
+        features: [
+          'Up to 100 customer scans',
+          'Basic analytics',
+          'Email support',
+          'Perfect for testing the platform'
+        ],
+        planType: 'free_trial',
+      );
+
+      if (kDebugMode) {
+        print('Default free trial plan created successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating default free trial plan: $e');
+      }
+    }
+  }
+
   // Toggle subscription plan active status
   Future<void> toggleSubscriptionPlanStatus(
       String planId, bool isActive) async {
@@ -799,7 +864,7 @@ class AdminController extends GetxController {
     }
   }
 
-  // Get active subscription plans (for restaurants to see)
+  // Get active subscription plans (for admin assignment, including free trial)
   List<SubscriptionPlanModel> get activeSubscriptionPlans {
     return subscriptionPlans.where((plan) => plan.isActive).toList();
   }
@@ -1290,7 +1355,16 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // 4. Create / update restaurant document
+      // 4. Get the free trial plan
+      final freeTrialPlan = this.freeTrialPlan;
+      if (freeTrialPlan == null) {
+        throw 'No active free trial plan found. Please create a free trial plan in the admin panel.';
+      }
+
+      // 5. Create / update restaurant document
+      final now = DateTime.now();
+      final trialEndDate = now.add(Duration(days: freeTrialPlan.durationDays));
+      
       await _firestore.collection('restaurants').doc(restaurantUid).set({
         'uid': restaurantUid,
         'restaurantName': registrationData['restaurantName'] ?? '',
@@ -1303,10 +1377,11 @@ class AdminController extends GetxController {
         'supportEmail': registrationData['supportEmail'] ?? '',
         'bankDetails': registrationData['bankDetails'] ?? '',
         'ibanNumber': registrationData['ibanNumber'] ?? '',
-        'subscriptionPlan': 'free_trial',
+        'subscriptionPlan': freeTrialPlan.id,
         'subscriptionStatus': 'free_trial',
         'currentScanCount': 0,
-        'trialStartDate': FieldValue.serverTimestamp(),
+        'trialStartDate': Timestamp.fromDate(now),
+        'subscriptionEnd': Timestamp.fromDate(trialEndDate),
         'createdAt': FieldValue.serverTimestamp(),
         'approvalStatus': 'approved',
         'approvedAt': Timestamp.now(),
