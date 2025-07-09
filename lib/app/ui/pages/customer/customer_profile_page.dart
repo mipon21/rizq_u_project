@@ -170,7 +170,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                       fillColor: Color(0xFFF5F5F5),
                     ),
                   ),
-                  // const SizedBox(height: 16),
+                  // 
 
                   // Account Status Section
                   // if (profile.isRestricted || profile.dailyPointLimit != null)
@@ -291,7 +291,7 @@ class CustomerProfilePage extends GetView<CustomerController> {
                   //       ],
                   //     ),
                   //   ),
-
+                  const SizedBox(height: 16), 
                   if (profile.isRestricted || profile.dailyPointLimit != null)
                     const SizedBox(height: 20),
 
