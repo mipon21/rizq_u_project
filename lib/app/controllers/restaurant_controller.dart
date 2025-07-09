@@ -524,7 +524,7 @@ class RestaurantController extends GetxController {
 
       // 3. Check 10-Minute Cooldown for this specific customer
       final now = DateTime.now();
-      final tenMinutesAgo = now.subtract(const Duration(hours: 0));
+      final tenMinutesAgo = now.subtract(const Duration(hours: 4));
 
       final recentScans = await _firestore
           .collection('scans')

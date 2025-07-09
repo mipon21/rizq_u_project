@@ -97,8 +97,6 @@ class RestaurantRegistrationController extends GetxController {
 
   Future<bool> uploadLogo() async {
     try {
-      isLoading.value = true;
-
       if (logoFile.value != null) {
         final url = await _uploadImage(logoFile.value!, 'restaurant_logos');
         if (url == null) return false;
@@ -109,8 +107,6 @@ class RestaurantRegistrationController extends GetxController {
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload logo: $e');
       return false;
-    } finally {
-      isLoading.value = false;
     }
   }
 

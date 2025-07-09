@@ -23,68 +23,109 @@ class RestaurantRegistrationPage
         backgroundColor: MColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: Obx(() {
-        return Stepper(
-          currentStep: controller.currentStep.value,
-          onStepContinue: () {
-            if (controller.currentStep.value < 1) {
-              controller.nextStep();
-            } else {
-              controller.submitRestaurantRegistration();
-            }
-          },
-          onStepCancel: () {
-            if (controller.currentStep.value > 0) {
-              controller.previousStep();
-            }
-          },
-          controlsBuilder: (context, details) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: Row(
-                children: [
-                  if (controller.currentStep.value > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: details.onStepCancel,
-                        child: const Text('Previous'),
+      body: Stack(
+        children: [
+                    Obx(() {
+            return Stepper(
+              currentStep: controller.currentStep.value,
+              onStepContinue: () {
+                if (controller.currentStep.value < 1) {
+                  controller.nextStep();
+                } else {
+                  controller.submitRestaurantRegistration();
+                }
+              },
+              onStepCancel: () {
+                if (controller.currentStep.value > 0) {
+                  controller.previousStep();
+                }
+              },
+              controlsBuilder: (context, details) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Row(
+                    children: [
+                      if (controller.currentStep.value > 0)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: details.onStepCancel,
+                            child: const Text('Previous'),
+                          ),
+                        ),
+                      if (controller.currentStep.value > 0)
+                        const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : details.onStepContinue,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: controller.isLoading.value
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(controller.currentStep.value == 1
+                                  ? 'Submit'
+                                  : 'Next'),
+                        ),
                       ),
-                    ),
-                  if (controller.currentStep.value > 0)
-                    const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : details.onStepContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MColors.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: controller.isLoading.value
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                    ],
+                  ),
+                );
+              },
+              steps: [
+                _buildBasicInfoStep(),
+                _buildContactInfoStep(),
+              ],
+            );
+          }),
+          // Loading overlay
+          Obx(() => controller.isLoading.value
+              ? Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: const Center(
+                    child: Card(
+                      margin: EdgeInsets.all(20),
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'Submitting registration...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
-                            )
-                          : Text(controller.currentStep.value == 1
-                              ? 'Submit'
-                              : 'Next'),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Please wait while we process your information',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-          steps: [
-            _buildBasicInfoStep(),
-            _buildContactInfoStep(),
-          ],
-        );
-      }),
+                )
+              : const SizedBox.shrink()),
+        ],
+      ),
     );
   }
 
