@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // Adjust import
@@ -6,29 +7,90 @@ import '../../../utils/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rizq/app/utils/constants/image_strings.dart';
 class RegisterPage extends GetView<AuthController> {
-  const RegisterPage({super.key});
+  RegisterPage({super.key});
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  // Method to launch Privacy Policy URL
+  Future<void> launchPrivacyPolicy() async {
+    try {
+      // Get the settings document - assuming it has a specific ID like 'app_settings'
+      final settingsDoc = await _firestore.collection('Settings').doc('app_settings').get();
+      
+      if (!settingsDoc.exists) {
+        Get.snackbar(
+          'Error',
+          'Settings not found',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      
+      final privacyPolicy = settingsDoc.data()?['privacy_policy'];
+      
+      if (privacyPolicy == null || privacyPolicy.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Privacy policy URL not configured',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
 
-  // Static method to launch Privacy Policy URL
-  static Future<void> launchPrivacyPolicy() async {
-    // Demo URL - replace with actual privacy policy URL later
-    final Uri url = Uri.parse('https://sites.google.com/view/rizq-app-pdc/accueil');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      final Uri url = Uri.parse(privacyPolicy);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        Get.snackbar(
+          'Error',
+          'Could not launch the privacy policy page',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
       Get.snackbar(
         'Error',
-        'Could not launch the privacy policy page',
+        'Failed to load privacy policy: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
 
-  // Static method to launch Terms and Conditions URL
-  static Future<void> launchTermsAndConditions() async {
-    // Demo URL - replace with actual terms and conditions URL later
-    final Uri url = Uri.parse('https://example.com/terms-and-conditions');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+  // Method to launch Terms and Conditions URL
+  Future<void> launchTermsAndConditions() async {
+    try {
+      // Get the settings document - assuming it has a specific ID like 'app_settings'
+      final settingsDoc = await _firestore.collection('Settings').doc('app_settings').get();
+      
+      if (!settingsDoc.exists) {
+        Get.snackbar(
+          'Error',
+          'Settings not found',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      
+      final termsConditions = settingsDoc.data()?['terms_conditions'];
+      
+      if (termsConditions == null || termsConditions.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Terms and conditions URL not configured',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      final Uri url = Uri.parse(termsConditions);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        Get.snackbar(
+          'Error',
+          'Could not launch the terms and conditions page',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
       Get.snackbar(
         'Error',
-        'Could not launch the terms and conditions page',
+        'Failed to load terms and conditions: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -219,7 +281,9 @@ class RegisterPage extends GetView<AuthController> {
                       children: [
                         const Text('I agree to the '),
                         InkWell(
-                          onTap: () => RegisterPage.launchPrivacyPolicy(),
+                          onTap: () => launchPrivacyPolicy(
+
+                          ),  
                           child: const Text(
                             'Privacy Policy',
                             style: TextStyle(
@@ -230,7 +294,7 @@ class RegisterPage extends GetView<AuthController> {
                         ),
                         const Text(' and '),
                         InkWell(
-                          onTap: () => RegisterPage.launchTermsAndConditions(),
+                          onTap: () => launchTermsAndConditions(),
                           child: const Text(
                             'Terms and Conditions',
                             style: TextStyle(

@@ -22,3 +22,13 @@ flutter run -d chrome
 build_normal_web.bat
 # or
 flutter build web --release --no-tree-shake-icons
+
+
+#For App only Newer Device
+flutter build apk --release --target-platform android-arm64
+
+#support older phones too:
+flutter build apk --release --target-platform android-arm,android-arm64
+
+#If you also want to test on emulator:
+flutter build apk --release --target-platform android-arm,android-arm64,android-x64

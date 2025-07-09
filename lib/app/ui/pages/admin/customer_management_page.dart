@@ -677,7 +677,12 @@ class CustomerManagementPage extends GetView<AdminController> {
                     .collection('users')
                     .doc(customerId)
                     .delete();
+                
+                // Close dialog first
                 Get.back();
+                
+                // Show success message after dialog closes
+                await Future.delayed(const Duration(milliseconds: 100));
                 Get.snackbar(
                   'Success',
                   'Customer deleted successfully',
@@ -686,6 +691,11 @@ class CustomerManagementPage extends GetView<AdminController> {
                   colorText: Colors.white,
                 );
               } catch (e) {
+                // Close dialog first
+                Get.back();
+                
+                // Show error message after dialog closes
+                await Future.delayed(const Duration(milliseconds: 100));
                 Get.snackbar(
                   'Error',
                   'Failed to delete customer: $e',
@@ -1034,6 +1044,10 @@ class CustomerManagementPage extends GetView<AdminController> {
                             if (firstNameController.text.trim().isEmpty ||
                                 lastNameController.text.trim().isEmpty ||
                                 selectedDate.value == null) {
+                              // Close any existing snackbars first
+                              if (Get.isSnackbarOpen) {
+                                Get.closeCurrentSnackbar();
+                              }
                               Get.snackbar(
                                 'Error',
                                 'Please fill all required fields',
@@ -1043,13 +1057,40 @@ class CustomerManagementPage extends GetView<AdminController> {
                               return;
                             }
 
-                            await controller.updateCustomerDetails(
-                              customerId: customerId,
-                              firstName: firstNameController.text.trim(),
-                              lastName: lastNameController.text.trim(),
-                              dateOfBirth: selectedDate.value!,
-                            );
-                            Get.back();
+                            try {
+                              await controller.updateCustomerDetails(
+                                customerId: customerId,
+                                firstName: firstNameController.text.trim(),
+                                lastName: lastNameController.text.trim(),
+                                dateOfBirth: selectedDate.value!,
+                              );
+                              
+                              // Close dialog first
+                              Get.back();
+                              
+                              // Show success message after dialog closes
+                              await Future.delayed(const Duration(milliseconds: 100));
+                              Get.snackbar(
+                                'Success',
+                                'Customer details updated successfully',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.green,
+                                colorText: Colors.white,
+                              );
+                            } catch (e) {
+                              // Close dialog first
+                              Get.back();
+                              
+                              // Show error message after dialog closes
+                              await Future.delayed(const Duration(milliseconds: 100));
+                              Get.snackbar(
+                                'Error',
+                                'Failed to update customer details',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MColors.primary,
@@ -1239,11 +1280,38 @@ class CustomerManagementPage extends GetView<AdminController> {
                               ? null
                               : () async {
                                   if (formKey.currentState?.validate() ?? false) {
-                                    await controller.createCustomerAccount(
-                                      email: emailController.text.trim(),
-                                      password: passwordController.text,
-                                    );
-                                    Get.back();
+                                    try {
+                                      await controller.createCustomerAccount(
+                                        email: emailController.text.trim(),
+                                        password: passwordController.text,
+                                      );
+                                      
+                                      // Close dialog first
+                                      Get.back();
+                                      
+                                      // Show success message after dialog closes
+                                      await Future.delayed(const Duration(milliseconds: 100));
+                                      Get.snackbar(
+                                        'Success',
+                                        'Customer account created successfully',
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: Colors.green,
+                                        colorText: Colors.white,
+                                      );
+                                    } catch (e) {
+                                      // Close dialog first
+                                      Get.back();
+                                      
+                                      // Show error message after dialog closes
+                                      await Future.delayed(const Duration(milliseconds: 100));
+                                      Get.snackbar(
+                                        'Error',
+                                        'Failed to create customer account',
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: Colors.red,
+                                        colorText: Colors.white,
+                                      );
+                                    }
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
@@ -1379,14 +1447,41 @@ class CustomerManagementPage extends GetView<AdminController> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await controller.restrictCustomer(
-                customerId,
-                reason: reasonController.text.trim().isEmpty 
-                    ? null 
-                    : reasonController.text.trim(),
-              );
-              Get.back();
-              Get.back(); // Close customer details dialog
+              try {
+                final success = await controller.restrictCustomer(
+                  customerId,
+                  reason: reasonController.text.trim().isEmpty 
+                      ? null 
+                      : reasonController.text.trim(),
+                );
+                
+                // Close dialogs first
+                Get.back(); // Close the restrict dialog
+                Get.back(); // Close customer details dialog
+                
+                // Show snackbar after dialogs are closed
+                await Future.delayed(const Duration(milliseconds: 100));
+                if (success) {
+                  Get.snackbar(
+                    'Success',
+                    'Customer has been restricted',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.orange,
+                    colorText: Colors.white,
+                  );
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to restrict customer',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                }
+              } catch (e) {
+                // If there's an error, just close the restrict dialog
+                Get.back();
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
@@ -1411,9 +1506,36 @@ class CustomerManagementPage extends GetView<AdminController> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await controller.unrestrictCustomer(customerId);
-              Get.back();
-              Get.back(); // Close customer details dialog
+              try {
+                final success = await controller.unrestrictCustomer(customerId);
+                
+                // Close dialogs first
+                Get.back(); // Close the unrestrict dialog
+                Get.back(); // Close customer details dialog
+                
+                // Show snackbar after dialogs are closed
+                await Future.delayed(const Duration(milliseconds: 100));
+                if (success) {
+                  Get.snackbar(
+                    'Success',
+                    'Customer restriction has been removed',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                  );
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to remove customer restriction',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                }
+              } catch (e) {
+                // If there's an error, just close the unrestrict dialog
+                Get.back();
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -1488,9 +1610,36 @@ class CustomerManagementPage extends GetView<AdminController> {
           if (currentLimit != null)
             ElevatedButton(
               onPressed: () async {
-                await controller.removeCustomerPointLimit(customerId);
-                Get.back();
-                Get.back(); // Close customer details dialog
+                try {
+                  final success = await controller.removeCustomerPointLimit(customerId);
+                  
+                  // Close dialogs first
+                  Get.back(); // Close the point limit dialog
+                  Get.back(); // Close customer details dialog
+                  
+                  // Show snackbar after dialogs are closed
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (success) {
+                    Get.snackbar(
+                      'Success',
+                      'Daily point limit has been removed',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.green,
+                      colorText: Colors.white,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'Error',
+                      'Failed to remove point limit',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                    );
+                  }
+                } catch (e) {
+                  // If there's an error, just close the point limit dialog
+                  Get.back();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -1500,25 +1649,47 @@ class CustomerManagementPage extends GetView<AdminController> {
             ),
           ElevatedButton(
             onPressed: () async {
-              final limitText = limitController.text.trim();
-              if (limitText.isEmpty) {
-                await controller.removeCustomerPointLimit(customerId);
-              } else {
-                final limit = int.tryParse(limitText);
-                if (limit != null && limit >= 0) {
-                  await controller.setCustomerPointLimit(customerId, limit);
+              try {
+                final limitText = limitController.text.trim();
+                bool success = false;
+                String message = '';
+                
+                if (limitText.isEmpty) {
+                  success = await controller.removeCustomerPointLimit(customerId);
+                  message = success ? 'Daily point limit has been removed' : 'Failed to remove point limit';
                 } else {
-                  Get.snackbar(
-                    'Error',
-                    'Please enter a valid number (0 or greater)',
-                    backgroundColor: Colors.red[100],
-                    colorText: Colors.red[800],
-                  );
-                  return;
+                  final limit = int.tryParse(limitText);
+                  if (limit != null && limit >= 0) {
+                    success = await controller.setCustomerPointLimit(customerId, limit);
+                    message = success ? 'Daily point limit set to $limit points' : 'Failed to set point limit';
+                  } else {
+                    Get.snackbar(
+                      'Error',
+                      'Please enter a valid number (0 or greater)',
+                      backgroundColor: Colors.red[100],
+                      colorText: Colors.red[800],
+                    );
+                    return;
+                  }
                 }
+                
+                // Close dialogs first
+                Get.back(); // Close the point limit dialog
+                Get.back(); // Close customer details dialog
+                
+                // Show snackbar after dialogs are closed
+                await Future.delayed(const Duration(milliseconds: 100));
+                Get.snackbar(
+                  success ? 'Success' : 'Error',
+                  message,
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: success ? Colors.green : Colors.red,
+                  colorText: Colors.white,
+                );
+              } catch (e) {
+                // If there's an error, just close the point limit dialog
+                Get.back();
               }
-              Get.back();
-              Get.back(); // Close customer details dialog
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: MColors.primary,

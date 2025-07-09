@@ -1528,7 +1528,7 @@ class AdminController extends GetxController {
 
       // Add header row
       csvData.add([
-        'ID',
+        // 'ID',
         'Name',
         'Email',
         'Phone',
@@ -1547,13 +1547,30 @@ class AdminController extends GetxController {
             ? DateFormat('yyyy-MM-dd HH:mm').format(createdAt.toDate())
             : 'N/A';
 
+        // Get subscription plan name
+        String planName = 'No plan';
+        final planId = data['subscriptionPlan'];
+        if (planId != null) {
+          try {
+            final planDoc = await _firestore.collection('custom_subscription_plans').doc(planId).get();
+            if (planDoc.exists) {
+              planName = planDoc.data()?['name'] ?? 'Unknown Plan';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching plan name for $planId: $e');
+            }
+            planName = 'Unknown Plan';
+          }
+        }
+
         csvData.add([
-          doc.id,
+          // doc.id,
           data['name'] ?? 'N/A',
           data['email'] ?? 'N/A',
-          data['phone'] ?? 'N/A',
+          data['phoneNumber'] ?? 'N/A',
           data['address'] ?? 'N/A',
-          data['subscriptionPlan'] ?? 'No plan',
+          planName,
           data['subscriptionStatus'] ?? 'inactive',
           createdAtStr,
           data['approvalStatus'] ?? 'pending'
@@ -1612,7 +1629,7 @@ class AdminController extends GetxController {
 
       // Add header row
       csvData.add([
-        'ID',
+        // 'ID',
         'Name',
         'Email',
         'Phone',
@@ -1635,7 +1652,7 @@ class AdminController extends GetxController {
             : 'Never';
 
         csvData.add([
-          doc.id,
+          // doc.id,
           '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
           data['email'] ?? 'N/A',
           data['phone'] ?? 'N/A',
@@ -1691,8 +1708,8 @@ class AdminController extends GetxController {
       // Prepare CSV
       List<List<dynamic>> csvData = [];
       csvData.add([
-        'ID',
-        'Restaurant ID',
+        // 'ID',
+        'Restaurant Name',
         'Plan',
         'Amount Paid',
         'Status',
@@ -1719,10 +1736,47 @@ class AdminController extends GetxController {
               .format((data['endDate'] as Timestamp).toDate());
         }
 
+        // Get restaurant name
+        String restaurantName = 'Unknown';
+        final restaurantId = data['restaurantId'];
+        if (restaurantId != null) {
+          try {
+            final restaurantDoc = await _firestore.collection('restaurants').doc(restaurantId).get();
+            if (restaurantDoc.exists) {
+              restaurantName = restaurantDoc.data()?['name'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching restaurant name for $restaurantId: $e');
+            }
+          }
+        }
+
+        // Get subscription plan name
+        String planName = 'Unknown';
+        final planId = data['planId'] ?? data['plan'];
+        if (planId != null) {
+          try {
+            final planDoc = await _firestore.collection('custom_subscription_plans').doc(planId).get();
+            if (planDoc.exists) {
+              planName = planDoc.data()?['name'] ?? 'Unknown';
+            } else {
+              // Fallback to the plan field if it's already a name
+              planName = data['plan'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching plan name for $planId: $e');
+            }
+            // Fallback to the plan field if it's already a name
+            planName = data['plan'] ?? 'Unknown';
+          }
+        }
+
         csvData.add([
-          doc.id,
-          data['restaurantId'] ?? 'N/A',
-          data['plan'] ?? 'N/A',
+          // doc.id,
+          restaurantName,
+          planName,
           data['amountPaid'] ?? 0,
           data['status'] ?? 'N/A',
           startDateStr,
@@ -1771,9 +1825,9 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> csvData = [];
       csvData.add([
-        'ID',
-        'Restaurant ID',
-        'Customer ID',
+        // 'ID',
+        'Restaurant Name',
+        'Customer Name',
         'Points Awarded',
         'Timestamp'
       ]);
@@ -1786,10 +1840,48 @@ class AdminController extends GetxController {
               .format((data['timestamp'] as Timestamp).toDate());
         }
 
+        // Get restaurant name
+        String restaurantName = 'Unknown';
+        final restaurantId = data['restaurantId'];
+        if (restaurantId != null) {
+          try {
+            final restaurantDoc = await _firestore.collection('restaurants').doc(restaurantId).get();
+            if (restaurantDoc.exists) {
+              restaurantName = restaurantDoc.data()?['name'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching restaurant name for $restaurantId: $e');
+            }
+          }
+        }
+
+        // Get customer name
+        String customerName = 'Unknown';
+        final customerId = data['clientId'];
+        if (customerId != null) {
+          try {
+            final customerDoc = await _firestore.collection('users').doc(customerId).get();
+            if (customerDoc.exists) {
+              final customerData = customerDoc.data();
+              final firstName = customerData?['firstName'] ?? '';
+              final lastName = customerData?['lastName'] ?? '';
+              customerName = '$firstName $lastName'.trim();
+              if (customerName.isEmpty) {
+                customerName = customerData?['name'] ?? 'Unknown';
+              }
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching customer name for $customerId: $e');
+            }
+          }
+        }
+
         csvData.add([
-          doc.id,
-          data['restaurantId'] ?? 'N/A',
-          data['clientId'] ?? 'N/A',
+          // doc.id,
+          restaurantName,
+          customerName,
           data['pointsAwarded'] ?? 0,
           timestampStr,
         ]);
@@ -2108,7 +2200,7 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> pdfData = [];
       pdfData.add([
-        'ID',
+        // 'ID',
         'Name',
         'Email',
         'Phone',
@@ -2126,13 +2218,30 @@ class AdminController extends GetxController {
             ? DateFormat('yyyy-MM-dd HH:mm').format(createdAt.toDate())
             : 'N/A';
 
+        // Get subscription plan name
+        String planName = 'No plan';
+        final planId = data['subscriptionPlan'];
+        if (planId != null) {
+          try {
+            final planDoc = await _firestore.collection('custom_subscription_plans').doc(planId).get();
+            if (planDoc.exists) {
+              planName = planDoc.data()?['name'] ?? 'Unknown Plan';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching plan name for $planId: $e');
+            }
+            planName = 'Unknown Plan';
+          }
+        }
+
         pdfData.add([
-          doc.id,
+          // doc.id,
           data['name'] ?? 'N/A',
           data['email'] ?? 'N/A',
-          data['phone'] ?? 'N/A',
+          data['phoneNumber'] ?? 'N/A',
           data['address'] ?? 'N/A',
-          data['subscriptionPlan'] ?? 'No plan',
+          planName,
           data['subscriptionStatus'] ?? 'inactive',
           createdAtStr,
           data['approvalStatus'] ?? 'pending'
@@ -2227,8 +2336,8 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> pdfData = [];
       pdfData.add([
-        'ID',
-        'Restaurant ID',
+        // 'ID',
+        'Restaurant Name',
         'Plan',
         'Amount Paid',
         'Status',
@@ -2255,10 +2364,47 @@ class AdminController extends GetxController {
               .format((data['endDate'] as Timestamp).toDate());
         }
 
+        // Get restaurant name
+        String restaurantName = 'Unknown';
+        final restaurantId = data['restaurantId'];
+        if (restaurantId != null) {
+          try {
+            final restaurantDoc = await _firestore.collection('restaurants').doc(restaurantId).get();
+            if (restaurantDoc.exists) {
+              restaurantName = restaurantDoc.data()?['name'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching restaurant name for $restaurantId: $e');
+            }
+          }
+        }
+
+        // Get subscription plan name
+        String planName = 'Unknown';
+        final planId = data['planId'] ?? data['plan'];
+        if (planId != null) {
+          try {
+            final planDoc = await _firestore.collection('custom_subscription_plans').doc(planId).get();
+            if (planDoc.exists) {
+              planName = planDoc.data()?['name'] ?? 'Unknown';
+            } else {
+              // Fallback to the plan field if it's already a name
+              planName = data['plan'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching plan name for $planId: $e');
+            }
+            // Fallback to the plan field if it's already a name
+            planName = data['plan'] ?? 'Unknown';
+          }
+        }
+
         pdfData.add([
-          doc.id,
-          data['restaurantId'] ?? 'N/A',
-          data['plan'] ?? 'N/A',
+          //  doc.id,
+          restaurantName,
+          planName,
           data['amountPaid'] ?? 0,
           data['status'] ?? 'N/A',
           startDateStr,
@@ -2293,9 +2439,9 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> pdfData = [];
       pdfData.add([
-        'ID',
-        'Restaurant ID',
-        'Customer ID',
+        // 'ID',
+        'Restaurant Name',
+        'Customer Name',
         'Points Awarded',
         'Timestamp'
       ]);
@@ -2308,10 +2454,48 @@ class AdminController extends GetxController {
               .format((data['timestamp'] as Timestamp).toDate());
         }
 
+        // Get restaurant name
+        String restaurantName = 'Unknown';
+        final restaurantId = data['restaurantId'];
+        if (restaurantId != null) {
+          try {
+            final restaurantDoc = await _firestore.collection('restaurants').doc(restaurantId).get();
+            if (restaurantDoc.exists) {
+              restaurantName = restaurantDoc.data()?['name'] ?? 'Unknown';
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching restaurant name for $restaurantId: $e');
+            }
+          }
+        }
+
+        // Get customer name
+        String customerName = 'Unknown';
+        final customerId = data['clientId'];
+        if (customerId != null) {
+          try {
+            final customerDoc = await _firestore.collection('users').doc(customerId).get();
+            if (customerDoc.exists) {
+              final customerData = customerDoc.data();
+              final firstName = customerData?['firstName'] ?? '';
+              final lastName = customerData?['lastName'] ?? '';
+              customerName = '$firstName $lastName'.trim();
+              if (customerName.isEmpty) {
+                customerName = customerData?['name'] ?? 'Unknown';
+              }
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching customer name for $customerId: $e');
+            }
+          }
+        }
+
         pdfData.add([
-          doc.id,
-          data['restaurantId'] ?? 'N/A',
-          data['clientId'] ?? 'N/A',
+          // doc.id,
+          restaurantName,
+          customerName,
           data['pointsAwarded'] ?? 0,
           timestampStr,
         ]);
@@ -2345,9 +2529,9 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> csvData = [];
       csvData.add([
-        'ID',
+        // 'ID',
         'Restaurant Name',
-        'Customer ID',
+        'Customer Name',
         'Reward Type',
         'Points Used',
         'Claim Date'
@@ -2360,10 +2544,32 @@ class AdminController extends GetxController {
             ? DateFormat('yyyy-MM-dd HH:mm').format(claimDate.toDate())
             : 'N/A';
 
+        // Get customer name
+        String customerName = 'Unknown';
+        final customerId = data['customerId'];
+        if (customerId != null) {
+          try {
+            final customerDoc = await _firestore.collection('users').doc(customerId).get();
+            if (customerDoc.exists) {
+              final customerData = customerDoc.data();
+              final firstName = customerData?['firstName'] ?? '';
+              final lastName = customerData?['lastName'] ?? '';
+              customerName = '$firstName $lastName'.trim();
+              if (customerName.isEmpty) {
+                customerName = customerData?['name'] ?? 'Unknown';
+              }
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching customer name for $customerId: $e');
+            }
+          }
+        }
+
         csvData.add([
           doc.id,
           data['restaurantName'] ?? 'Unknown',
-          data['customerId'] ?? 'Unknown',
+          customerName,
           data['rewardType'] ?? 'Unknown',
           data['pointsUsed'] ?? 0,
           claimDateStr,
@@ -2409,9 +2615,9 @@ class AdminController extends GetxController {
 
       List<List<dynamic>> pdfData = [];
       pdfData.add([
-        'ID',
+        // 'ID',
         'Restaurant Name',
-        'Customer ID',
+        'Customer Name',
         'Reward Type',
         'Points Used',
         'Claim Date'
@@ -2424,10 +2630,32 @@ class AdminController extends GetxController {
             ? DateFormat('yyyy-MM-dd HH:mm').format(claimDate.toDate())
             : 'N/A';
 
+        // Get customer name
+        String customerName = 'Unknown';
+        final customerId = data['customerId'];
+        if (customerId != null) {
+          try {
+            final customerDoc = await _firestore.collection('users').doc(customerId).get();
+            if (customerDoc.exists) {
+              final customerData = customerDoc.data();
+              final firstName = customerData?['firstName'] ?? '';
+              final lastName = customerData?['lastName'] ?? '';
+              customerName = '$firstName $lastName'.trim();
+              if (customerName.isEmpty) {
+                customerName = customerData?['name'] ?? 'Unknown';
+              }
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error fetching customer name for $customerId: $e');
+            }
+          }
+        }
+
         pdfData.add([
-          doc.id,
+          // doc.id,
           data['restaurantName'] ?? 'Unknown',
-          data['customerId'] ?? 'Unknown',
+          customerName,
           data['rewardType'] ?? 'Unknown',
           data['pointsUsed'] ?? 0,
           claimDateStr,
@@ -2452,107 +2680,6 @@ class AdminController extends GetxController {
     }
   }
 
-  // Clean up duplicate active subscriptions
-  Future<void> cleanupDuplicateSubscriptions() async {
-    try {
-      Get.dialog(
-        const AlertDialog(
-          title: Text('Cleaning Up Subscriptions'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Please wait while we fix duplicate subscriptions...'),
-            ],
-          ),
-        ),
-        barrierDismissible: false,
-      );
-
-      final subscriptionsSnapshot = await _firestore.collection('subscriptions').get();
-      
-      // Group subscriptions by restaurant
-      Map<String, List<QueryDocumentSnapshot>> subscriptionsByRestaurant = {};
-      
-      for (var doc in subscriptionsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>?;
-        final restaurantId = data?['restaurantId'] as String?;
-        if (restaurantId != null) {
-          if (!subscriptionsByRestaurant.containsKey(restaurantId)) {
-            subscriptionsByRestaurant[restaurantId] = [];
-          }
-          subscriptionsByRestaurant[restaurantId]!.add(doc);
-        }
-      }
-      
-      int totalCleaned = 0;
-      
-      // For each restaurant, keep only the most recent active subscription
-      for (var entry in subscriptionsByRestaurant.entries) {
-        final restaurantId = entry.key;
-        final subscriptions = entry.value;
-        
-        // Filter active subscriptions
-        final activeSubscriptions = subscriptions.where((doc) {
-          final data = doc.data() as Map<String, dynamic>?;
-          return data?['status'] == 'active';
-        }).toList();
-        
-        if (activeSubscriptions.length > 1) {
-          // Sort by creation date (most recent first)
-          activeSubscriptions.sort((a, b) {
-            final aData = a.data() as Map<String, dynamic>?;
-            final bData = b.data() as Map<String, dynamic>?;
-            final aDate = (aData?['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
-            final bDate = (bData?['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
-            return bDate.compareTo(aDate);
-          });
-          
-          // Keep the first (most recent), deactivate the rest
-          for (int i = 1; i < activeSubscriptions.length; i++) {
-            await _firestore.collection('subscriptions')
-                .doc(activeSubscriptions[i].id)
-                .update({'status': 'expired'});
-            totalCleaned++;
-            
-            if (kDebugMode) {
-              print('Deactivated duplicate subscription: ${activeSubscriptions[i].id} for restaurant: $restaurantId');
-            }
-          }
-        }
-      }
-      
-      Get.back(); // Close loading dialog
-      
-      Get.snackbar(
-        'Cleanup Complete',
-        'Deactivated $totalCleaned duplicate subscriptions. Each restaurant now has only 1 active subscription.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-      );
-      
-      // Refresh dashboard metrics
-      await fetchDashboardMetrics();
-      
-    } catch (e) {
-      Get.back(); // Close loading dialog
-      
-      if (kDebugMode) {
-        print('Error cleaning up subscriptions: $e');
-      }
-      
-      Get.snackbar(
-        'Cleanup Failed',
-        'Failed to clean up subscriptions: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
-  }
 
   // Switch revenue calculation mode
   void switchRevenueMode(String mode) {
@@ -3034,7 +3161,7 @@ class AdminController extends GetxController {
   }
 
   // Customer Restriction Methods
-  Future<void> restrictCustomer(String customerId, {String? reason}) async {
+  Future<bool> restrictCustomer(String customerId, {String? reason}) async {
     try {
       isLoading.value = true;
 
@@ -3045,30 +3172,18 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      Get.snackbar(
-        'Success',
-        'Customer has been restricted',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+      return true; // Success
     } catch (e) {
       if (kDebugMode) {
         print('Error restricting customer: $e');
       }
-      Get.snackbar(
-        'Error',
-        'Failed to restrict customer: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      return false; // Error
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> unrestrictCustomer(String customerId) async {
+  Future<bool> unrestrictCustomer(String customerId) async {
     try {
       isLoading.value = true;
 
@@ -3080,31 +3195,19 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      Get.snackbar(
-        'Success',
-        'Customer restriction has been removed',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      return true; // Success
     } catch (e) {
       if (kDebugMode) {
         print('Error unrestricting customer: $e');
       }
-      Get.snackbar(
-        'Error',
-        'Failed to remove customer restriction: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      return false; // Error
     } finally {
       isLoading.value = false;
     }
   }
 
   // Point Earning Limit Methods
-  Future<void> setCustomerPointLimit(String customerId, int dailyLimit) async {
+  Future<bool> setCustomerPointLimit(String customerId, int dailyLimit) async {
     try {
       isLoading.value = true;
 
@@ -3114,30 +3217,18 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      Get.snackbar(
-        'Success',
-        'Daily point limit set to $dailyLimit points',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      return true; // Success
     } catch (e) {
       if (kDebugMode) {
         print('Error setting point limit: $e');
       }
-      Get.snackbar(
-        'Error',
-        'Failed to set point limit: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      return false; // Error
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> removeCustomerPointLimit(String customerId) async {
+  Future<bool> removeCustomerPointLimit(String customerId) async {
     try {
       isLoading.value = true;
 
@@ -3147,24 +3238,12 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      Get.snackbar(
-        'Success',
-        'Daily point limit has been removed',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      return true; // Success
     } catch (e) {
       if (kDebugMode) {
         print('Error removing point limit: $e');
       }
-      Get.snackbar(
-        'Error',
-        'Failed to remove point limit: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      return false; // Error
     } finally {
       isLoading.value = false;
     }
