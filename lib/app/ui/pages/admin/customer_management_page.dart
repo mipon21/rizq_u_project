@@ -176,42 +176,49 @@ class CustomerManagementPage extends GetView<AdminController> {
                                     return DataRow(
                                       cells: [
                                         DataCell(
-                                          Row(
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(name),
-                                              if (data['isRestricted'] == true)
-                                                Container(
-                                                  margin: const EdgeInsets.only(left: 8),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red,
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  child: const Text(
-                                                    'RESTRICTED',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (data['dailyPointLimit'] != null)
-                                                Container(
-                                                  margin: const EdgeInsets.only(left: 4),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.orange,
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  child: Text(
-                                                    'LIMIT: ${data['dailyPointLimit']}',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
+                                              if (data['isRestricted'] == true || data['dailyPointLimit'] != null)
+                                                Wrap(
+                                                  spacing: 4,
+                                                  runSpacing: 2,
+                                                  children: [
+                                                    if (data['isRestricted'] == true)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red,
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                        child: const Text(
+                                                          'RESTRICTED',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    if (data['dailyPointLimit'] != null)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.orange,
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                        child: Text(
+                                                          'LIMIT: ${data['dailyPointLimit']}',
+                                                          style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
                                                 ),
                                             ],
                                           ),
@@ -277,41 +284,48 @@ class CustomerManagementPage extends GetView<AdminController> {
                               ),
                             ),
                           ),
-                          title: Row(
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(child: Text(name)),
-                              if (data['isRestricted'] == true)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'RESTRICTED',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              if (data['dailyPointLimit'] != null)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'LIMIT: ${data['dailyPointLimit']}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                              Text(name),
+                              if (data['isRestricted'] == true || data['dailyPointLimit'] != null)
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 2,
+                                  children: [
+                                    if (data['isRestricted'] == true)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          'RESTRICTED',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    if (data['dailyPointLimit'] != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'LIMIT: ${data['dailyPointLimit']}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                             ],
                           ),
@@ -483,11 +497,13 @@ class CustomerManagementPage extends GetView<AdminController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Customer Information',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                Expanded(
+                                  child: const Text(
+                                    'Customer Information',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                                 IconButton(
@@ -548,82 +564,85 @@ class CustomerManagementPage extends GetView<AdminController> {
                 ),
               ),
               const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Column(
                 children: [
-                  // Left side - Restriction actions
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Top row - Customer Management section
+                  Row(
                     children: [
-                      Text(
-                        'Customer Management',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Customer Management',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (data['isRestricted'] == true)
+                                  ElevatedButton.icon(
+                                    onPressed: () => _showUnrestrictDialog(context, customerId),
+                                    icon: const Icon(Icons.check_circle, size: 16),
+                                    label: const Text('Unrestrict'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    ),
+                                  )
+                                else
+                                  ElevatedButton.icon(
+                                    onPressed: () => _showRestrictDialog(context, customerId),
+                                    icon: const Icon(Icons.block, size: 16),
+                                    label: const Text('Restrict'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    ),
+                                  ),
+                                ElevatedButton.icon(
+                                  onPressed: () => _showPointLimitDialog(context, customerId, data),
+                                  icon: const Icon(Icons.speed, size: 16),
+                                  label: const Text('Point Limit'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: MColors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          if (data['isRestricted'] == true)
-                            ElevatedButton.icon(
-                              onPressed: () => _showUnrestrictDialog(context, customerId),
-                              icon: const Icon(Icons.check_circle, size: 16),
-                              label: const Text('Unrestrict'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            )
-                          else
-                            ElevatedButton.icon(
-                              onPressed: () => _showRestrictDialog(context, customerId),
-                              icon: const Icon(Icons.block, size: 16),
-                              label: const Text('Restrict'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: () => _showPointLimitDialog(context, customerId, data),
-                            icon: const Icon(Icons.speed, size: 16),
-                            label: const Text('Point Limit'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: MColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
-                  // Right side - Close and Delete
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  const SizedBox(height: 16),
+                  // Bottom row - Close and Delete buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => Get.back(),
-                            child: const Text('Close'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () =>
-                                _showDeleteConfirmation(context, customerId),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Delete Customer'),
-                          ),
-                        ],
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('Close'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () =>
+                            _showDeleteConfirmation(context, customerId),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Delete'),
                       ),
                     ],
                   ),
@@ -918,11 +937,13 @@ class CustomerManagementPage extends GetView<AdminController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Edit Customer Details',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: const Text(
+                      'Edit Customer Details',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -1077,11 +1098,13 @@ class CustomerManagementPage extends GetView<AdminController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Create New Customer',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: const Text(
+                      'Create New Customer',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -1236,7 +1259,7 @@ class CustomerManagementPage extends GetView<AdminController> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Create Customer'),
+                              : const Text('Create'),
                         )),
                       ],
                     ),
