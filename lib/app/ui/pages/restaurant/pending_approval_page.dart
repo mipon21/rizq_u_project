@@ -285,56 +285,21 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                 registration.ibanNumber!.isNotEmpty)
               _buildDetailRow('IBAN Number', registration.ibanNumber!),
 
-            // National ID Images
-            if (registration.ownerNationalIdFront.isNotEmpty) ...[
+            // Contact Information
+            if (registration.phoneNumber.isNotEmpty || registration.postalAddress.isNotEmpty) ...[
               const SizedBox(height: 16),
               const Text(
-                'National ID Documents',
+                'Contact Information',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const Text('Front Side'),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedImageWidget(
-                            imageUrl: registration.ownerNationalIdFront,
-                            width: double.infinity,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const Text('Back Side'),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedImageWidget(
-                            imageUrl: registration.ownerNationalIdBack,
-                            width: double.infinity,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              if (registration.phoneNumber.isNotEmpty)
+                _buildDetailRow('Phone Number', registration.phoneNumber),
+              if (registration.postalAddress.isNotEmpty)
+                _buildDetailRow('Postal Address', registration.postalAddress),
             ],
 
             const SizedBox(height: 16),

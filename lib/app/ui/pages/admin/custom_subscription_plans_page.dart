@@ -117,6 +117,22 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          if (plan.isInitial)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Initial Plan',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                           if (plan.isFreeTrial)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -270,6 +286,19 @@ class CustomSubscriptionPlansPage extends GetView<AdminController> {
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () => _showDeleteConfirmation(context, plan),
                         tooltip: 'Delete Plan',
+                      ),
+                    const SizedBox(width: 8),
+                    if (!plan.isInitial && plan.isActive)
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.star_border, size: 18),
+                        label: const Text('Set as Initial'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.deepPurple,
+                          side: const BorderSide(color: Colors.deepPurple),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                        onPressed: () => controller.setInitialSubscriptionPlan(plan.id),
                       ),
                   ],
                 ),

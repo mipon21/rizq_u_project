@@ -13,6 +13,7 @@ class SubscriptionPlanModel {
   final DateTime? updatedAt;
   final List<String> features;
   final String planType; // 'regular' or 'free_trial'
+  final bool isInitial;
 
   SubscriptionPlanModel({
     required this.id,
@@ -27,6 +28,7 @@ class SubscriptionPlanModel {
     this.updatedAt,
     required this.features,
     this.planType = 'regular',
+    this.isInitial = false,
   });
 
   factory SubscriptionPlanModel.fromFirestore(
@@ -46,6 +48,7 @@ class SubscriptionPlanModel {
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       features: List<String>.from(data['features'] ?? []),
       planType: data['planType'] ?? 'regular',
+      isInitial: data['isInitial'] ?? false,
     );
   }
 
@@ -62,6 +65,7 @@ class SubscriptionPlanModel {
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'features': features,
       'planType': planType,
+      'isInitial': isInitial,
     };
   }
 
@@ -78,6 +82,7 @@ class SubscriptionPlanModel {
     DateTime? updatedAt,
     List<String>? features,
     String? planType,
+    bool? isInitial,
   }) {
     return SubscriptionPlanModel(
       id: id ?? this.id,
@@ -92,6 +97,7 @@ class SubscriptionPlanModel {
       updatedAt: updatedAt ?? this.updatedAt,
       features: features ?? this.features,
       planType: planType ?? this.planType,
+      isInitial: isInitial ?? this.isInitial,
     );
   }
 

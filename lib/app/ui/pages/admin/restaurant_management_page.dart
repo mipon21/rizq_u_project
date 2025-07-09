@@ -584,8 +584,8 @@ class RestaurantManagementPage extends GetView<AdminController> {
     
     // Non-editable display data
     final logoUrl = data['logoUrl'] ?? '';
-    final nationalIdFront = data['ownerNationalIdFront'] ?? '';
-    final nationalIdBack = data['ownerNationalIdBack'] ?? '';
+    final phoneNumber = data['phoneNumber'] ?? '';
+    final postalAddress = data['postalAddress'] ?? '';
     final createdAt = data['createdAt'];
     final approvalStatus = data['approvalStatus'] ?? 'unknown';
 
@@ -724,55 +724,30 @@ class RestaurantManagementPage extends GetView<AdminController> {
                     ),
                   ),
 
-                  // National ID Documents (Display Only)
-                  if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[
+                  // Contact Information (Display Only)
+                  if (phoneNumber.isNotEmpty || postalAddress.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text(
-                      'Owner Identity Documents (View Only)',
+                      'Contact Information (View Only)',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (nationalIdFront.isNotEmpty)
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text('National ID - Front'),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedImageWidget(
-                                    imageUrl: nationalIdFront,
-                                    width: double.infinity,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (nationalIdFront.isNotEmpty && nationalIdBack.isNotEmpty)
-                          const SizedBox(width: 16),
-                        if (nationalIdBack.isNotEmpty)
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text('National ID - Back'),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedImageWidget(
-                                    imageUrl: nationalIdBack,
-                                    width: double.infinity,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (phoneNumber.isNotEmpty)
+                            _buildInfoRow('Phone Number', phoneNumber),
+                          if (postalAddress.isNotEmpty)
+                            _buildInfoRow('Postal Address', postalAddress),
+                        ],
+                      ),
                     ),
                   ],
                 ],
@@ -891,8 +866,8 @@ class RestaurantManagementPage extends GetView<AdminController> {
     final approvalStatus = data['approvalStatus'] ?? 'pending';
     final createdAt = data['createdAt'];
     final logoUrl = data['logoUrl'] ?? '';
-    final nationalIdFront = data['ownerNationalIdFront'] ?? '';
-    final nationalIdBack = data['ownerNationalIdBack'] ?? '';
+    final phoneNumber = data['phoneNumber'] ?? '';
+    final postalAddress = data['postalAddress'] ?? '';
 
     showDialog(
       context: context,
@@ -998,65 +973,17 @@ class RestaurantManagementPage extends GetView<AdminController> {
                         (createdAt as Timestamp).toDate().toString().split(' ')[0]),
                   ]),
 
-                  // National ID Documents (Display Only)
-                  if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[
+                  // Contact Information (Display Only)
+                  if (phoneNumber.isNotEmpty || postalAddress.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    _buildSectionTitle('Owner Identity Documents'),
+                    _buildSectionTitle('Contact Information'),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (nationalIdFront.isNotEmpty)
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'National ID - Front',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedImageWidget(
-                                    imageUrl: nationalIdFront,
-                                    width: double.infinity,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (nationalIdFront.isNotEmpty && nationalIdBack.isNotEmpty)
-                          const SizedBox(width: 16),
-                        if (nationalIdBack.isNotEmpty)
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'National ID - Back',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedImageWidget(
-                                    imageUrl: nationalIdBack,
-                                    width: double.infinity,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                    _buildInfoCard([
+                      if (phoneNumber.isNotEmpty)
+                        _buildDetailRow('Phone Number', phoneNumber),
+                      if (postalAddress.isNotEmpty)
+                        _buildDetailRow('Postal Address', postalAddress),
+                    ]),
                   ],
                 ],
               ),

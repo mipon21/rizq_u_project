@@ -20,23 +20,19 @@ class RestaurantRegistrationController extends GetxController {
   // Form controllers
   final RxString restaurantName = ''.obs;
   final RxString ownerName = ''.obs;
+  final RxString phoneNumber = ''.obs;
+  final RxString postalAddress = ''.obs;
   final RxString supportEmail = ''.obs;
   final RxString bankDetails = ''.obs;
   final RxString ibanNumber = ''.obs;
 
   // Observable variables for local images
   final Rx<File?> logoFile = Rx<File?>(null);
-  final Rx<File?> nationalIdFrontFile = Rx<File?>(null);
-  final Rx<File?> nationalIdBackFile = Rx<File?>(null);
 
   // Observable variables
   final RxBool isLoading = false.obs;
   final RxBool isUploadingLogo = false.obs;
-  final RxBool isUploadingIdFront = false.obs;
-  final RxBool isUploadingIdBack = false.obs;
   final RxString logoUrl = ''.obs;
-  final RxString nationalIdFrontUrl = ''.obs;
-  final RxString nationalIdBackUrl = ''.obs;
   final RxInt currentStep = 0.obs;
   final RxBool isFormValid = false.obs;
 
@@ -52,18 +48,18 @@ class RestaurantRegistrationController extends GetxController {
     // Listen to form changes to validate
     ever(restaurantName, (_) => _validateForm());
     ever(ownerName, (_) => _validateForm());
+    ever(phoneNumber, (_) => _validateForm());
+    ever(postalAddress, (_) => _validateForm());
     ever(logoFile, (_) => _validateForm());
-    ever(nationalIdFrontFile, (_) => _validateForm());
-    ever(nationalIdBackFile, (_) => _validateForm());
   }
 
 
   void _validateForm() {
     isFormValid.value = restaurantName.value.trim().isNotEmpty &&
         ownerName.value.trim().isNotEmpty &&
-        logoFile.value != null &&
-        nationalIdFrontFile.value != null &&
-        nationalIdBackFile.value != null;
+        phoneNumber.value.trim().isNotEmpty &&
+        postalAddress.value.trim().isNotEmpty &&
+        logoFile.value != null;
   }
 
   Future<void> pickLogo() async {
@@ -78,36 +74,6 @@ class RestaurantRegistrationController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to pick logo: $e');
-    }
-  }
-
-  Future<void> pickNationalIdFront() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-      );
-
-      if (image != null) {
-        nationalIdFrontFile.value = File(image.path);
-      }
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to pick National ID front: $e');
-    }
-  }
-
-  Future<void> pickNationalIdBack() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-      );
-
-      if (image != null) {
-        nationalIdBackFile.value = File(image.path);
-      }
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to pick National ID back: $e');
     }
   }
 
@@ -126,7 +92,7 @@ class RestaurantRegistrationController extends GetxController {
     }
   }
 
-  Future<bool> uploadAllImages() async {
+  Future<bool> uploadLogo() async {
     try {
       isLoading.value = true;
 
@@ -136,23 +102,9 @@ class RestaurantRegistrationController extends GetxController {
         logoUrl.value = url;
       }
 
-      if (nationalIdFrontFile.value != null) {
-        final url =
-            await _uploadImage(nationalIdFrontFile.value!, 'national_ids');
-        if (url == null) return false;
-        nationalIdFrontUrl.value = url;
-      }
-
-      if (nationalIdBackFile.value != null) {
-        final url =
-            await _uploadImage(nationalIdBackFile.value!, 'national_ids');
-        if (url == null) return false;
-        nationalIdBackUrl.value = url;
-      }
-
       return true;
     } catch (e) {
-      Get.snackbar('Error', 'Failed to upload images: $e');
+      Get.snackbar('Error', 'Failed to upload logo: $e');
       return false;
     } finally {
       isLoading.value = false;
@@ -174,10 +126,10 @@ class RestaurantRegistrationController extends GetxController {
         return;
       }
 
-      // Upload all images first
-      final imagesUploaded = await uploadAllImages();
-      if (!imagesUploaded) {
-        Get.snackbar('Error', 'Failed to upload images');
+      // Upload logo first
+      final logoUploaded = await uploadLogo();
+      if (!logoUploaded) {
+        Get.snackbar('Error', 'Failed to upload logo');
         return;
       }
 
@@ -187,8 +139,8 @@ class RestaurantRegistrationController extends GetxController {
         email: user.email ?? '',
         restaurantName: restaurantName.value.trim(),
         ownerName: ownerName.value.trim(),
-        ownerNationalIdFront: nationalIdFrontUrl.value,
-        ownerNationalIdBack: nationalIdBackUrl.value,
+        phoneNumber: phoneNumber.value.trim(),
+        postalAddress: postalAddress.value.trim(),
         supportEmail: '',
         bankDetails: '',
         ibanNumber: '',
@@ -249,6 +201,8 @@ class RestaurantRegistrationController extends GetxController {
           'restaurantName': registration.restaurantName,
           'ownerName': registration.ownerName,
           'email': registration.email,
+          'phoneNumber': registration.phoneNumber,
+          'postalAddress': registration.postalAddress,
         },
       });
     } catch (e) {
@@ -297,9 +251,9 @@ class RestaurantRegistrationController extends GetxController {
   void resetForm() {
     restaurantName.value = '';
     ownerName.value = '';
+    phoneNumber.value = '';
+    postalAddress.value = '';
     logoUrl.value = '';
-    nationalIdFrontUrl.value = '';
-    nationalIdBackUrl.value = '';
     currentStep.value = 0;
   }
 

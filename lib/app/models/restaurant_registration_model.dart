@@ -5,8 +5,8 @@ class RestaurantRegistrationModel {
   final String email;
   final String restaurantName;
   final String ownerName;
-  final String ownerNationalIdFront;
-  final String ownerNationalIdBack;
+  final String phoneNumber;
+  final String postalAddress;
   final String? supportEmail;
   final String? bankDetails;
   final String? ibanNumber;
@@ -23,8 +23,8 @@ class RestaurantRegistrationModel {
     required this.email,
     required this.restaurantName,
     required this.ownerName,
-    required this.ownerNationalIdFront,
-    required this.ownerNationalIdBack,
+    required this.phoneNumber,
+    required this.postalAddress,
     this.supportEmail,
     this.bankDetails,
     this.ibanNumber,
@@ -46,8 +46,8 @@ class RestaurantRegistrationModel {
       email: data['email'] ?? '',
       restaurantName: data['restaurantName'] ?? '',
       ownerName: data['ownerName'] ?? '',
-      ownerNationalIdFront: data['ownerNationalIdFront'] ?? '',
-      ownerNationalIdBack: data['ownerNationalIdBack'] ?? '',
+      phoneNumber: data['phoneNumber'] ?? '',
+      postalAddress: data['postalAddress'] ?? '',
       supportEmail: data['supportEmail'],
       bankDetails: data['bankDetails'],
       ibanNumber: data['ibanNumber'],
@@ -67,8 +67,8 @@ class RestaurantRegistrationModel {
       'email': email,
       'restaurantName': restaurantName,
       'ownerName': ownerName,
-      'ownerNationalIdFront': ownerNationalIdFront,
-      'ownerNationalIdBack': ownerNationalIdBack,
+      'phoneNumber': phoneNumber,
+      'postalAddress': postalAddress,
       'supportEmail': supportEmail,
       'bankDetails': bankDetails,
       'ibanNumber': ibanNumber,
@@ -87,8 +87,8 @@ class RestaurantRegistrationModel {
     String? email,
     String? restaurantName,
     String? ownerName,
-    String? ownerNationalIdFront,
-    String? ownerNationalIdBack,
+    String? phoneNumber,
+    String? postalAddress,
     String? supportEmail,
     String? bankDetails,
     String? ibanNumber,
@@ -105,8 +105,8 @@ class RestaurantRegistrationModel {
       email: email ?? this.email,
       restaurantName: restaurantName ?? this.restaurantName,
       ownerName: ownerName ?? this.ownerName,
-      ownerNationalIdFront: ownerNationalIdFront ?? this.ownerNationalIdFront,
-      ownerNationalIdBack: ownerNationalIdBack ?? this.ownerNationalIdBack,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      postalAddress: postalAddress ?? this.postalAddress,
       supportEmail: supportEmail ?? this.supportEmail,
       bankDetails: bankDetails ?? this.bankDetails,
       ibanNumber: ibanNumber ?? this.ibanNumber,

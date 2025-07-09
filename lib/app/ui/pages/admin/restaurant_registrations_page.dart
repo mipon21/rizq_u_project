@@ -114,8 +114,8 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
     final logoUrl = data['logoUrl'] ?? '';
     final bankDetails = data['bankDetails'] ?? '';
     final ibanNumber = data['ibanNumber'] ?? '';
-    final nationalIdFront = data['ownerNationalIdFront'] ?? '';
-    final nationalIdBack = data['ownerNationalIdBack'] ?? '';
+    final phoneNumber = data['phoneNumber'] ?? '';
+    final postalAddress = data['postalAddress'] ?? '';
 
     Color statusColor;
     String statusText;
@@ -266,101 +266,21 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
             if (ibanNumber != null && ibanNumber.isNotEmpty)
               _buildDetailRow('IBAN Number', ibanNumber),
             
-            // National ID Images
-            if (nationalIdFront.isNotEmpty || nationalIdBack.isNotEmpty) ...[
+            // Contact Information
+            if (phoneNumber.isNotEmpty || postalAddress.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Text(
-                'National ID Documents',
+                'Contact Information',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (nationalIdFront.isNotEmpty)
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Text('Front Side'),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => _showFullScreenImage(context,
-                                nationalIdFront, 'National ID - Front'),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Stack(
-                                children: [
-                                  CachedImageWidget(
-                                    imageUrl: nationalIdFront,
-                                    width: double.infinity,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Positioned.fill(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.zoom_in,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (nationalIdFront.isNotEmpty && nationalIdBack.isNotEmpty)
-                    const SizedBox(width: 16),
-                  if (nationalIdBack.isNotEmpty)
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Text('Back Side'),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => _showFullScreenImage(
-                                context, nationalIdBack, 'National ID - Back'),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Stack(
-                                children: [
-                                  CachedImageWidget(
-                                    imageUrl: nationalIdBack,
-                                    width: double.infinity,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Positioned.fill(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.zoom_in,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+              if (phoneNumber.isNotEmpty)
+                _buildDetailRow('Phone Number', phoneNumber),
+              if (postalAddress.isNotEmpty)
+                _buildDetailRow('Postal Address', postalAddress),
             ],
             
             // Action Buttons
@@ -369,14 +289,20 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => controller.approveRestaurant(registrationId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Approve'),
-                    ),
+                    child: Obx(() {
+                      final hasInitialPlan = controller.initialPlan != null;
+                      return Tooltip(
+                        message: hasInitialPlan ? '' : 'Set an initial plan in Custom Subscription Plans to enable approval',
+                        child: ElevatedButton(
+                          onPressed: hasInitialPlan ? () => controller.approveRestaurant(registrationId) : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Approve'),
+                        ),
+                      );
+                    }),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

@@ -1355,33 +1355,41 @@ class AdminController extends GetxController {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // 4. Get the free trial plan
-      final freeTrialPlan = this.freeTrialPlan;
-      if (freeTrialPlan == null) {
-        throw 'No active free trial plan found. Please create a free trial plan in the admin panel.';
+      // 4. Get the initial plan
+      final initialPlan = this.initialPlan;
+      if (initialPlan == null) {
+        Get.snackbar(
+          'Approval Blocked',
+          'No initial subscription plan is set. Please set an initial plan in the Custom Subscription Plans section before approving restaurants.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
       }
 
       // 5. Create / update restaurant document
       final now = DateTime.now();
-      final trialEndDate = now.add(Duration(days: freeTrialPlan.durationDays));
-      
+      final planEndDate = now.add(Duration(days: initialPlan.durationDays));
       await _firestore.collection('restaurants').doc(restaurantUid).set({
         'uid': restaurantUid,
         'restaurantName': registrationData['restaurantName'] ?? '',
         'name':
             registrationData['restaurantName'] ?? '', // keep backward-compat
         'ownerName': registrationData['ownerName'] ?? '',
-        'address': registrationData['address'] ?? '',
+        'address': registrationData['postalAddress'] ?? '', // Use postal address as address
         'email': registrationData['email'] ?? '',
+        'phoneNumber': registrationData['phoneNumber'] ?? '',
+        'postalAddress': registrationData['postalAddress'] ?? '',
         'logoUrl': registrationData['logoUrl'] ?? '',
         'supportEmail': registrationData['supportEmail'] ?? '',
         'bankDetails': registrationData['bankDetails'] ?? '',
         'ibanNumber': registrationData['ibanNumber'] ?? '',
-        'subscriptionPlan': freeTrialPlan.id,
-        'subscriptionStatus': 'free_trial',
+        'subscriptionPlan': initialPlan.id,
+        'subscriptionStatus': initialPlan.planType,
         'currentScanCount': 0,
         'trialStartDate': Timestamp.fromDate(now),
-        'subscriptionEnd': Timestamp.fromDate(trialEndDate),
+        'subscriptionEnd': Timestamp.fromDate(planEndDate),
         'createdAt': FieldValue.serverTimestamp(),
         'approvalStatus': 'approved',
         'approvedAt': Timestamp.now(),
@@ -3204,6 +3212,32 @@ class AdminController extends GetxController {
         'pointsByRestaurant': {},
         'scanCountToday': 0,
       };
+    }
+  }
+
+  // Get the initial plan (isInitial == true)
+  SubscriptionPlanModel? get initialPlan {
+    try {
+      return subscriptionPlans.firstWhere((plan) => plan.isInitial && plan.isActive);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Set a plan as the initial plan
+  Future<void> setInitialSubscriptionPlan(String planId) async {
+    try {
+      // Unset isInitial for all plans
+      final batch = _firestore.batch();
+      for (final plan in subscriptionPlans) {
+        final docRef = _firestore.collection('custom_subscription_plans').doc(plan.id);
+        batch.update(docRef, {'isInitial': plan.id == planId});
+      }
+      await batch.commit();
+      await loadSubscriptionPlans();
+      Get.snackbar('Success', 'Initial plan updated', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to set initial plan: $e', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
 }

@@ -80,7 +80,7 @@ class RestaurantRegistrationPage
           },
           steps: [
             _buildBasicInfoStep(),
-            _buildDocumentUploadStep(),
+            _buildContactInfoStep(),
           ],
         );
       }),
@@ -117,35 +117,47 @@ class RestaurantRegistrationPage
     );
   }
 
-  Step _buildDocumentUploadStep() {
+  Step _buildContactInfoStep() {
     return Step(
-      title: const Text('Documents & Logo'),
+      title: const Text('Contact Information & Logo'),
       content: Column(
         children: [
+          // Phone Number
+          TextFormField(
+            decoration: const InputDecoration(
+              labelText: 'Phone Number *',
+              hintText: '+212 6XX XXX XXX',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.phone),
+            ),
+            keyboardType: TextInputType.phone,
+            onChanged: (value) => controller.phoneNumber.value = value,
+            validator: (value) =>
+                value?.isEmpty ?? true ? 'Phone number is required' : null,
+          ),
+          const SizedBox(height: 16),
+
+          // Postal Address
+          TextFormField(
+            decoration: const InputDecoration(
+              labelText: 'Postal Address *',
+              hintText: 'Enter your complete postal address',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.location_on),
+            ),
+            maxLines: 3,
+            onChanged: (value) => controller.postalAddress.value = value,
+            validator: (value) =>
+                value?.isEmpty ?? true ? 'Postal address is required' : null,
+          ),
+          const SizedBox(height: 16),
+
           // Restaurant Logo
           _buildImageUploadSection(
             title: 'Restaurant Logo *',
             imageFile: controller.logoFile.value,
             onTap: controller.pickLogo,
             icon: Icons.restaurant,
-          ),
-          const SizedBox(height: 16),
-
-          // National ID Front
-          _buildImageUploadSection(
-            title: 'National ID Front *',
-            imageFile: controller.nationalIdFrontFile.value,
-            onTap: controller.pickNationalIdFront,
-            icon: Icons.credit_card,
-          ),
-          const SizedBox(height: 16),
-
-          // National ID Back
-          _buildImageUploadSection(
-            title: 'National ID Back *',
-            imageFile: controller.nationalIdBackFile.value,
-            onTap: controller.pickNationalIdBack,
-            icon: Icons.credit_card,
           ),
         ],
       ),
