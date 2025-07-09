@@ -642,12 +642,8 @@ class CustomerController extends GetxController {
             : program.customerPoints,
       });
 
-      // 3. Update restaurant stats (optional)
-      final restaurantRef =
-          _firestore.collection('restaurants').doc(program.restaurantId);
-      batch.update(restaurantRef, {
-        'totalRewardsClaimed': FieldValue.increment(1),
-      });
+      // Note: totalRewardsClaimed will be incremented when the reward is verified by restaurant staff
+      // This ensures accurate counting of actual verified rewards
 
       // Commit the batch
       await batch.commit();

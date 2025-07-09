@@ -614,7 +614,10 @@ class _DashboardTabState extends State<DashboardTab>
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 15,
+                                                overflow: TextOverflow.ellipsis,
+                                                
                                               ),
+                                              maxLines: 1,
                                             ),
                                             Row(
                                               mainAxisAlignment:

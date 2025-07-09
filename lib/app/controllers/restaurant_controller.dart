@@ -25,6 +25,7 @@ class RestaurantProfileModel {
   final String bankDetails; // New field for bank details
   final DateTime? subscriptionEnd; // New field for subscription end date
   final bool isSuspended; // New field for suspension status
+  final int totalRewardsClaimed; // New field for total verified rewards
   // Registration fields
   final String? ownerName;
   final String? supportEmail;
@@ -45,6 +46,7 @@ class RestaurantProfileModel {
     this.bankDetails = '', // Default to empty string
     this.subscriptionEnd, // New parameter
     this.isSuspended = false, // Default to not suspended
+    this.totalRewardsClaimed = 0, // Default to 0
     this.ownerName,
     this.supportEmail,
     this.ibanNumber,
@@ -75,6 +77,24 @@ class RestaurantProfileModel {
       }
     }
 
+    // Get total rewards claimed with proper type checking
+    int totalRewardsClaimed = 0;
+    try {
+      final rawTotalRewardsClaimed = data['totalRewardsClaimed'];
+      if (rawTotalRewardsClaimed is int) {
+        totalRewardsClaimed = rawTotalRewardsClaimed;
+      } else if (rawTotalRewardsClaimed is num) {
+        totalRewardsClaimed = rawTotalRewardsClaimed.toInt();
+      } else if (rawTotalRewardsClaimed is String) {
+        totalRewardsClaimed = int.tryParse(rawTotalRewardsClaimed) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error parsing total rewards claimed: $e');
+        print('Raw total rewards claimed value: ${data['totalRewardsClaimed']}');
+      }
+    }
+
     return RestaurantProfileModel(
       uid: data['uid'] ?? snapshot.id,
       name: data['name'] ?? '',
@@ -88,6 +108,7 @@ class RestaurantProfileModel {
       bankDetails: data['bankDetails'] ?? '',
       subscriptionEnd: (data['subscriptionEnd'] as Timestamp?)?.toDate(),
       isSuspended: data['isSuspended'] ?? false,
+      totalRewardsClaimed: totalRewardsClaimed,
       ownerName: data['ownerName'],
       supportEmail: data['supportEmail'],
       ibanNumber: data['ibanNumber'],
@@ -97,7 +118,7 @@ class RestaurantProfileModel {
   }
 
   // Create a copy of this model with updated scan count
-  RestaurantProfileModel copyWith({int? currentScanCount}) {
+  RestaurantProfileModel copyWith({int? currentScanCount, int? totalRewardsClaimed}) {
     return RestaurantProfileModel(
       uid: uid,
       name: name,
@@ -111,6 +132,7 @@ class RestaurantProfileModel {
       bankDetails: bankDetails,
       subscriptionEnd: subscriptionEnd,
       isSuspended: isSuspended,
+      totalRewardsClaimed: totalRewardsClaimed ?? this.totalRewardsClaimed,
       ownerName: ownerName,
       supportEmail: supportEmail,
       ibanNumber: ibanNumber,
@@ -231,7 +253,7 @@ class RestaurantController extends GetxController {
       restaurantProfile.value?.isSubscriptionActive ?? false;
   bool get isSuspended => restaurantProfile.value?.isSuspended ?? false;
   int get scanCount => restaurantProfile.value?.currentScanCount ?? 0;
-  int get rewardsIssuedCount => restaurantProfile.value?.rewardsIssued ?? 0;
+  int get rewardsIssuedCount => restaurantProfile.value?.totalRewardsClaimed ?? 0;
 
   // Cache for customer data to avoid repeated queries
   final Map<String, String> _customerCache = {};
@@ -502,7 +524,7 @@ class RestaurantController extends GetxController {
 
       // 3. Check 10-Minute Cooldown for this specific customer
       final now = DateTime.now();
-      final tenMinutesAgo = now.subtract(const Duration(hours: 4));
+      final tenMinutesAgo = now.subtract(const Duration(hours: 0));
 
       final recentScans = await _firestore
           .collection('scans')
@@ -743,11 +765,27 @@ class RestaurantController extends GetxController {
         return false;
       }
 
-      // Mark as verified
-      await _firestore.collection('claims').doc(claimDoc.id).update({
-        'isVerified': true,
-        'verifiedDate': FieldValue.serverTimestamp(),
+      // Mark as verified and update restaurant's total rewards claimed
+      await _firestore.runTransaction((transaction) async {
+        // Update the claim
+        transaction.update(_firestore.collection('claims').doc(claimDoc.id), {
+          'isVerified': true,
+          'verifiedDate': FieldValue.serverTimestamp(),
+        });
+        
+        // Update restaurant's total rewards claimed
+        final restaurantRef = _firestore.collection('restaurants').doc(restaurantUid);
+        transaction.update(restaurantRef, {
+          'totalRewardsClaimed': FieldValue.increment(1),
+        });
       });
+
+      // Update local profile state
+      if (restaurantProfile.value != null) {
+        restaurantProfile.value = restaurantProfile.value!.copyWith(
+          totalRewardsClaimed: restaurantProfile.value!.totalRewardsClaimed + 1,
+        );
+      }
 
       // Show success message with reward details
       final rewardType = claimData['rewardType'] ?? 'Reward';
@@ -756,8 +794,9 @@ class RestaurantController extends GetxController {
       verificationResult.value =
           'Success! Verified "$rewardType" reward. This claim is now marked as fulfilled.';
 
-      // Refresh the claims list
+      // Refresh the claims list and profile
       await fetchClaimedRewards();
+      await fetchRestaurantProfile();
 
       return true;
     } catch (e) {
