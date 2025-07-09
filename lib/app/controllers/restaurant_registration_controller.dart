@@ -21,6 +21,7 @@ class RestaurantRegistrationController extends GetxController {
   final RxString restaurantName = ''.obs;
   final RxString ownerName = ''.obs;
   final RxString phoneNumber = ''.obs;
+  final RxString countryCode = '+212'.obs; // Default to Morocco
   final RxString postalAddress = ''.obs;
   final RxString supportEmail = ''.obs;
   final RxString bankDetails = ''.obs;
@@ -49,6 +50,7 @@ class RestaurantRegistrationController extends GetxController {
     ever(restaurantName, (_) => _validateForm());
     ever(ownerName, (_) => _validateForm());
     ever(phoneNumber, (_) => _validateForm());
+    ever(countryCode, (_) => _validateForm());
     ever(postalAddress, (_) => _validateForm());
     ever(logoFile, (_) => _validateForm());
   }
@@ -58,6 +60,7 @@ class RestaurantRegistrationController extends GetxController {
     isFormValid.value = restaurantName.value.trim().isNotEmpty &&
         ownerName.value.trim().isNotEmpty &&
         phoneNumber.value.trim().isNotEmpty &&
+        countryCode.value.isNotEmpty &&
         postalAddress.value.trim().isNotEmpty &&
         logoFile.value != null;
   }
@@ -139,7 +142,7 @@ class RestaurantRegistrationController extends GetxController {
         email: user.email ?? '',
         restaurantName: restaurantName.value.trim(),
         ownerName: ownerName.value.trim(),
-        phoneNumber: phoneNumber.value.trim(),
+        phoneNumber: '${countryCode.value}${phoneNumber.value.trim()}',
         postalAddress: postalAddress.value.trim(),
         supportEmail: '',
         bankDetails: '',
@@ -252,6 +255,7 @@ class RestaurantRegistrationController extends GetxController {
     restaurantName.value = '';
     ownerName.value = '';
     phoneNumber.value = '';
+    countryCode.value = '+212'; // Reset to Morocco default
     postalAddress.value = '';
     logoUrl.value = '';
     currentStep.value = 0;

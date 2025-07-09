@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:country_picker/country_picker.dart';
 import '../../../controllers/restaurant_registration_controller.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../ui/theme/widget_themes/cached_image_widget.dart';
@@ -122,19 +123,76 @@ class RestaurantRegistrationPage
       title: const Text('Contact Information & Logo'),
       content: Column(
         children: [
-          // Phone Number
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Phone Number *',
-              hintText: '+212 6XX XXX XXX',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.phone),
-            ),
-            keyboardType: TextInputType.phone,
-            onChanged: (value) => controller.phoneNumber.value = value,
-            validator: (value) =>
-                value?.isEmpty ?? true ? 'Phone number is required' : null,
+          // Phone Number with Country Code
+          Row(
+            children: [
+              // Country Code Picker
+              Container(
+                width: 120,
+                child: Obx(() => TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Code',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.arrow_drop_down),
+                      onPressed: () {
+                        showCountryPicker(
+                          context: Get.context!,
+                          showPhoneCode: true,
+                          countryListTheme: CountryListThemeData(
+                            flagSize: 25,
+                            backgroundColor: Colors.white,
+                            textStyle: TextStyle(fontSize: 16, color: Colors.black),
+                            bottomSheetHeight: 500,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(20.0),
+                              topRight: Radius.circular(20.0),
+                            ),
+                            searchTextStyle: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                          onSelect: (Country country) {
+                            controller.countryCode.value = '+${country.phoneCode}';
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  controller: TextEditingController(text: controller.countryCode.value),
+                )),
+              ),
+              SizedBox(width: 12),
+              // Phone Number Field (without country code)
+              Expanded(
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number *',
+                    hintText: '6XX XXX XXX',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  onChanged: (value) => controller.phoneNumber.value = value,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Phone number is required' : null,
+                ),
+              ),
+            ],
           ),
+          // Helper text to show the full phone number
+          Obx(() => controller.countryCode.value.isNotEmpty && controller.phoneNumber.value.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Full number: ${controller.countryCode.value}${controller.phoneNumber.value}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+              : SizedBox.shrink()),
           const SizedBox(height: 16),
 
           // Postal Address

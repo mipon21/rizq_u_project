@@ -742,8 +742,8 @@ class RestaurantManagementPage extends GetView<AdminController> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (phoneNumber.isNotEmpty)
-                            _buildInfoRow('Phone Number', phoneNumber),
+                                                  if (phoneNumber.isNotEmpty)
+                          _buildInfoRow('Phone Number', _formatPhoneNumber(phoneNumber)),
                           if (postalAddress.isNotEmpty)
                             _buildInfoRow('Postal Address', postalAddress),
                         ],
@@ -1630,5 +1630,14 @@ class RestaurantManagementPage extends GetView<AdminController> {
     } else {
       return formattedDate;
     }
+  }
+
+  String _formatPhoneNumber(String phoneNumber) {
+    // If the phone number already has a country code, return as is
+    if (phoneNumber.startsWith('+')) {
+      return phoneNumber;
+    }
+    // Otherwise, assume it's a local number and format it
+    return phoneNumber;
   }
 }

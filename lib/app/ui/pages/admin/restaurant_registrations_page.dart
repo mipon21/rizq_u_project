@@ -278,7 +278,7 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
               ),
               const SizedBox(height: 8),
               if (phoneNumber.isNotEmpty)
-                _buildDetailRow('Phone Number', phoneNumber),
+                _buildDetailRow('Phone Number', _formatPhoneNumber(phoneNumber)),
               if (postalAddress.isNotEmpty)
                 _buildDetailRow('Postal Address', postalAddress),
             ],
@@ -490,5 +490,14 @@ class RestaurantRegistrationsPage extends GetView<AdminController> {
         ],
       ),
     );
+  }
+
+  String _formatPhoneNumber(String phoneNumber) {
+    // If the phone number already has a country code, return as is
+    if (phoneNumber.startsWith('+')) {
+      return phoneNumber;
+    }
+    // Otherwise, assume it's a local number and format it
+    return phoneNumber;
   }
 }

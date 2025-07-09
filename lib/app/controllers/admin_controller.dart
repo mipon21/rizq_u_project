@@ -1379,7 +1379,7 @@ class AdminController extends GetxController {
         'ownerName': registrationData['ownerName'] ?? '',
         'address': registrationData['postalAddress'] ?? '', // Use postal address as address
         'email': registrationData['email'] ?? '',
-        'phoneNumber': registrationData['phoneNumber'] ?? '',
+        'phoneNumber': registrationData['phoneNumber'] ?? '', // Already includes country code
         'postalAddress': registrationData['postalAddress'] ?? '',
         'logoUrl': registrationData['logoUrl'] ?? '',
         'supportEmail': registrationData['supportEmail'] ?? '',
