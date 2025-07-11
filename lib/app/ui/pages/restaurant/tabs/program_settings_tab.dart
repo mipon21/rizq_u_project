@@ -161,41 +161,7 @@ class ProgramSettingsTab extends StatelessWidget {
                   );
                 }),
                 const SizedBox(height: 15),
-                // Highlighted custom reward text
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color:
-                          Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Custom reward option has been taken to consideration',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 15),
+                
                 Container(
                   width: double.infinity,
                   padding:

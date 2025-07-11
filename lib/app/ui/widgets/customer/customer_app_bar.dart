@@ -122,7 +122,7 @@ class CustomerAppBar extends StatelessWidget implements PreferredSizeWidget {
     ConfirmationDialog.show(
       context: context,
       title: 'Confirm Account Deletion',
-      content: 'This action is permanent and cannot be undone. All your data will be deleted. Do you want to proceed?',
+      content: 'This action is permanent and cannot be undone. Do you want to proceed?',
       confirmText: 'Delete Account',
       confirmTextColor: Colors.white,
       

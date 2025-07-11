@@ -38,7 +38,7 @@ class AccountDeletionHelper {
       builder: (context) => AlertDialog(
         title: const Text('Confirm Account Deletion'),
         content: const Text(
-            'This action is permanent and cannot be undone. All your data will be deleted. Do you want to proceed?'),
+            'This action is permanent and cannot be undone. Do you want to proceed?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
