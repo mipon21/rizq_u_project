@@ -29,6 +29,7 @@ import '../ui/pages/restaurant/pending_approval_page.dart';
 import '../ui/pages/restaurant/tabs/qr_scanner_page.dart';
 import '../ui/pages/restaurant/subscription_page.dart';
 import '../ui/pages/splash_page.dart';
+import '../ui/pages/no_internet_page.dart';
 
 part 'app_routes.dart';
 
@@ -42,6 +43,7 @@ class AppPages {
 
   static final routes = [
     GetPage(name: Routes.SPLASH, page: () => const SplashPage()),
+    GetPage(name: Routes.NO_INTERNET, page: () => const NoInternetPage()),
     GetPage(
       name: Routes.LOGIN,
       page: () => const LoginPage(),

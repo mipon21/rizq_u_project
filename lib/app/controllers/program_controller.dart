@@ -1,5 +1,6 @@
     import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
 
@@ -73,7 +74,7 @@ import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
              }
           }
         } catch (e) {
-          Get.snackbar('Error', 'Failed to load loyalty program: $e');
+          Get.snackbar('Error', 'Failed to load loyalty program: $e', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
            if (kDebugMode) {
              print("Error fetching program for $restaurantUid: $e");
            }
@@ -88,7 +89,7 @@ import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
          try {
             // Validate inputs (basic)
            if (newRewardType.isEmpty || newPointsRequired <= 0) {
-              Get.snackbar('Invalid Input', 'Reward type cannot be empty and points must be positive.');
+              Get.snackbar('Invalid Input', 'Reward type cannot be empty and points must be positive.', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
               return;
            }
 
@@ -107,12 +108,12 @@ import 'package:rizq/app/controllers/auth_controller.dart'; // For kDebugMode
             );
             loyaltyProgram.refresh(); // Notify listeners
 
-           Get.snackbar('Success', 'Loyalty program updated.');
+           Get.snackbar('Success', 'Loyalty program updated.', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
             if (kDebugMode) {
               print("Updated program for $restaurantUid: $newRewardType, $newPointsRequired points.");
             }
          } catch (e) {
-            Get.snackbar('Error', 'Failed to update program: $e');
+            Get.snackbar('Error', 'Failed to update program: $e', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
              if (kDebugMode) {
                print("Error updating program for $restaurantUid: $e");
              }

@@ -9,6 +9,7 @@ abstract class Routes {
   static const REGISTER = '/register';
   static const FORGOT_PASSWORD = '/forgot-password';
   static const EMAIL_VERIFICATION = '/email-verification';
+  static const NO_INTERNET = '/no-internet';
 
   // Customer Routes
   static const CUSTOMER_HOME = '/customer/home';

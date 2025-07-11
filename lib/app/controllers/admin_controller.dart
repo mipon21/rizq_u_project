@@ -179,6 +179,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoadingRevenueData.value = false;
@@ -272,6 +273,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoadingActivityData.value = false;
@@ -292,6 +294,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
       return;
     }
@@ -318,6 +321,7 @@ class AdminController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
         );
         return;
       }
@@ -354,6 +358,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -366,6 +371,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoading.value = false;
@@ -575,6 +581,7 @@ class AdminController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
       
       // Reset metrics to 0 on error
@@ -621,6 +628,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoadingSubscriptionPlans.value = false;
@@ -680,6 +688,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -691,6 +700,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -741,6 +751,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -752,6 +763,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -773,6 +785,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -784,6 +797,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -849,6 +863,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -860,6 +875,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -961,6 +977,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       // Refresh dashboard metrics to show updated count
@@ -975,6 +992,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isAssigningSubscription.value = false;
@@ -1094,6 +1112,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -1105,6 +1124,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1192,6 +1212,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       // Refresh dashboard metrics to show updated count
@@ -1206,6 +1227,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1283,6 +1305,7 @@ class AdminController extends GetxController {
         'Error',
         'Failed to mark notifications as read',
         snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1364,6 +1387,7 @@ class AdminController extends GetxController {
           snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red,
           colorText: Colors.white,
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
         );
         return;
       }
@@ -1433,6 +1457,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -1444,6 +1469,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1499,6 +1525,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -1510,6 +1537,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1609,6 +1637,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1693,6 +1722,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -1812,7 +1842,8 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export subscriptions: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
+          
     }
   }
 
@@ -1914,7 +1945,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export scan activity: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -1931,6 +1962,7 @@ class AdminController extends GetxController {
         'Error',
         'Failed to log out',
         snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -2026,6 +2058,7 @@ class AdminController extends GetxController {
         'Error',
         'Failed to load loyalty program data',
         snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoadingLoyaltyData.value = false;
@@ -2263,7 +2296,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export restaurant PDF: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2325,7 +2358,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export customers PDF: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2428,7 +2461,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export subscriptions PDF: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2516,7 +2549,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export scan PDFs: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white ,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2603,7 +2636,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export reward claims: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2676,7 +2709,7 @@ class AdminController extends GetxController {
       Get.snackbar('Error', 'Failed to export reward claims PDF: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white);
+          colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 
@@ -2712,6 +2745,7 @@ class AdminController extends GetxController {
       backgroundColor: Colors.blue,
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
     );
   }
   
@@ -2826,7 +2860,7 @@ class AdminController extends GetxController {
         'Failed to initiate cleanup: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,
+        colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -2991,7 +3025,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 5),margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       if (kDebugMode) {
@@ -3013,7 +3047,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 5),margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     }
   }
@@ -3042,7 +3076,7 @@ class AdminController extends GetxController {
         'Customer details updated successfully',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
-        colorText: Colors.white,
+        colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } catch (e) {
       if (kDebugMode) {
@@ -3053,7 +3087,7 @@ class AdminController extends GetxController {
         'Failed to update customer details: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,
+        colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoading.value = false;
@@ -3094,7 +3128,7 @@ class AdminController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 5),margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       if (kDebugMode) {
@@ -3123,7 +3157,7 @@ class AdminController extends GetxController {
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,
+        colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       if (kDebugMode) {
@@ -3138,7 +3172,7 @@ class AdminController extends GetxController {
         'Failed to create customer account: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,
+        colorText: Colors.white,margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
     } finally {
       isLoading.value = false;
@@ -3314,9 +3348,9 @@ class AdminController extends GetxController {
       }
       await batch.commit();
       await loadSubscriptionPlans();
-      Get.snackbar('Success', 'Initial plan updated', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
+      Get.snackbar('Success', 'Initial plan updated', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     } catch (e) {
-      Get.snackbar('Error', 'Failed to set initial plan: $e', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar('Error', 'Failed to set initial plan: $e', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     }
   }
 

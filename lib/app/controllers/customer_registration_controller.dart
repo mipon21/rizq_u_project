@@ -43,7 +43,7 @@ class CustomerRegistrationController extends GetxController {
 
   Future<void> submitCustomerRegistration() async {
     if (!isFormValid.value) {
-      Get.snackbar('Error', 'Please fill all required fields');
+      Get.snackbar('Error', 'Please fill all required fields',margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
       return;
     }
 
@@ -52,7 +52,7 @@ class CustomerRegistrationController extends GetxController {
 
       final user = _auth.currentUser;
       if (user == null) {
-        Get.snackbar('Error', 'User not authenticated');
+        Get.snackbar('Error', 'User not authenticated',margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
         return;
       }
 
@@ -91,7 +91,7 @@ class CustomerRegistrationController extends GetxController {
         'Welcome to Rizq! Your account has been created successfully.',
         duration: const Duration(seconds: 3),
         backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
+        colorText: Colors.green[800],margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       // Navigate to customer home
@@ -100,7 +100,7 @@ class CustomerRegistrationController extends GetxController {
       if (kDebugMode) {
         print('Error submitting customer registration: $e');
       }
-      Get.snackbar('Error', 'Failed to complete registration: $e');
+      Get.snackbar('Error', 'Failed to complete registration: $e',margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
     } finally {
       isLoading.value = false;
     }

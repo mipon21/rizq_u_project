@@ -411,9 +411,7 @@ class CustomerController extends GetxController {
                 'You\'ve reached enough points for ${restaurantData['name']}! Claim your reward.',
                 duration: const Duration(seconds: 5),
                 backgroundColor: Colors.white,
-                // borderColor: MColors.primary,
-                // borderWidth: 0.5,
-                // borderRadius: 10,
+                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                 dismissDirection: DismissDirection.vertical,
                 isDismissible: true,
                 colorText: MColors.primary,
@@ -496,6 +494,7 @@ class CustomerController extends GetxController {
         duration: const Duration(seconds: 5),
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       // If error, try to load from cache
@@ -582,7 +581,7 @@ class CustomerController extends GetxController {
   Future<void> claimReward(RestaurantProgramModel program) async {
     if (userUid.isEmpty) return;
     if (!program.rewardReady) {
-      Get.snackbar('Not Eligible', 'You need more points to claim this reward');
+      Get.snackbar('Not Eligible', 'You need more points to claim this reward', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
       return;
     }
 
@@ -655,7 +654,7 @@ class CustomerController extends GetxController {
       // Refresh data AFTER the dialog is dismissed to prevent navigation issues
       await fetchAllCustomerData();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to claim reward: $e');
+      Get.snackbar('Error', 'Failed to claim reward: $e', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
       if (kDebugMode) {
         print("Error claiming reward: $e");
       }
@@ -1170,7 +1169,7 @@ class CustomerController extends GetxController {
         print("Fetched ${cards.length} loyalty cards for customer $userUid");
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch loyalty points: $e');
+      Get.snackbar('Error', 'Failed to fetch loyalty points: $e', margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
       if (kDebugMode) {
         print("Error fetching loyalty data for $userUid: $e");
       }
@@ -1247,7 +1246,7 @@ class CustomerController extends GetxController {
         Get.snackbar('Index Required',
             'The app needs a database index to be created. Please contact the administrator.',
             duration: const Duration(seconds: 7),
-            snackPosition: SnackPosition.BOTTOM);
+            snackPosition: SnackPosition.BOTTOM, margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
 
         if (kDebugMode) {
           print("Error fetching scan history for $userUid: $e");
@@ -1256,7 +1255,7 @@ class CustomerController extends GetxController {
           }
         }
       } else {
-        Get.snackbar('Error', '$errorMessage: $e');
+        Get.snackbar('Error', '$errorMessage: $e',margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10));
         if (kDebugMode) {
           print("Error fetching scan history for $userUid: $e");
         }
@@ -1316,6 +1315,7 @@ class CustomerController extends GetxController {
         'Error',
         'Failed to load profile: $e',
         snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
       if (kDebugMode) {
         print("Error fetching customer profile: $e");
@@ -1359,6 +1359,7 @@ class CustomerController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[800],
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       return true;
@@ -1368,7 +1369,7 @@ class CustomerController extends GetxController {
         'Failed to update profile: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
+        colorText: Colors.red[800],margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
       if (kDebugMode) {
         print("Error updating customer profile: $e");
@@ -1431,7 +1432,7 @@ class CustomerController extends GetxController {
         'Profile picture updated',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
+        colorText: Colors.green[800],margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
 
       return true;
@@ -1441,7 +1442,7 @@ class CustomerController extends GetxController {
         'Failed to upload image: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
+        colorText: Colors.red[800],margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
       );
       if (kDebugMode) {
         print("Error uploading profile image: $e");
@@ -1508,6 +1509,7 @@ class CustomerController extends GetxController {
               dismissDirection: DismissDirection.vertical,
               isDismissible: true,
               icon: const Icon(Icons.card_giftcard, color: Colors.purple),
+              margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
             );
           }
         }
@@ -1524,7 +1526,7 @@ class CustomerController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           dismissDirection: DismissDirection.vertical,
           isDismissible: true,
-          icon: const Icon(Icons.error_outline, color: Colors.red),
+          icon: const Icon(Icons.error_outline, color: Colors.red),margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
         );
       }
     }
@@ -1560,7 +1562,7 @@ class CustomerController extends GetxController {
           backgroundColor: Colors.orange,
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
-          margin: const EdgeInsets.all(16),
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10)
         );
       }
     } catch (e) {
