@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:intl/intl.dart';
 import '../utils/constants/colors.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:rizq/app/services/app_settings_service.dart';
 
 class RestaurantProfileModel {
   final String uid;
@@ -522,9 +523,10 @@ class RestaurantController extends GetxController {
         return;
       }
 
-      // 3. Check 10-Minute Cooldown for this specific customer
+      // 3. Check Cooldown for this specific customer
+      final cooldownMinutes = await AppSettingsService.getQrScanCooldownMinutes();
       final now = DateTime.now();
-      final tenMinutesAgo = now.subtract(const Duration(hours: 4));
+      final cooldownAgo = now.subtract(Duration(minutes: cooldownMinutes));
 
       final recentScans = await _firestore
           .collection('scans')
@@ -532,29 +534,30 @@ class RestaurantController extends GetxController {
           .where('clientId', isEqualTo: customerUid)
           .where(
             'timestamp',
-            isGreaterThan: Timestamp.fromDate(tenMinutesAgo),
+            isGreaterThan: Timestamp.fromDate(cooldownAgo),
           )
           .limit(1) // We only need to know if at least one exists
           .get();
 
-      // Check if customer has scanned within the last 10 minutes
+      // Check if customer has scanned within the last cooldown time
       if (recentScans.docs.isNotEmpty) {
         final lastScanTime =
             (recentScans.docs.first.data()['timestamp'] as Timestamp).toDate();
         final timeDifference = now.difference(lastScanTime);
-        final totalRemainingMinutes = (4 * 60) - timeDifference.inMinutes;
+        final totalRemainingMinutes = cooldownMinutes - timeDifference.inMinutes;
         
         if (totalRemainingMinutes > 0) {
-          final remainingHours = totalRemainingMinutes ~/ 60;
-          final remainingMinutes = totalRemainingMinutes % 60;
-          
           String timeDisplay;
-          if (remainingHours > 0 && remainingMinutes > 0) {
-            timeDisplay = '$remainingHours hr $remainingMinutes min';
-          } else if (remainingHours > 0) {
-            timeDisplay = '$remainingHours hr';
+          if (totalRemainingMinutes >= 60) {
+            final remainingHours = totalRemainingMinutes ~/ 60;
+            final remainingMinutes = totalRemainingMinutes % 60;
+            if (remainingMinutes > 0) {
+              timeDisplay = '$remainingHours hr $remainingMinutes min';
+            } else {
+              timeDisplay = '$remainingHours hr';
+            }
           } else {
-            timeDisplay = '$remainingMinutes min';
+            timeDisplay = '$totalRemainingMinutes min';
           }
 
           Get.closeAllSnackbars();
