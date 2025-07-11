@@ -20,6 +20,11 @@ import 'dart:typed_data';
 class AdminController extends GetxController {
   static AdminController get instance => Get.find();
 
+  // Static flag to track if free trial plan creation has been attempted
+  static bool _hasAttemptedFreeTrialCreation = false;
+  // Static flag to track if onInit has been called
+  static bool _hasInitialized = false;
+
   // Firebase instances
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -88,6 +93,17 @@ class AdminController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Prevent multiple initializations
+    if (_hasInitialized) {
+      if (kDebugMode) {
+        print('AdminController already initialized, skipping...');
+      }
+      return;
+    }
+    
+    _hasInitialized = true;
+    
     // Load subscription plans automatically when controller is initialized
     // This ensures plans are available when accessed from restaurant pages
     loadSubscriptionPlans().then((_) {
@@ -804,6 +820,16 @@ class AdminController extends GetxController {
 
   // Create default free trial plan if it doesn't exist
   Future<void> createDefaultFreeTrialPlan() async {
+    // Prevent multiple attempts to create free trial plan
+    if (_hasAttemptedFreeTrialCreation) {
+      if (kDebugMode) {
+        print('Free trial plan creation already attempted, skipping...');
+      }
+      return;
+    }
+    
+    _hasAttemptedFreeTrialCreation = true;
+    
     try {
       // Check if free trial plan already exists
       final existingFreeTrial = subscriptionPlans.where((plan) => plan.isFreeTrial).toList();
@@ -3354,5 +3380,14 @@ class AdminController extends GetxController {
     }
   }
 
+  // Reset the free trial creation flag (for testing purposes)
+  static void resetFreeTrialCreationFlag() {
+    _hasAttemptedFreeTrialCreation = false;
+  }
+
+  // Reset the initialization flag (for testing purposes)
+  static void resetInitializationFlag() {
+    _hasInitialized = false;
+  }
 
 }
